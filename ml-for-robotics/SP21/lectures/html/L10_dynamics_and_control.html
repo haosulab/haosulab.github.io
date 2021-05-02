@@ -1,0 +1,1029 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>L10</title>
+        <meta name="description" content="" />
+        <meta name="author" content="Hao Su" />
+        <link rel="stylesheet" href="../extras/highlight/styles/github.css">
+        <link rel="stylesheet" href="../extras/mermaid/mermaid.forest.css">
+        <link href="../css/impress-common.css" rel="stylesheet" />   
+        <link href="css/classic-slides.css" rel="stylesheet" />
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/1.7.1/viz.js"> </script>
+        <link rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/vs.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+        \[
+        \newcommand{\mc}[1]{\mathcal{#1}} 
+        \newcommand{\mv}[1]{\boldsymbol{#1}}\newcommand{\mvinfty}{\boldsymbol{\infty}}\newcommand{\mvzero}{\boldsymbol{0}}
+        \newcommand{\f}[1]{\mathfrak{#1}}
+        \newcommand{\bb}[1]{\mathbb{#1}}
+        \newcommand{\d}[1]{\mathrm{d}#1}
+        \newcommand{\ddt}{\frac{\d{}}{\d{t}}}
+        \newcommand{\pLp}[1]{\frac{\partial L}{\partial #1}}
+        \newcommand{\bm}[1]{\begin{bmatrix}#1\end{bmatrix}}
+        \newcommand{\lagrangian}{F=\ddt\pLp{\dot{q}}-\pLp{q}}
+        \newcommand{\mxi}{\mv{\xi}}
+        \newcommand{\aligned}[1]{\begin{aligned}#1\end{aligned}}
+        \]
+    </head>
+    <body class="impress-not-supported">
+        <div class="fallback-message">
+            <p>Your browser <b>doesn't support the features required</b> by impress.js, so you are presented with a simplified version of this presentation.</p>
+            <p>For the best experience please use the latest <b>Chrome</b>, <b>Safari</b> or <b>Firefox</b> browser.</p>
+        </div>
+        <div id="impress"
+             data-width="1920"
+             data-height="1080"
+             data-max-scale="3"
+             data-min-scale="0"
+             data-perspective="1000"
+             data-transition-duration="0"
+             >
+
+             <div class="step slide title" data-x="-2200" data-y="-3000" id="title">
+                 <h1 class="nt">L10: Constraint Force Computation, Control</h1>
+                 <h2>Hao Su</h2>
+                 <h3>Spring, 2021</h3>
+             </div>
+             <div id="toc" class="step slide" data-rel-x="2200" data-rel-y="0">
+                 <h1 class="nt">Agenda</h1>
+                 <ul class="large">
+                     <li><a href="#constrained_lagrangian">Constrained Lagrangian Method</a></li>
+                     <li><a href="#variational_method">Variational Method</a></li>
+                     <li><a href="#control">Control</a></li>
+                     <li><a href="#PID">PID Control</a></li>
+                 </ul>
+                 click to jump to the section.
+             </div>
+             <div class="step slide">
+                 <h1 class="vt">Review: Lagrangian Function</h1>
+                 <ul>
+                     <li>Let \(q\in\bb{R}^n\) be the generalized coordinates. 
+                     </li>
+                     <li><strong>Lagrangian function:</strong> \(L(q, \dot{q})=T(q,\dot{q})-V(q)\)
+                         <ul>
+                             <li>\(T(q,\dot{q})\): kinetic energy of system</li>
+                             <li>\(V(q)\): potential energy (given by some conservative force, e.g., gravity, electric field force)</li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Review: The Principle of Stationary Action</h1>
+                 <div class="row">
+                     <div class="column" style="flex: 70%">
+                         <ul>
+                             <li>Given a pair of time instants, \(t_1\) and \(t_2\)  </li>
+                             <li>What is the curve \(\mv{q}:[t_1, t_2]\to \cal{C}\) in the configuration space \(\cal{C}\)?</li>
+                         </ul>
+                         <ul>
+                             <li><strong>Action</strong> is defined to be a functional of \(\mv{q}(t)\):
+                                 \[
+                                 S[\mv{q}]=\int_{t_1}^{t_2} L(q, \dot{q}) \d{t}
+                                 =\int_{t_1}^{t_2} [T(\mv{q}, \dot{\mv{q}})-V(\mv{q})] \d{t}
+                                 \]</li>
+                         </ul>
+                     </div>
+                     <div class="column" style="flex: 30%">
+                         <img src="./L9/least_action_principle.svg" width="100%"/>
+                         <div class="credit"><a href="https://en.wikipedia.org/wiki/Stationary_Action_Principle">Wikipedia: Stationary Action Principle</a></div>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Review: The Principle of Stationary Action</h1>
+                 <div class="row">
+                     <div class="column" style="flex: 70%">
+                         <ul>
+                             <li>The actual curve \(\mv{q}(t)\) is a stationary point of the \(S[\mv{q}]\):
+                                 \[
+                                 \forall  \mv{\delta}:[t_1, t_2]\to \cal{C},\quad \lim_{\epsilon\to 0}\frac{1}{\epsilon}(S[\mv{q}+\epsilon \mv{\delta}]-S [\mv{q}])=0 \tag{1}
+                                 \]
+                             </li>
+                             <li>Note: Treating $\mv{q}$ as a variable, and (1) is an extension of the first-order optimality condition that we use in calculus: \[
+                                 \nabla_{q}S[q]=0
+                                 \]</li>
+                             <li class="substep">Using <em>variational method</em>, condition (1) becomes 
+                                 \[
+                                 \frac{\d{}}{\d{t}}\frac{\partial L}{\partial \dot{q}}-\frac{\partial L}{\partial q}=0
+                                 \]
+                             </li>
+                         </ul>
+                     </div>
+                     <div class="column" style="flex: 30%">
+                         <img src="./L9/least_action_principle.svg" width="100%"/>
+                         <div class="credit"><a href="https://en.wikipedia.org/wiki/Stationary_Action_Principle">Wikipedia: Stationary Action Principle</a></div>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="vt">Review: Euler-Lagrange Equation</h1>
+                 <ul>
+                     <li>When there are external non-conservative generalized force \(\mv{F}\in\bb{R}^n\) added to the system (e.g., torque at robot arm joints), we have the following Euler-Lagrange equation:
+                         \[
+                         \mv{F}=\frac{\d{}}{\d{t}}\frac{\partial L}{\partial \dot{q}}-\frac{\partial L}{\partial q}\tag{Euler-Lagrange Equation}
+                         \]
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide separator" id="robot_arm">
+                 <h1 class="nt">Example: Robot Arm</h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Robot Arm</h1>
+                 <ul>
+                     <li>For kinematic chains with $n$ joints, it is convenient and always possible to choose the joint angles $\theta=(\theta_1,\ldots,\theta_n)$ and the joint torques $\tau=(\tau_1,\ldots,\tau_n)$ as the generalized coordinates and generalized forces, respectively.
+                         <ul>
+                             <li>If joint $i$ is revolute: $\theta_i$ joint angle and $\tau_i$ is joint torque</li>
+                             <li>If joint $i$ is prismatic: $\theta_i$ joint position and $\tau_i$ is joint force</li>
+                             <li>Then, the joint force/torque $\tau$ and joint angular/linear velocity $\dot{\theta}$ form dual pairs.</li>
+                         </ul>
+                     </li>
+                     <li>Lagrangian Equations:
+                         \[
+                         \tau_i=\ddt\pLp{\dot{\theta}_i}-\pLp{\theta_i}
+                         \]
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Review of Notations for Robot Arms</h1>
+                 For each link $i\in\{1,\ldots,n\}$, the corresponding body-frame $\cal{F}_i$ is attached to the center of mass of link $i$. All the following quantities are expressed in $\cal{F}_i$
+                 <ul>
+                     <li>$\mxi^b_i$: body twist of the link frame $\cal{F}_i$</li>
+                     <li>$\f{M}_i^b=\bm{m_i\rm{Id}_{3\times 3}& 0\\0 & \mv{I}^b_i }$: body inertia matrix</li>
+                     <li>Kinetic energy of link $i$: $T_i=\frac{1}{2}(\mxi_i^b)^T \f{M}^b_i\mxi_i^b$</li>
+                     <li>$J^b_i\in\bb{R}^{6\times n}$: body Jacobian of link $i$ (so that we have the forward dynamics $\mv{\xi}^b_i=J^b_i\dot{\theta}$)</li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Kinetic and Potential Energies</h1>
+                 <ul>
+                     <li>Total kinetic energy:
+                         \[
+                         T(\theta,\dot{\theta})=\frac{1}{2}\sum_{i=1}^n (\mxi^b_i)^T\f{M}^b_i\mxi^b_i=\frac{1}{2}\dot{\theta}^T\underbrace{(\sum_{i=1}^n(J^b_i(\theta)\f{M}^b_i J^b_i(\theta)))}_{\mv{M}^b(\theta)}\dot{\theta}:=\frac{1}{2}\dot{\theta}^T\mv{M}^b(\theta)\dot{\theta}
+                         \]
+                     </li>
+                     <li>Potential energy:
+                         \[
+                         V(\theta)=\sum_{i=1}^n m_i g h_i(\theta)
+                         \]
+                         <ul>
+                             <li>$h_i(\theta)$: height of center of mass of link $i$</li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Lagrangian Equation</h1>
+                 <ul>
+                     <li>Plug $L=T-V$ into $\lagrangian$, and we have
+                     </li>
+                     <li>$\tau_i=\ddt\pLp{\dot{\theta}}-\pLp{\theta_i}$
+                         \[
+                         \tau_i=\sum_{j=1}^n M^b_{ij}(\theta)\ddot{\theta}_j+\sum_{j=1}^n\sum_{k=1}^n\Gamma^b_{ijk}(\theta)\dot{\theta}_j\dot{\theta}_k+\frac{\partial V}{\partial \theta_i}
+                         \]
+                         $M^b_{ij}$ is the $(i, j)$-th entry of matrix $\mv{M}^b$
+                     </li>
+                     <li>$\Gamma^b_{ijk}(\theta)$ is called the <strong>Christoffel symbols of the first kind</strong>
+                         \[
+                         \Gamma^b_{ijk}(\theta)=\frac{1}{2}\left(\frac{\partial M^b_{ij}}{\partial \theta_k}+\frac{\partial M^b_{ik}}{\partial \theta_j}-\frac{\partial M^b_{jk}}{\partial \theta_i}\right)
+                         \]
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Lagrangian Equation</h1>
+                 <ul>
+                     <li>Lagrangian equation in vector form:
+                         \[
+                         \tau=\mv{M}^b(\theta)\ddot{\theta}+C^b(\theta,\dot{\theta})\dot{\theta}+g^b(\theta)
+                         \]
+                         <ul>
+                             <li>$C^b_{ij}(\theta,\dot{\theta}):=\sum_{k=1}^n \Gamma^b_{ijk}\dot{\theta}_k$ is called the <strong>Coriolis matrix</strong>
+                                 <ul>
+                                     <li>Recall that in the body-frame Newton Euler equation, we also have a Coriolis term that comes from the derivative of the rotational inertia ($\mv{\tau}^b=\mv{I}^b\dot{\mv{\omega}}^b+\mv{\omega}^b\times \mv{I}^b\mv{\omega}^b$). It was used to compensate for the rotational acceleration of the body frame.</li>
+                                     <li>This $C^b_{ij}(\theta,\dot{\theta})$ also comes from taking the derivative of $\mv{M}^b$ w.r.t. $\theta$. Because $\mv{M}^b$ and $\mxi^b$ are described in the body frame in our derivation, we also need this Coriolis term to compensate for the movement of the body frame.</li>
+                                 </ul>
+                             </li>
+                             <li>$g^b(\theta)$ is due to gravity in our derivation. If there are other external forces (e.g., friction), it would also show up here.
+                             </li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <ul>
+                     <li>Equations for a simple arm</li>
+                 </ul>
+                 <img src="L9/3dof_lagrangian.svg" width="100%"/>
+             </div>
+             <div class="step slide">
+                 <ul>
+                     <li>Equations for PUMA 560 Arm</li>
+                 </ul>
+                 <img src="./L9/puma_dynamics.svg" width="100%">
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Are We Done Yet?</h1>
+                 <ul>
+                     <!--
+                         -<li><strong>Summary of our achievement</strong>: We can relate acceleration of generalized coordinate with external generalized forces by $\ddot{\theta}=\rm{Forward}(\tau; \theta, \dot{\theta})$.</li>
+                     -->
+                     <li>Let us use the tools to solve our grasping example</li>
+                     <div class="row">
+                         <div class="column">
+                             <ul>
+                                 <li class="substep">Suppose that each arm has 3 joints with motors installed.</li>
+                                 <li class="substep">The <strong>degree-of-freedom</strong> (independent coordinates) of the system is: $2\times 3+6=12$ including both two arms and the rigid object.</li>
+                                 <li class="substep">If we would like control the robot to hold the box firmly, the degree-of-freedom will reduce due to constraints.</li>
+                                 <li class="substep">How to solve FD/ID for this system?</li>
+                                 <li class="substep">Additionally, if we are to keep the box static, among many $\tau$ candidates, we want to choose one by the contact force and torque. However, our previously developed tool does not tell us about these quantities! </li>
+                             </ul>
+                         </div>
+                         <div class="column" style="flex: 30%">
+                             <img src="L7/multifingers.png" width="100%"/>
+                         </div>
+                     </div>
+                 </ul>
+
+             </div>
+             <div class="step slide separator" id="constrained_lagrangian">
+                 <h1 class="nt">Constrained Lagrangian Method</h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Constrained Lagrangian Method</h1>
+                 <div class="row">
+                     <div class="column">
+                         <ul>
+                             <li>Our previous Lagrangian method uses independent coordinates to describe the state of the system</li>
+                             <li class="substep">Sometimes, we are interested in the situation happening not at these independent coordinates (e.g., in the grasping example, we are interested in the internal forces at the contact points).</li>
+                             <li class="substep">We augment our previous Lagrangian methods to answer such query.</li>
+                         </ul>
+                     </div>
+                     <div class="column" style="flex: 30%">
+                         <img src="L7/multifingers.png" width="100%"/>
+                     </div>
+                 </div>
+             </div>
+
+             <div class="step slide">
+                 <h1 class="vt">Review: Contact Coordinate Frame</h1>
+                 <div class="row">
+                     <div class="column">
+                         <ul>
+                             <li>We build a <strong>contact frame</strong> \(C_i\) at each contact point</li>
+                             <li>The \(z\)-axis of the frame points inward along <em>surface normal</em></li>
+                             <li>When recording force and torque at the contact point, it is natural to set \(C_i\) as the <em>observer's frame</em>, i.e., \[
+                                 \mv{F}^{C_i}=\begin{bmatrix}\mv{f}^{C_i}\\\mv{\tau}^{C_i}\end{bmatrix}
+                                 \]
+                             </li>
+                         </ul>
+                     </div>
+                     <div class="column" style="flex: 30%">
+                         <img src="L7/contact_frame.png" width="100%"/>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="et">Step 1: Adding Generalized Coordinates<br/> for Constraint Force</h1>
+                 <div style="margin-top:50px"></div>
+                 <div class="row">
+                     <div class="column">
+                         <ul>
+                             <li>We assign additional generalized coordinates at the constraints.
+                                 <ul>
+                                     <li>E.g., we add the 6D pose of the contact frames at the end of the two finger tips as the generalized coordinates.</li>
+                                     <li>So the generalized velocities are the twists at the finger tips $\mxi^{C_i}$. </li>
+                                 </ul>
+                             </li>
+                             <li class="substep">These additional generalized coordinates have their corresponding generalized forces (our query).
+                                 <ul>
+                                     <li>In our example, the additional generalized forces are the internal forces ($\mv{f}^{C_i}$ and $\mv{\tau}^{C_i}$) at the contact points $\mv{F}^{C_i}$.</li>
+                                 </ul>
+                             </li>
+                         </ul>
+                     </div>
+                     <div class="column" style="flex: 30%">
+                         <div style="margin-top: 100px"></div>
+                         <img src="L7/contact_frame.png" width="100%"/>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Step 2: Adding Constraints</h1>
+                 <div class="row">
+                     <div class="column" style="flex: 80%">
+                         <ul>
+                             <li>While assigning the additional generalized coordinates, we also need to add constraints. </li>
+                             <ul>
+                                 <li>In our example, $\mxi^{C_i}$ must conform to two sets of constraints:
+                                     <ul>
+                                         <li>All contact frames must move in accordance with the movement of the object;</li>
+                                         <li>All contact frames must move in accordance with the movement of the arms.</li>
+                                     </ul>
+                                 </li>
+                             </ul>
+                         </ul>
+                     </div>
+                     <div class="column" style="flex: 40%">
+                         <img src="L7/multifingers.png" width="100%"/>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Step 2: Adding Constraints</h1>
+                 <div class="row">
+                     <div class="column" style="flex: 80%">
+                         <div>
+                             <em>
+                                 "All contact frames must move in accordance with the movement of the object."
+                             </em>                 
+                             <ul>
+                                 <li>Assume the body frame twist of the box is $\mxi^{b}$. 
+                                 </li>
+                                 <li>Then, $\mxi^{C_i}=[\rm{Ad}_{C_i\to b}]\mxi^{b}\quad \forall i$.
+                                 </li>
+                             </ul>
+                         </div>
+                         <div class="substep">
+                             <em>
+                                 "All contact frames must move in accordance with the movement of the arms."
+                             </em>
+                             <ul>
+                                 <li>The body frame twist of the contact frame is $\mxi^{C_i}$. 
+                                 </li>
+                                 <li>We can develop the hand Jacobian as $\mxi^{C_i}=J^{C_i}(\theta)\dot{\theta}\quad \forall i$.
+                                 </li>
+                             </ul>
+                         </div>
+                     </div>
+                     <div class="column" style="flex: 40%">
+                         <img src="L7/multifingers.png" width="100%"/>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Constraints for Augmented<br/>Generalized Velocities</h1>
+                 <ul>
+                     <li>
+                         We put all constraints over generalized velocities in a linear equation:
+                         \[
+                         A(q)\dot{q}=0, \quad\mbox{where } A(q)\in\bb{R}^{m\times n}
+                         \]
+                     </li>
+                     <ul>
+                         <li>$m$: number of constraints </li>
+                         <li>$n$: dimension of generalized coordinates </li>
+                     </ul>
+                     <li>After some infinitesimal time internal $\delta t$, the displacement of the generalized coordinates is $\delta q=\dot{q}\delta t$. We rewrite the constraints as
+                         \[
+                         A(q)\delta q=0
+                         \]
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">A Few More Words on Constraints</h1>
+                 <ul>
+                     <li>A constraint on a mechanical system restricts the motion of the system by limiting the set of paths that the system can follow. </li>
+                     <li><strong>Holonomic constraints</strong>:
+                         <ul>
+                             <li>Roughly speaking, the constraint $A(q)\delta{q}=0$ does not depend on $\dot{q}$
+                                 (e.g., our grasping example)</li>
+                             <li>Strictly speaking, a constraint is said to be <strong>holonomic</strong> if it restricts the motion of the system to a smooth hyper-surface in the (unconstrained) space $\cal{C}$. </li>
+                         </ul>
+                     </li>
+                     <li>Example of <strong>Nonholonomic constraints</strong>:
+                         <ul>
+                             <li>No-side-slip constraint of wheeled robot: Due to <em>rolling friction</em>, a car can only move along the velocity direction, thus the constraint is velocity-based ($A(q, \dot{q})\delta q=0$), and cannot be written as purely position-based. </li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide separator" id="variational_method">
+                 <h1 class="nt">Variational Method</h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt"><div class="hl">Some Tricky (but Sloppy) Math is Coming!</div></h1>
+                 <center>
+                     <img src="./L9/plants_vs_zombies.jpeg" width="40%"/>
+                     <div class="credit">source: Plants vs Zombies V3</div>
+                 </center>
+             </div>
+             <div class="step slide">
+                 <h1 class="et">Background: Unconstrained Function Optimization</h1>
+                 <ul>
+                     <li>For some $f:\bb{R}^n\to \bb{R}$, let us solve the optimization problem
+                         \[
+                         \underset{x}{\mbox{minimize}} \quad f(x)
+                         \]
+                     </li>
+                 </ul>
+                 <ul>
+                     <!-- -<li>First of all, the optimal solution of $f(x)$ must be a stationary point of $f(x)$.</li> -->
+                     <li>The first-order Taylor's expansion of $f(x)$ is
+                         \[
+                         f(x+\delta x)-f(x)=\nabla f(x)^T\delta x+o(\delta x)
+                         \]
+                     </li>
+                     <li>The optimal point must be a <em>stationary point</em>, i.e., <em>the first-order term diminishes</em>:
+                         \[
+                         \nabla f(x^*)^T\delta x=0
+                         \]
+                     </li>
+                     <li>Because the problem is unconstrained, $\delta x$ can vary along any direction.</li>
+                     <li>Therefore, $\nabla f(x^*)=0$ is a necessary condition.</li>                             
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Background: Constrained Function Optimization</h1>
+                 <ul>
+                     <li>For some $f:\bb{R}^n\to \bb{R}$, let us solve the optimization problem
+                         \[
+                         \aligned{
+                         &\underset{x}{\mbox{minimize}} & &f(x)\\
+                         &\mbox{subject to} & &Ax=0, \qquad A\in\bb{R}^{m\times n}
+                         }
+                         \]
+                     </li>
+                 </ul>
+                 <ul>
+                     <li>The first-order Taylor's expansion of $f(x)$ is
+                         \[
+                         f(x+\delta x)-f(x)=\nabla f(x)^T\delta x+o(\delta x)
+                         \]
+                     </li>
+                     <li>The optimal point must be a <em>stationary point</em>, i.e., <em>the first-order term diminishes for variations in the constraint set</em>:
+                         \[
+                         \forall \delta x: A\delta x=0, \nabla f(x^*)^T\delta x=0
+                         \]
+                     </li>
+                     <li>$\delta x\in Null(A)$ and $\nabla f(x^*)^T\perp \delta x$ implies that 
+                         $\nabla f(x^*)=-A^T\lambda$
+                         for some $\lambda\in\bb{R}^{m}$
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="vt">Background: Constrained Function Optimization</h1>
+                 <ul>
+                     <li>Optimality Condition:
+                         \[
+                         \left\{
+                         \aligned{
+                         &\nabla f(x)+A^T\lambda=0&&\rm{(stationarity)}\\
+                         &Ax=0&&\rm{(feasibility)}\\
+                         }\right.
+                         \]
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="et">Principle of Stationary Action (Unconstrained)</h1>
+                 <ul>
+                     <li>Given some $q:[t_1,t_2]\to \cal{C}$, assume a small perturbation function $\delta q:[t_1,t_2]\to\cal{C}$ such that \[\delta q(t_1)=\delta q(t_2)=0\]</li>
+                     <li>For the functional $S[q]=\int_{t_1}^{t_2}L(q, \dot{q})\d{t}$, the first-order variation is
+                         \[
+                         \aligned{
+                         \delta S=S[q+\delta q]-S[q]&=\int_{t_1}^{t_2}L(q+\delta q, \dot{q}+\delta \dot{q})-L(q, \dot{q})\\
+                         &=\int_{t_1}^{t_2}L(q,\dot{q})+\left(\pLp{q}\right)^T\delta q+\left(\pLp{\dot{q}}\right)^T\delta \dot{q}-L(q,\dot{q})+o(q)\\
+                         &=\int_{t_1}^{t_2}\left(\pLp{q}\right)^T\delta q+\left(\pLp{\dot{q}}\right)^T\delta \ddt q+o(q)=\int_{t_1}^{t_2}\left(\pLp{q}\right)^T\delta q+\left(\pLp{\dot{q}}\right)^T\ddt\delta q+o(q)\\
+                         &=\int_{t_1}^{t_2}\left(\pLp{q}\right)^T\delta q+\left.\pLp{\dot{q}}\delta q\right\vert_{t_1}^{t_2}-\left(\ddt\pLp{\dot{q}}\right)^T\delta q+o(t)=\int_{t_1}^{t_2} \left(\pLp{q}-\ddt\pLp{\dot{q}}\right)^T\delta q+o(t)
+                         }
+                         \]
+                     </li>
+                     <li>Because the problem is unconstrained, $\delta q$ can vary along any direction.</li>
+                     <li>Therefore, $\ddt\pLp{\dot{q}}-\pLp{q}=0$ is the condition for stationary solution.</li>                             
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="et">Principle of Stationary Action<br/> (Holonomically Constrained)</h1>
+                 <ul>
+                     <li>Given some $q:[t_1,t_2]\to \cal{C}$, assume a small perturbation function $\delta q:[t_1,t_2]\to\cal{C}$ such that \[
+                         \delta q(t_1)=\delta q(t_2)=0,\qquad A(q)\delta q=0
+                         \]</li>
+                     <li>For the functional $S[q]=\int_{t_1}^{t_2}L(q, \dot{q})\d{t}$, the first-order variation is
+                         \[
+                         \aligned{
+                         \delta S=S[q+\delta q]-S[q]&=\int_{t_1}^{t_2} \left(\pLp{q}-\ddt\pLp{\dot{q}}\right)^T\delta q+o(t)
+                         }
+                         \]
+                     </li>
+                     <li>The optimal point must be a <em>stationary point</em>, i.e., <em>the first-order term diminishes for variations in the constraint set</em>:
+                         \[
+                         \forall \delta q:A(q)\delta q=0,
+                         \int_{t_1}^{t_2} \left(\pLp{q}-\ddt\pLp{\dot{q}}\right)^T\delta q=0
+                         \]
+                     </li>
+                     <li>$\forall \delta q\in Null(A(q)), \ddt\pLp{\dot{q}}-\pLp{q}\perp \delta q$, which implies that $\ddt\pLp{\dot{q}}-\pLp{q}=-A(q)^T\lambda$ for some $\lambda\in\bb{R}^{m}$</li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="et">Principle of Stationary Action<br/>(Holonomically Constrained)</h1>
+                 <ul>
+                     <li>Stationary point condition (no external force):
+                         \[
+                         \left\{
+                         \aligned{
+                         &\ddt\pLp{\dot{q}}-\pLp{q}+A(q)^T\lambda=0&&\rm{(stationarity)}\\
+                         &A(q)\dot{q}=0&&\rm{(feasibility)}\\
+                         }\right.
+                         \]
+                     </li>
+                     <li>When external force exists, 
+                         \[
+                         \left\{
+                         \aligned{
+                         &\ddt\pLp{\dot{q}}-\pLp{q}+A(q)^T\lambda=\mv{F}&&\rm{(stationarity)}\\
+                         &A(q)\dot{q}=0&&\rm{(feasibility)}\\
+                         }\right.
+                         \]
+                     </li>
+                     <li><strong>Constraint Force</strong>: $\mv{F}_{cons}=A(q)^T\lambda$</li>
+                     <li>Note that $\mv{F}_{cons}^T\dot{q}=0$, thus internal force does no work.</li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="et">Principle of Stationary Action<br/>(Holonomically Constrained)</h1>
+                 <ul>
+                     <li>
+                         The feasibility constraint can be rewritten as:
+                         \[
+                         \dot{A(q)}\dot{q}+A(q)\ddot{q}=0
+                         \]
+                     </li>
+                     <li>The system of equations is thus:
+                         \[
+                         \left\{
+                         \aligned{
+                         &\ddt\pLp{\dot{q}}-\pLp{q}+A(q)^T\lambda=\mv{F}&&\rm{(stationarity)}\\
+                         &\dot{A(q)}\dot{q}+A(q)\ddot{q}=0&&\rm{(feasibility)}
+                         }\right.
+                         \]
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="et">Principle of Stationary Action<br/>(Holonomically Constrained)</h1>
+                 <ul>
+                     <li>Our object manipulation example:
+                         \[
+                         \left\{
+                         \aligned{
+                         &M(q)\ddot{q}+C(q,\dot{q})\dot{q}+g(q,\dot{q})+A(q)^T\lambda=\mv{F}&&\rm{(stationarity)}\\
+                         &\dot{A(q)}\dot{q}+A(q)\ddot{q}=0&&\rm{(feasibility)}
+                         }\right.
+                         \]
+                         therefore, 
+                         \[
+                         \lambda = (AM^{-1}A^T)^{-1}(AM^{-1}(F-C\dot{q}-N)+\dot{A}\dot{q})
+                         \]
+                         where $AM^{-1}A^T$ is full rank if the constraints are independent.
+                     </li>
+                     <li>Note: $M(q)$, $C(q, \dot{q})$, and $g(q, \dot{q})$ are computed from the two arms and the object. </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="et">Example: Cart Pole</h1>
+                 <div class="row">
+                     <div class="column">
+                         <div style="margin-top: 100px"></div>
+                         <ul>
+                             <li>Kinetic energy: $T=\frac{1}{2}M v_1^2+\frac{1}{2}m v_2^2$</li> 
+                             <li>Assume the joint position is $[x_1(t), 0]^T$ and the point mass position is $[x_2(t), y_2(t)]$, then
+                                 <ul>
+                                     <li>$v_1^2=\dot{x}_1^2$</li>
+                                     <li>$v_2^2=\dot{x}_2^2+\dot{y}_2^2$</li>
+                                 </ul>
+                             </li>
+                             <li>Potential energy: $V=mgy_2$</li> 
+                             <li>Constraint: $C(x_1, x_2, y_2)=(x_1-x_2)^2+y_2^2-l^2$</li> 
+                             <ul>
+                                 <li>$A(q)\dot{q}=\nabla_q C(q)\dot{q}$</li>
+                             </ul>
+                         </ul>
+                     </div>
+                     <div class="column" style="flex: 20%">
+                         <img src="./L9/cart-pendulum.svg" width="80%"></img><br/>
+                         A schematic drawing of the inverted pendulum on a cart. The rod is considered massless. 
+                         <div class="credit">https://en.wikipedia.org/wiki/Inverted_pendulum</div>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="et">Example: Cart Pole</h1>
+                 <div class="row">
+                     <div class="column">
+                         <pre height="800px" width="500px"><code class="language-python hljs"></code></pre>
+                         <script type="text/javascript">
+                             $.get("./L10/cartpole_internal_force_theta.py", function(response) {  //(1)
+                                 $("code").html(response);               //(2)
+                                 $("code").each(function(i, block) {    
+                                     hljs.highlightBlock(block);             //(3)
+                                 });
+                             });
+                         </script>
+                     </div>
+                     <div class="column" style="flex: 20%">
+                         <img src="./L9/cart-pendulum.svg" width="80%"></img><br/>
+                         A schematic drawing of the inverted pendulum on a cart. The rod is considered massless. 
+                         <div class="credit">https://en.wikipedia.org/wiki/Inverted_pendulum</div>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide separator" id="control">
+                 <h1 class="nt">Control</h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Plan versus Control</h1>
+                 <ul>
+                     <li>Suppose we have a robot, how do we use it to move objects?  </li>
+                     <p><img src="./L10/plan_and_control.svg" width="100%"></p>
+                     <li>Motion planning algorithms can generate a trajectory (position, velocity, and acceleration) of the robot.</li>                             
+                     <li>Now we need to know how to <strong>control</strong> the robot to follow such a trajectory. </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Control</h1>
+                 <ul>
+                     <li>Let us look at what we have
+                         <ul>
+                             <li>A <em>desired</em> trajectory to follow: $(q_{d}, \dot{q}_d, \ddot{q}_d)$</li>
+                             <li>Forward dynamics $\ddot{q}=\rm{FD}(\mv{F}; q, \dot{q})$</li>
+                             <li>Inverse dynamics $\mv{F}=\rm{ID}(\ddot{q}; q, \dot{q})$</li>
+                         </ul>
+                     </li>
+                     <li>Ideally, we just use inverse dynamics to compute $\ddot{q}$ at every moment to match $\ddot{q}_d$, and we are done!  </li>
+                 </ul>
+                 <ul class="substep">
+                     <li>However, the real world is not perfect. There will be many sources of error, and error accumulates if only acceleration is matched.</li>
+                     <li>We use <strong>control</strong> to deal with delay, overshoot, or steady-state error, and ensure stability.
+                         \[
+                         e=q-q_d\tag{steady-state error}
+                         \]</li>
+                 </ul>
+             </div>
+             <div class="step slide separator" id="PID">
+                 <h1 class="nt">PID Controller</h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Feedforward and Feedback Control</h1>
+                 <ul>
+                     <li>We need some force to match $\ddot{q}_d$. This component is called the <strong>feed-forward component</strong>, which comes from $\rm{ID}(\cdot)$:
+                         \[
+                         \mv{F}_{ff}=\rm{ID}(\ddot{q}_d; q, \dot{q})
+                         \]
+                     </li>
+                     <li>We also need some additional force to correct the steady-state error, which is called the <strong>feedback component</strong>:
+                         \[
+                         \mv{F}_{fb}=M(q)(-K_v\dot{e}-K_p e)
+                         \]
+                         where $M(q)$ is the inertia of the system.
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Computed Torque Control Law</h1>
+                 <ul>
+                     <li>Let us apply the previous control law to our single-arm robot derived last lecture.</li>
+                     <li>Inverse dynamics equation:
+                         \[
+                         \tau=M(\theta)\ddot{\theta}+C(\theta,\dot{\theta})\dot{\theta}+g(\theta)
+                         \]
+                     </li>
+                     <li class="substep">
+                         Therefore,
+                         \[
+                         \aligned{
+                         \tau_{ff}&=M(\theta)\ddot{\theta}_d+C(\theta,\dot{\theta})\dot{\theta}+g(\theta)\\
+                         \tau_{fb}&=M(\theta)(-K_v\dot{e}-K_p e)
+                         }
+                         \]
+                         where $K_v, K_p \in\bb{S}^+$ are constant matrices ($\bb{S}^+$: positive-semidefinite matrices cone).
+                     </li>
+                     <li class="substep">Combine them together, and the <em>computed torque control law</em> is:
+                         \[
+                         \tau=
+                         M(\theta)(\ddot{\theta}_d-K_v\dot{e}-K_p e)+C(\theta,\dot{\theta})\dot{\theta}+g(\theta)
+                         \tag{computed torque control}
+                         \]
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Convergence Analysis</h1>
+                 <ul>
+                     <li>We will control the system by the torque
+                         \[
+                         \tau=M(\theta)(\ddot{\theta}_d-K_v\dot{e}-K_p e)+C(\theta,\dot{\theta})\dot{\theta}+g(\theta)\tag{1}
+                         \]
+                     </li>
+                     <li>However, inverse dynamics equation tells us that the acceleration from $\tau$ is
+                         \[
+                         \tau=M(\theta)\ddot{\theta}+C(\theta,\dot{\theta})\dot{\theta}+g(\theta)\tag{2}
+                         \]
+                     </li>
+                     <li>Subtracting (2) from (1) and cancel $M(\theta)$, we get the error equation:
+                         \[
+                         \ddot{e}+K_v\dot{e}+K_p e=0
+                         \]
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="vt">Convergence Analysis</h1>
+                 \[
+                 \ddot{e}+K_v\dot{e}+K_p e=0
+                 \]
+                 <ul>
+                     <li>Because $K_v, K_p\in\bb{S}^+$, by the theory of ODE, $e(t)=\mathcal{O}(e^{\alpha t})$, $\alpha\le 0$. </li>
+                     <li>We say that the computed torque control law has <strong>exponential convergence rate</strong>.</li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="vt"></h1>
+
+                 <div class="large">
+                     <ul>
+                         <li>Sometimes, we do not have the inverse dynamics equation of the system, but we still hope the controller to work</li>
+                         (Isn't that the advertisement of model-free reinforcement learning?)
+                     </ul>
+                 </div>
+             </div>
+
+             <div class="step slide">
+                 <h1 class="nt">PD Control</h1>
+                 <ul>
+                     <li>The PD control law has the form:
+                         \[
+                         \tau=-K_v\dot{e}-K_p e \tag{PD control}
+                         \]
+                         where $K_v, K_p\in\bb{S}^+$ and $e=\theta-\theta_d$.
+                     </li>
+                     <li>Does not compute inverse dynamics at all.</li>
+                     <li>No theoretical guarantee in general.</li>
+                     <li>Not practical in general</li>
+                     <li>$e$ may converge; however, it usually does not converge to $0$.</li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">PID Control</h1>
+                 <ul>
+                     <li>PID Control law has the form
+                         \[
+                         \tau=-K_v\dot{e}-K_p e-K_i \int_0^t e(t)\d{t} \tag{PID control}
+                         \]
+                         where $K_v, K_p, K_i\in\bb{S}^+$ and $e=\theta-\theta_d$.
+                     </li>
+                     <li>$K_i$ term: accumulate errors over all past time steps. </li>
+                     <li>Inherits all the issues of PD, except</li>
+                     <li>When $e$ converges, it usually converges to $0$.</li>
+                     <li>Widely used in practice.</li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Augmented PID Control</h1>
+                 <ul>
+                     <li>Augmented PID control law has the form:
+                         \[
+                         \tau=\rm{ID}(\ddot{\theta}_d)-K_v\dot{e}-K_p e
+                         \]
+                     </li>
+                     <li>Recall the computed torque control law:
+                         \[
+                         \tau=\rm{ID}(\ddot{\theta_d})-M(\theta)K_v\dot{e}-M(\theta)K_p e
+
+                         \]
+                     </li>
+                     <li>Compared with the computed torque control law, $K$'s may be harder to tune.</li>
+                     <li>Does result in exponential convergence for $K_v, K_p\in\bb{S}^+$</li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Tuning PID</h1>
+                 <center>
+                     <table class="bordertable">
+                         <caption>Effects of <i>increasing</i> a parameter independently                         </caption>
+                         <tbody>
+                             <tr> <th>Parameter </th>
+                                 <th>Rise time </th> <th>Overshoot
+                                 </th>
+                                 <th>Settling time
+                                 </th>
+                                 <th>Steady-state error
+                                 </th>
+                                 <th>Stability
+                                 </th>
+                             </tr>
+                             <tr style="text-align:center;">
+                                 <th><span class="mwe-math-element"><span class="mwe-math-mathml-inline mwe-math-mathml-a11y" style="display: none;"><math xmlns="http://www.w3.org/1998/Math/MathML" alttext="{\displaystyle K_{p}}">
+                                             <semantics>
+                                             <mrow class="MJX-TeXAtom-ORD">
+                                             <mstyle displaystyle="true" scriptlevel="0">
+                                             <msub>
+                                             <mi>K</mi>
+                                             <mrow class="MJX-TeXAtom-ORD">
+                                             <mi>p</mi>
+                                             </mrow>
+                                             </msub>
+                                             </mstyle>
+                                             </mrow>
+                                             <annotation encoding="application/x-tex">{\displaystyle K_{p}}</annotation>
+                                             </semantics>
+                                             </math></span><img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/81d33ac9af047e93746da20160e9952cdfad0d17" class="mwe-math-fallback-image-inline" aria-hidden="true" style="vertical-align: -1.005ex; width:3.032ex; height:2.843ex;" alt="K_{p}"></span>
+                                 </th>
+                                 <td>Decrease
+                                 </td>
+                                 <td>Increase
+                                 </td>
+                                 <td>Small change
+                                 </td>
+                                 <td>Decrease
+                                 </td>
+                                 <td>Degrade
+                                 </td>
+                             </tr>
+                             <tr style="text-align:center;">
+                                 <th><span class="mwe-math-element"><span class="mwe-math-mathml-inline mwe-math-mathml-a11y" style="display: none;"><math xmlns="http://www.w3.org/1998/Math/MathML" alttext="{\displaystyle K_{i}}">
+                                             <semantics>
+                                             <mrow class="MJX-TeXAtom-ORD">
+                                             <mstyle displaystyle="true" scriptlevel="0">
+                                             <msub>
+                                             <mi>K</mi>
+                                             <mrow class="MJX-TeXAtom-ORD">
+                                             <mi>i</mi>
+                                             </mrow>
+                                             </msub>
+                                             </mstyle>
+                                             </mrow>
+                                             <annotation encoding="application/x-tex">{\displaystyle K_{i}}</annotation>
+                                             </semantics>
+                                             </math></span><img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/719736a1feb0bd7e73bb1425641a61229f55bb6d" class="mwe-math-fallback-image-inline" aria-hidden="true" style="vertical-align: -0.671ex; width:2.773ex; height:2.509ex;" alt="K_{i}"></span>
+                                 </th>
+                                 <td>Decrease
+                                 </td>
+                                 <td>Increase
+                                 </td>
+                                 <td>Increase
+                                 </td>
+                                 <td>Eliminate
+                                 </td>
+                                 <td>Degrade
+                                 </td>
+                             </tr>
+                             <tr style="text-align:center;">
+                                 <th><span class="mwe-math-element"><span class="mwe-math-mathml-inline mwe-math-mathml-a11y" style="display: none;"><math xmlns="http://www.w3.org/1998/Math/MathML" alttext="{\displaystyle K_{d}}">
+                                             <semantics>
+                                             <mrow class="MJX-TeXAtom-ORD">
+                                             <mstyle displaystyle="true" scriptlevel="0">
+                                             <msub>
+                                             <mi>K</mi>
+                                             <mrow class="MJX-TeXAtom-ORD">
+                                             <mi>d</mi>
+                                             </mrow>
+                                             </msub>
+                                             </mstyle>
+                                             </mrow>
+                                             <annotation encoding="application/x-tex">{\displaystyle K_{d}}</annotation>
+                                             </semantics>
+                                             </math></span><img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/af467d41e25cebc9640cba0240778eaae4057181" class="mwe-math-fallback-image-inline" aria-hidden="true" style="vertical-align: -0.671ex; width:3.065ex; height:2.509ex;" alt="K_{d}"></span>
+                                 </th>
+                                 <td>Minor change
+                                 </td>
+                                 <td>Decrease
+                                 </td>
+                                 <td>Decrease
+                                 </td>
+                                 <td>No effect in theory
+                                 </td>
+                                 <td>Improve if <span class="mwe-math-element"><span class="mwe-math-mathml-inline mwe-math-mathml-a11y" style="display: none;"><math xmlns="http://www.w3.org/1998/Math/MathML" alttext="{\displaystyle K_{d}}">
+                                             <semantics>
+                                             <mrow class="MJX-TeXAtom-ORD">
+                                             <mstyle displaystyle="true" scriptlevel="0">
+                                             <msub>
+                                             <mi>K</mi>
+                                             <mrow class="MJX-TeXAtom-ORD">
+                                             <mi>d</mi>
+                                             </mrow>
+                                             </msub>
+                                             </mstyle>
+                                             </mrow>
+                                             <annotation encoding="application/x-tex">{\displaystyle K_{d}}</annotation>
+                                             </semantics>
+                                             </math></span><img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/af467d41e25cebc9640cba0240778eaae4057181" class="mwe-math-fallback-image-inline" aria-hidden="true" style="vertical-align: -0.671ex; width:3.065ex; height:2.509ex;" alt="K_{d}"></span> small
+                                 </td>
+                             </tr>
+                         </tbody>
+                     </table>
+                 </center>
+                 <p>
+                     <div class="credit"><span style="margin-left:10%">Kiam Heong Ang; Chong, G.; Yun Li (2005). "PID control system analysis, design, and technology". IEEE Transactions on Control Systems Technology. 13 (4): 559–576. </span></div>
+                     <div class="credit"><span style="margin-left:10%"> Jinghua Zhong (Spring 2006). "PID Controller Tuning: A Short Tutorial" (PDF). Archived from the original on 2015-04-21. Retrieved 2011-04-04.</span></div>
+                     <div class="credit"><span style="margin-left:10%"><a href="https://en.wikipedia.org/wiki/PID_controller#cite_note-24">https://en.wikipedia.org/wiki/PID_controller#cite_note-24</a></span></div>
+                 </p>
+             </div>
+
+
+
+
+
+             <div id="overview" class="step" data-x="4500" data-y="1500" data-scale="10" style="pointer-events: none;"></div>
+             <!--
+                 <div id="markdown" class="step slide markdown" data-rel-x="0" data-rel-y="900">
+                 </div>
+             -->
+        </div>
+
+        <!--
+            Add navigation-ui controls: back, forward and a select list.
+            Add a progress indicator bar (current step / all steps)
+            Add the help popup plugin
+        -->
+        <div id="impress-toolbar"></div>
+
+        <div class="impress-progressbar"><div></div></div>
+        <div class="impress-progress"></div>
+
+        <div id="impress-help"></div>
+
+        <!-- Extra modules
+            Load highlight.js, mermaid.js, markdown.js and MathJax.js from extras.
+            If you're curious about details, these are initialized in src/plugins/extras/extras.js -->
+            <script type="text/javascript" src="../extras/highlight/highlight.pack.js"></script>
+            <script type="text/javascript" src="../extras/mermaid/mermaid.min.js"></script>
+            <script type="text/javascript" src="../extras/markdown/markdown.js"></script>
+            <!--
+                To make all described above really work, you need to include impress.js in the page.
+                You also need to call a `impress().init()` function to initialize impress.js presentation.
+                And you should do it in the end of your document. 
+            -->
+            <script type="text/javascript" src="../js/impress.js">
+            </script>
+            <script type="text/javascript">
+                (function(){
+                    var vizPrefix = "language-viz-";
+                    Array.prototype.forEach.call(document.querySelectorAll("[class^=" + vizPrefix + "]"), function(x){
+                        var engine;
+                        x.getAttribute("class").split(" ").forEach(function(cls){
+                            if (cls.startsWith(vizPrefix)) {
+                                engine = cls.substr(vizPrefix.length);
+                            }
+                        });
+                        var image = new DOMParser().parseFromString(Viz(x.innerText, {format:"svg", engine:engine}), "image/svg+xml");
+                        x.parentNode.insertBefore(image.documentElement, x);
+                        x.style.display = 'none'
+                        x.parentNode.style.backgroundColor = "white"
+                    });
+                })();
+            </script>
+            <script type="text/javascript">
+                window.MathJax = {
+                    tex2jax: {
+                        inlineMath: [['$','$'], ['\\(','\\)']],
+                        displayMath: [['$$','$$'], ['\\[','\\]']],
+                        processEscapes: true,
+                        processEnvironments: true,
+                        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+                        TeX: { equationNumbers: { autoNumber: "AMS" },
+                            extensions: ["AMSmath.js", "AMSsymbols.js", "color.js"],
+                        },
+                        jax: ["input/TeX", "output/SVG"]
+                    },
+                    AuthorInit: function () {
+                        MathJax.Hub.Register.StartupHook("Begin",function () {
+                            MathJax.Hub.Queue(function() {
+                                var all = MathJax.Hub.getAllJax(), i;
+                                for(i = 0; i < all.length; i += 1) {
+                                    all[i].SourceElement().parentNode.className += ' has-jax';
+                                }
+                            })
+                        });
+                    }
+                };
+            </script>
+            <script type="text/javascript" src="../extras/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+            <script>impress().init();</script>
+            <!--            <script>
+                function setSlideID() {
+                    x = document.getElementsByClassName("slide");
+                    const titleSet = new Set();
+                    for (var i = 0; i < x.length; i++) {
+                        h1 = x[i].getElementsByTagName("h1")[0];
+                // alert(title);
+                        title = h1.innerHTML.replace(/\W/g, '_');
+                        if (titleSet.has(title)) {
+                            continue;
+                        }
+                        x[i].id = title;
+                        titleSet.add(title);
+                    }
+                }
+            </script>
+            <script> setSlideID(); </script>-->
+    </body>
+</html>
+<!-- discarded -->
+

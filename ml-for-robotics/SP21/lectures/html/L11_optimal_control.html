@@ -1,0 +1,803 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>L11</title>
+        <meta name="description" content="" />
+        <meta name="author" content="Hao Su" />
+        <link rel="stylesheet" href="../extras/highlight/styles/github.css">
+        <link rel="stylesheet" href="../extras/mermaid/mermaid.forest.css">
+        <link href="../css/impress-common.css" rel="stylesheet" />   
+        <link href="css/classic-slides.css" rel="stylesheet" />
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/1.7.1/viz.js"> </script>
+        <link rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/vs.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+    </head>
+    <body class="impress-not-supported">
+        <div class="fallback-message">
+            <p>Your browser <b>doesn't support the features required</b> by impress.js, so you are presented with a simplified version of this presentation.</p>
+            <p>For the best experience please use the latest <b>Chrome</b>, <b>Safari</b> or <b>Firefox</b> browser.</p>
+        </div>
+        <div id="latex-macros"></div>
+        <script src="./latex_macros.js"></script>
+        <div id="impress"
+             data-width="1920"
+             data-height="1080"
+             data-max-scale="3"
+             data-min-scale="0"
+             data-perspective="1000"
+             data-transition-duration="0"
+             >
+
+             <div class="step slide title" data-x="-2200" data-y="-3000" id="title">
+                 <h1 class="nt">L11: Optimal Control</h1>
+                 <h2>Hao Su</h2>
+                 <h3>Spring, 2021</h3>
+                 <div class="ack">Contents are based on <a href="http://underactuated.mit.edu/">Underactuated Robotics</a> taught at MIT by Prof. Russ Tedrake and <a href="https://people.eecs.berkeley.edu/~pabbeel/cs287-fa19/slides/Lec5-LQR.pdf">CS287</a> taught at UC Berkeley by Prof. Pieter Abbeel.</div>
+             </div>
+             <div id="toc" class="step slide" data-rel-x="2200" data-rel-y="0">
+                 <h1 class="nt">Agenda</h1>
+                 <ul class="large">
+                     <li><a href="#">Fully-actuated v.s. Under-actuated Systems</a></li>
+                     <li><a href="#">Basic Idea of Optimal Control</a></li>
+                     <li><a href="#">Linear Quadratic Control</a></li>
+                 </ul>
+                 click to jump to the section.
+             </div>
+             <div class="step slide separator">
+                 <h1 class="nt">Fully-actuated v.s. Under-actuated Systems</h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="vt">Review: Control</h1>
+                 <ul>
+                     <li>A <em>desired</em> trajectory to follow: $(\q_{d}, \dotq_d, \ddotq_d)$</li>
+                     <li>Forward dynamics $\ddotq=\rm{FD}(\mv{F}; \q, \dotq)$</li>
+                     <li>Inverse dynamics $\mv{F}=\rm{ID}(\ddotq; \q, \dotq)$</li>
+                     <li>We use <strong>control</strong> to deal with delay, overshoot, or steady-state error, and ensure stability.</li>
+                     <li>Steady-state error
+                         \[
+                         e=q-q_d
+                         \]
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Review: Feedforward and Feedback Control</h1>
+                 <ul>
+                     <li>We need some force to match $\ddotq_d$. This component is called the <strong>feed-forward component</strong>, which comes from $\rm{ID}(\cdot)$:
+                         \[
+                         \mv{F}_{ff}=\rm{ID}(\ddotq_d; \q, \dotq)
+                         \]
+                     </li>
+                     <li>We also need some additional force to correct the steady-state error, which is called the <strong>feedback component</strong>:
+                         \[
+                         \mv{F}_{fb}=M(\q)(-K_v\dot{e}-K_p e)
+                         \]
+                         where $M(\q)$ is the inertia of the system.
+                     </li>
+                     <li>
+                         The total force we exert to control the system is
+                         \[
+                         \mv{F}=\mv{F}_{ff}+\mv{F}_{fb}
+                         \]
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Review: Computed Torque Control</h1>
+                 <ul>
+                     <li>Computed Torque Control:
+                         \[
+                         \tau=M(\theta)(\ddot{\theta}_d-K_v\dot{e}-K_p e)+C(\theta,\dot{\theta})\dot{\theta}+g(\theta)\tag{1}
+                         \]
+                     </li>
+                     <li>By ID, the acceleration under this $\tau$ is
+                         \[
+                         \tau=M(\theta)\ddot{\theta}+C(\theta,\dot{\theta})\dot{\theta}+g(\theta)\tag{2}
+                         \]
+                     </li>
+                     <li>Subtracting (2) from (1) and cancel $M(\theta)$, we get the error equation:
+                         \[
+                         \ddot{e}+K_v\dot{e}+K_p e=0
+                         \]
+                     </li>
+                     <li>Because $K_v, K_p\in\bb{S}^+$, by the theory of ODE, $e(t)=\mathcal{O}(e^{\alpha t})$, $\alpha\le 0$. </li>
+                     <li>We say that the computed torque control law has <strong>exponential convergence rate</strong>.</li>
+                 </ul>
+             </div>
+             <!--
+                 -<div class="step slide">
+                 -    <h1 class="nt">Review: PID Control</h1>
+                 -    <ul>
+                 -        <li>PID Control law has the form
+                 -            \[
+                 -            \tau=-K_v\dot{e}-K_p e-K_i \int_0^t e(t)\d{t} \tag{PID control}
+                 -            \]
+                 -            where $K_v, K_p, K_i\in\bb{S}^+$ and $e=\theta-\theta_d$.
+                 -        </li>
+                 -        <li>$K_i$ term: accumulate errors over all past time steps. </li>
+                 -        <li>Inherits all the issues of PD, except</li>
+                 -        <li>When $e$ converges, it usually converges to $0$.</li>
+                 -        <li>Widely used in practice.</li>
+                 -    </ul>
+                 -</div>
+             -->
+             <!--
+                 -<div class="step slide">
+                 -    <h1 class="et">Example of Single-Joint Manipulator (Inverted Pendulum)</h1>
+                 -    
+                 -    <div class="row">
+                 -        <div class="column">
+                 -            <pre style="max-height: 600px; width: 700px"><code class="language-python hljs"></code></pre>
+                 -            <script type="text/javascript">
+                     -                $.get("./L11/inverted_pendulum.py", function(response) {  //(1)
+                -                    $("code").html(response);               //(2)
+                -                    $("code").each(function(i, block) {    
+                -                        hljs.highlightBlock(block);             //(3)
+                -                    });
+                -                });
+                -            </script>
+                 -        </div>
+                 -        <div class="column">
+                     -            <div style="margin-top: 100px"></div>
+                     -            <img src="./L11/inverted_pendulum.gif" width="80%"/>
+                     -            Using feedback control (PID), it is very easy to control this swing-up inverted pendulum.
+                     -        </div>
+                 -    </div>
+                 -</div>
+                 -->
+                 <div class="step slide">
+                     <h1 class="nt">Example of Single-Joint Manipulator<br/> (Inverted Pendulum)</h1>
+                     <img src="./L11/inverted_pendulum.gif" width="40%"/>
+                     <p>Using feedback control (PID), it is very easy to control this swing-up inverted pendulum.</p>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="et">Limitation of PID Control</h1>
+                     <div class="row">
+                         <div class="column">
+                             <ul>
+                                 <li>Consider the cart-pole example.</li>
+                                 <li>Our desired position is that the rod is upright straight.</li>
+                                 <li>Can we control it by the computed torque law?</li>
+                             </ul>
+                             <ul class="substep">
+                                 <!--
+                                     -<li>Recall that,</li>
+                                     -\[
+                                     -(M+m)\ddot{x}-ml\cos\theta\ddot{\theta}+ml\sin\theta\dot{\theta}^2=f\\
+                                     -l\ddot{\theta}-g\sin\theta-\ddot{x}\cos\theta=0
+                                     -\]
+                                     -<li>At the desired state, $x=\dot{x}=\ddot{x}=\theta=\dot{\theta}=\ddot{\theta}=0$</li>
+                                     -<li>Thus the feedback control force is $f_{feedforward}=ID(\ddot{q}; q, \dot{q})=0$</li>
+                                 -->
+                                 <li>Let us try the feedforward-feedback control law.</li>
+                                 <li>First of all, we can only control the 1D force $f$. It is also obvious that $f_{feedforward}=0$.</li>
+                                 <li>The feedback force should be
+                                     \[
+                                     f_{feedback} = M(\q)(-K_v\dot{e}-K_p e)
+                                     \]
+                                 </li>
+                                 <li>Note that $e=\q-\q_d=\bm{x\\\theta}-\bm{x_d\\\theta_d}$, thus the feedback force should be 2D. But we can only control the 1D force!</li>
+                                 <li>Our convergence analysis does not apply here.</li>
+                                 <li>Turns out that tuning the PID for cart pole is hard.</li>
+                             </ul>
+                         </div>
+                         <div class="column" style="flex: 20%">
+                             <div style="margin-top: 100px"></div>
+                             <img src="./L9/cart-pendulum.svg" width="80%"></img><br/>
+                             A schematic drawing of the inverted pendulum on a cart. The rod is considered massless. 
+                             <div class="credit">https://en.wikipedia.org/wiki/Inverted_pendulum</div>
+                         </div>
+                     </div>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="nt">Underactuated Control Differential Equations</h1>
+                     <ul>
+                         <li>Notions:</li>
+                         <ul>
+                             <li><strong>Second-order</strong> control dynamical system: $\ddotq=f(\q, \dotq, \u, t)$</li>
+                             <li>Control vector: $\mv{u}\in\cal{U}$</li>
+                             <li>State: $\mv{x}=(\q, \dotq)\in\cal{X}$ </li>
+                         </ul>
+                         <li><strong>Underactuated Control Differential Equations</strong>:
+                             <blockquote>
+                                 A second-order control differential equation described by the equations
+                                 \[
+                                 \ddotq=f(\q, \dotq, \u, t)
+                                 \]
+                                 is <span class="hl">fully actuated</span> in state $\mv{x}=(\q,\dotq)$ and time $t$ if the
+                                 resulting map $f$ is surjective: for every $\ddotq$ there exists a $\u$ which produces the
+                                 desired response. Otherwise, it is  <span class="hl">underactuated</span> (in $\mv{x}$ at
+                                 time $t$).
+                             </blockquote>
+                         </li>
+                         <li>It is beyond the comfort zone of PID controllers for underactuated systems.</li>
+                     </ul>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="nt">The Power of Underactuated System: <br/>A Passive Dynamic Walker Example</h1>
+                     <div class="row">
+                         <div class="column">
+                             <video controls>
+                                 <source src="./L11/3D_passive_dynamic_walker_I.ogg" type="video/ogg"/>
+                             </video>
+                         </div>
+                         <div class="column">
+                             <video controls>
+                                 <source src="./L11/3D_passive_dynamic_walker_II.ogg"/>
+                             </video>
+                         </div>
+                     </div>
+                     <p>A 3D passive dynamic walker by Steve Collins and Andy Ruina at Cornell.</p>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="nt">Many <em>Interesting</em> Problems in Robotics are Underactuated</h1>
+                     <ul>
+                         <li><strong>Legged robots are underactuated.</strong> Consider a legged machine with $N$ internal joints and $N$ actuators. If the robot is not bolted to the ground, then the degrees of freedom of the system include both the internal joints and the six degrees of freedom which define the position and orientation of the robot in space. Since $\u\in\bb{R}^N$ and $\q\in\bb{R}^{N+6}$, the system is underactuated.</li>
+                         <li><strong>(Most) Swimming and flying robots are underactuated.</strong> The story is the same here as for legged machines. Each control surface adds one actuator and one DOF. And this is already a simplification, as the true state of the system should really include the (infinite-dimensional) state of the flow.</li>
+                         <li><strong>Robot manipulation is (often) underactuated.</strong> Consider a fully-actuated robotic arm. When this arm is manipulating an object with degrees of freedom (even a brick has six), it can become underactuated. </li>
+                     </ul>
+                     <div class="rby">Read by Yourself</div>
+                 </div>
+
+                 <div class="step slide separator">
+                     <h1 class="nt">Concepts and Main Theoretical Results<br/>of Optimal Control</h1>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="nt">Control as Optimization Problem</h1>
+                     <ul>
+                         <li>Key idea: <span class="hl">Design an optimization problem whose solution is the control signal</span>. </li>
+                         <li>Example
+                             <ul>
+                                 <li>
+                                     <div class="row">
+                                         <div class="column">
+                                             Consider the simple second-order control dynamics system:
+                                             \[
+                                             \ddot{q}=u, \quad |u|\le 1
+                                             \]
+                                         </div>
+                                         <div class="column">
+                                             <img src="./L11/double_integrator_brick.svg" width="100%"/>
+                                             <p><div class="credit"><a
+                                                     href="http://underactuated.mit.edu/dp.html#section1">credit: Sec 11 of
+                                                     <em>Underactuated Robotics</em>.</a></div></p>
+                                         </div>
+                                     </div>
+                                 </li>
+                                 <li>The task is to design a control system, $u=\pi(\x, t), \x=[q, \dot{q}]^T$ to regulate
+                                     this brick to $\x=[0, 0]^T$. </li>
+                                 <li>Optimization problem:
+                                     <ul>
+                                         <li>Minimum time: $\min_{\pi} t_f$ subject to $\x(t_0)=\x_0, \x(t_f)=0$.</li>
+                                         <li>Quadratic cost: $\min_{\pi} \int_{t_0}^{\infty} \x^T(t) \mv{Q} \x(t) \d{t},\
+                                             \mv{Q}\succ 0.$</li>
+                                     </ul>
+                                 </li>
+                             </ul>
+                         </li>
+                     </ul>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="nt">Transition Function</h1>
+                     \[
+                     \dot{\x}=f(\x, \u)\tag{transition function}
+                     \]
+                     <ul>
+                         <li>Example 1 &mdash; Brick:
+                             \[
+                             \bm{\dot{q}\\\ddot{q}}=
+                             \bm{0 & 1\\0 & 0}\bm{q\\\dot{q}}+\bm{0\\1}u,
+                             \] which is of $\dot{\x}=A \x + B\u$ form.
+                         </li>
+                         <li>Example 2 &mdash; Manipulator :
+                             \[
+                             \bm{\dot{\theta}\\\ddot{\theta}}=
+                             \bm{0 & I\\0 &
+                             M^{-1}_{\theta}}\bm{\theta\\\dot{\theta}}+\bm{0\\M^{-1}_{\theta}C_{\theta, \dot{\theta}}}\tau+\bm{0\\-M^{-1}_{\theta}g_{\theta}},
+                             \] which is of $\dot{\x}=A_{\x} \x + B_{\x}\u+C_{\x}$ form. Let $\x'_{\x}=\x+A^{-1}_{\x}C_{\x}$, then
+                             $\dot{\x'}=A_{\x}\x'+B_{\x}\u$.
+                         </li>
+                     </ul>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="nt">Transition Function</h1>
+                     \[
+                     \dot{\x}=f(\x, \u)\tag{transition function}
+                     \]
+                     <div style="margin-top: 100px"></div>
+                     <ul>
+                         <li>Understanding the linear transition function $\dot{\x}=A\x+B\u$ is fundamentally important, because <em>locally</em> it approximates any differentiable transitions. 
+                             <ul>
+                                 <li>For example, around stationary state $\x^*$, $0=f(\x^*, \u^*)$. Take $\x'=\x-\x^*, \u'=\u-\u_*$, plug in the transition function, and use Taylor's expansion to approximate $f$ around $\x^*$ and $\u^*$, then </li>
+                                 \[
+                                 \dot{\x'}\approx\nabla_{\x}f(\x^*,\u^*) \x' + \nabla_{\u}f(\x^*,\u^*) \u'
+                                 \]
+                             </ul>
+                         </li>
+                     </ul>
+                 </div>
+
+                 <div class="step slide">
+                     <h1 class="nt">Additive Cost</h1>
+                     \[
+                     \int_0^T \ell(\x(t), \u(t))\d{t}\tag{additive cost}
+                     \]
+                     <ul>
+                         <li>For example, the quadratic cost for the brick example is an additive cost:
+                             \[\min_{\pi} \int_{t_0}^{\infty} \x^T(t) \mv{Q} \x(t) \d{t},\
+                             \mv{Q}\succ 0.\]</li>
+                         <li>Additive cost is a favorable choice in optimal control, because 
+                             <ul>
+                                 <li>it admits an optimality condition of elegant form.</li>
+                                 <li>in discrete case, it also implies a "dynamic programming" solution (we will see in the next lecture of reinforcement learning).</li>
+                             </ul>
+                         </li>
+                     </ul>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="nt">Cost-to-go Function</h1>
+                     <ul>
+                         <li>Consider a <em>time-invariant</em> dynamic system $\dot{x}=f(\x, \u)$ with an <em>infinite-horizon</em> additive cost $\int_{0}^{\infty} \ell(\x, \u)\d{t}$ 
+                             <ul>
+                                 <li>Time-invariant: $f$ and $\ell$ do not directly depend on $t$.</li>
+                             </ul>
+                         </li>
+                         <li>Suppose that we will control the system using a <strong>policy</strong> $\u=\pi(\x)$</li>
+                         <li>The <strong>cost-to-go function</strong> at a certain starting state $\x_0$ is:
+                             \[
+                             J^{\pi}(\x_0)=\int_{0}^{\infty} \ell(\x(t), \u(t))\d{t}\tag{cost-to-go function}
+                             \]                         
+                             where $\x(0)=\x_0$ and $\u(t)=\pi(\x(t))$.
+                         </li>
+                         <li>You will see that the cost-to-go-function and the value function in reinforcement learning are essentially the same thing, except that one needs to be minimized and the other maximized.</li>
+                     </ul>
+                 </div>
+
+                 <div class="step slide">
+                     <h1 class="et">The Hamilton-Jacobi-Bellman Equation<br/>(Optimality Condition)</h1>
+                     <ul>
+                         <li>Consider a time-invariant system $\dot{x}=f(\x, \u)$ with an additive cost $\int_{0}^{\infty} \ell(\x, \u)\d{t}$, in which $f, \ell \in C^{\infty}(\cal{X}\times \cal{U})$, $\rm{Hess}(\ell)\succ 0$, $\ell(x)=0\ \rm{iff}\ x=\x^*$. 
+                         </li>
+                         <li>Under some technical conditions on the existence and boundedness of solutions (see <a href="http://underactuated.mit.edu/dp.html#section1"><em>Thm 7.1 in Underactuated Robotics</em></a>), a sufficient condition for the existence of optimal policy is:
+                             <p>$\exists J:\cal{X}\to \bb{R}\in C^{\infty}(\cal{X}), {\rm{Hess}}$$(J)\succ 0$ such that  $\forall\x\in{\cal{X}}$,
+                                 \[
+                                 \underset{\u\in \cal{U}}{\min}\left[\ell(\x,\u)+\left(\frac{\partial J(\x)}{\partial \x}\right)^Tf(\x, \u)\right]=0\tag{HJB equation}
+                                 \]
+                             </p>
+                         </li>
+                         <li>$J(\x)$ is the <strong>cost-to-go</strong> function.</li>
+                         <li>The <strong>optimal policy</strong> is 
+                             \(
+                             \pi^*(\x)=\underset{\u\in \cal{U}}{\arg\min}\left[\ell(\x,\u)+\left(\frac{\partial J(\x)}{\partial \x}\right)^Tf(\x, \u)\right]
+                             \)
+                         </li>
+                     </ul>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="et">The Hamilton-Jacobi-Bellman Equation<br/>(Optimality Condition)</h1>
+                     <ul>
+                         <li>The HJB equation is the continuous version of the Bellman equation in discrete dynamic programming/reinforcement learning.</li>
+                         <li>A (sloppy) justification:
+                             <ul>
+                                 <li>The Bellman equation (for optimal policy $\pi^*$) of the discrete problem:
+                                     \[
+                                     \aligned{
+                                     J(\x_t)=\ell(\x_t,\u_t)\Delta t + J(\x_{t+1}), 
+                                     \mbox{ where } \frac{\x_{t+1}-\x_t}{\Delta t}=f(\x_t,\u_t)\mbox{ and }\u_t=\pi^*(\x_t)
+                                     }
+                                     \]
+
+                                 </li>
+                                 <li>Therefore, 
+                                     \[
+                                     \aligned{
+                                     0=\ell(\x_t,\u_t)+\frac{J(\x_{t+1})-J(\x_t)}{\Delta t}&\iff 0=\ell(\x_t,\u_t)+\frac{J(\x_{t+1})-J(\x_t)}{\x_{t+1}-\x_t}\frac{\x_{t+1}-\x_t}{\Delta t}\\
+                                     &\iff 0=\ell(\x_t,\u_t)+\frac{J(\x_{t+1})-J(\x_t)}{\x_{t+1}-\x_t}f(\x_t, \u_t)
+                                     }
+                                     \]
+                                 </li>
+                                 <li>Let $\Delta t\to 0$, 
+                                     \(
+                                     0=\ell(\x_t,\u_t)+\left(\frac{\partial J(\x)}{\partial \x}\right)^Tf(\x, \u)
+                                     \)
+                                 </li>
+                             </ul>
+                         </li>
+                     </ul>
+                 </div>
+                 <div class="step slide separator">
+                     <h1 class="nt">Linear-Quadratic Regulator</h1>
+                     <h3><div class="credit">Slides are based on <a href="http://underactuated.mit.edu/lqr.html">CH8 of Underactuated Robotics</a></div></h3>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="nt">Canonical Form</h1>
+                     <ul>
+                         <li>Consider a linear time-invariant system in state-space form:</li>
+                         \[
+                         \dotx=A\x+B\u
+                         \]
+                         with the objective function to minimize:
+                         \[
+                         \int_0^{\infty}\ell(t)\d{t}=\int_0^{\infty}[\x^T\Q\x+\u^T\R\u]\d{t}
+                         \]
+                         in which $\Q=\Q^T\succeq 0, \R=\R^T\succ 0$ are two designed matrices.
+                         </li>
+                     </ul>
+                     <ul>
+                         <li>Remarks about the objective function:</li>
+                         <ul>
+                             <li>The cost $\ell(\x, \u)$ is quadratic: brings in advantage in doing analysis on the HJB equation.</li>
+                             <li>The cost involves penalty for large control signals (the $\u^T\R\u$ term), which favors <em>low energy</em> to achieve a certain goal.</li>
+                         </ul>
+                     </ul>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="nt">State Tracking Example</h1>
+                     <ul>
+                         <li>Sometimes, we need a bit of derivation to arrive at the canonical form.</li>
+                         <li>Consider the task of tracking a desired state trajectory $\x_d(t)$. It is natural to write down the following optimization problem:
+                             \[
+                             \aligned{
+                             &\underset{\u\in\cal{U}}{\mbox{minimize}}&&\int_0^{\infty} (\x-\x_d)^T \Q (\x-\x_d)+\u^T \R \u
+                             }
+                             \]
+                             in which $\Q\succeq 0, \R\succ 0$, and $\dotx = A\x+B\u$.
+                         </li>
+                         <li>Introduce $\tilde{\x}=\bm{\x-\x_d\\\x_d}$, $\tilde{A}=\bm{A & A\\0& 0}$, $\tilde{B}=\bm{B\\0}$, $\tilde{\Q}=\bm{Q & 0\\0 & 0}$, and the above optimization problem becomes the canonical form:
+                             \[
+                             \aligned{
+                             &\underset{\u\in\cal{U}}{\mbox{minimize}}&&\int_0^{\infty} \tilde{\x}^T \tilde{\Q} \tilde{\x}+\u^T \R \u
+                             }
+                             \]
+                             in which $\Q\succeq 0, \R\succ 0$, and $\dot{\tilde{\x}} = \tilde{A}\tilde{\x}+\tilde{B}\u$.
+                         </li>
+                     </ul>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="nt">LQR Controller (Infinite-horizon, Closed-form)</h1>
+                     <ul>
+                         <li>Recall the HJB optimality condition:
+                             <p>$\exists J:\cal{X}\to \bb{R}\in C^{\infty}(\cal{X}), {\rm{Hess}}$$(J)\succ 0$ such that  $\forall\x\in{\cal{X}}$,
+                                 \[
+                                 \underset{\u\in \cal{U}}{\min} L(\x, \u)=0,
+                                 \quad\mbox{where } L(\x,\u)=\ell(\x,\u)+\left(\frac{\partial J(\x)}{\partial \x}\right)^Tf(\x, \u)
+                                 \]
+                             </p>
+                         </li>
+                         <li>For our linear-quadratic system setup, it is known that $J(\x)=\x^T\S\x$. </li>
+                         <li>Let us plug this $J(\x)$ with unknown $\S$ into $L(\x,\u)$ to solve $\S$. </li>
+                         <li>Sketch: 
+                             <ol>
+                                 <li>For some given $\x$, we first find $\u^*=\underset{\u}{\arg\min}\ L(\x,\u)$;</li>
+                                 <li>Then we plug $\u^*$ back to $L(\x,\u)$ and obtain an equation system that includes $\S$</li>
+                                 <li>Solve $\S$ from the equation system.</li>
+                             </ol>
+                         </li>
+                     </ul>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="et">LQR Controller (Infinite-horizon, Closed-form)</h1>
+                     Details:
+                     <ul>
+                         <li>By $\ell(\x,\u)=\x^T\Q\x+\u^T\R\u$, $f(\x,\u)=A\x+B\u$, and $J(\x)=\x^T\S\x$, 
+                             \[
+                             L(\x,\u)=\ell(\x,\u)+\left(\frac{\partial J(\x)}{\partial \x}\right)^Tf(\x, \u)=\x^T\Q\x+\u^T\R\u+2\x^T\S A\x+2\x^T\S B\u
+                             \]
+                         </li>
+                         <li>
+                             To solve $\u^*$ given $\x$, we have
+                             \(
+                             \frac{\partial L}{\partial \u^*}=2\R\u^*+2B^T\S\x=0
+                             \)
+                             \[
+                             \therefore \u^*=-\R^{-1}B^T\S\x=-\K\x
+                             \]
+                         </li>
+                         <li>
+                             Plug $\u^*$ back into $L$ and by $\x^T\S A\x=\x^TA^T\S \x$, 
+                             \[
+                             \min_{\u}L(\x,\u)=\x^T(\Q-\S B\R^{-1}B^T\S+\S A+A^T\S)\x
+                             \]
+                         </li>
+                         <li>Since $\min_{\u} L(\x,\u)\equiv 0, \forall \x\in\cal{X}$, it must be true that
+                             \[
+                             \Q-\S B \R^{-1} B^T\S+\S A+A^T \S=0\tag{algebraic Riccati equation}
+                             \]
+                         </li>
+                     </ul>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="nt">Algebraic Riccati Equation</h1>
+                     Our goal is to solve $\S$ from the algebraic Riccati equation:
+                     \[
+                     \Q-\S B \R^{-1} B^T\S+\S A+A^T \S=0
+                     \]
+                     The existence of solution depends on a so-called "controllable" condition.
+                     <ul>
+                         <li>Controllable: 
+                             <ul>
+                                 <li>A system is said to be <strong>controllable</strong> if we can reach any target state $\x^*$ from any start state $\x_0$.</li>
+                                 <li>A system is said to be <strong>$t$-time controllable</strong> if we can reach any target state $\x^*$ from any start state $\x_0$ within $t$ time period.</li>
+                             </ul>
+                         </li>
+                         <li>The equation has a single positive-definite solution if and only if the system is controllable.</li>
+                         <li>There are good numerical methods for finding that solution, even in high-dimensional problems.  </li>
+                     </ul>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="nt">A Bit of Retrospection</h1>
+                     <ul>
+                         <li>Our $\u^*=-\K \x$. Plug in the transition function $\dotx=A\x+B\u$, and 
+                             \[
+                             \dotx = (A-BK)\x
+                             \]
+                         </li>
+                         <li>The solution takes the form 
+                             \[
+                             \x(t)=e^{(A-B\K)t}\x(0),
+                             \].
+                         </li>
+                         <li>Plug $\x(t)$ in the definition of the cost function, and we see that the cost takes the form
+                             \[
+                             J=\x^T(0)\S\x(0),
+                             \]
+                             which is a quadratic form, consistent with our assumption that $J$ is quadratic.
+                         </li>
+                     </ul>
+                 </div>
+
+                 <div class="step slide">
+                     <h1 class="nt">iterative LQR (iLQR) for Non-linear System</h1>
+                     <ul>
+                         <li>Consider the general optimal control problem:
+                             \[
+                             \dotx=f(\x, \u)
+                             \]
+                             with the general objective function to minimize:
+                             \[
+                             \int_0^{\infty}\ell(t)\d{t}
+                             \]
+                         </li>
+                         <li>We can build a local LQR problem at some key time steps and iteratively apply the LQR controller:
+                             <ol>
+                                 <li>Compute the first-order Taylor expansion of the dynamics model $\dotx=f(\x,\u)$ and the second-order Taylor expansion of the cost function $\ell(\x, \u)$;</li>
+                                 <li>Use the LQR to solve the optimal control policy and execute the policy for $\Delta t$;</li>
+                                 <li>Go to (1) and recompute the approximation;</li>
+                             </ol>
+                         </li>
+                     </ul>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="nt">Example: Cart Pole</h1>
+                     TODO: add the example here.
+                     <ul>
+                         <li>
+                         </li>
+                     </ul>
+                 </div>
+
+
+                 <div class="step slide separator">
+                     <h1 class="nt">Discrete-time LQR</h1>
+                     <h3><div class="credit">Contents are based on CS287-FA19 by Prof. Pieter Abbeel at UC Berkeley</div></h3>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="nt">Problem Setup</h1>
+                     <ul>
+                         <li>Transition function: $\x_{t+1}=A\x_t+B\u_t$<br/>
+                             $\x_t$: state at time $t$<br/>
+                             $\u_t$: input at time $t$
+                         </li>
+                         <li>1-step cost function: $\ell(\x_t, \u_t)=\x_t\Q\x_t+\u_t^T\R\u_t$
+                             with $\Q\succeq 0, \R\succ 0$
+                         </li>
+                         <li>We consider the <strong>finite-horizon</strong> setup, which needs more delicate treatment compared with the infinite-horizon setup.
+                         </li>
+                         <li>Suppose that our total cost only includes the cost for the first $n$ steps:
+                             \[
+                             \sum_{t=0}^{n-1} \ell(\x_t, \u_t),
+                             \]
+                         </li>
+                     </ul>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="nt">Finite-horizon Cost-to-go Function</h1>
+                     <ul>
+                         <li>We introduce the $k$-step cost-to-go function as:
+                             \[
+                             J_k^{\pi}(\x)=\sum_{t=0}^{k-1} \ell(\x_t, \u_t),
+                             \]
+                         </li>
+                         where $\x_0=\x$ and $\u_t=\pi(\x_t)$.
+                         <li>The optimal policy must take the optimal action at each step. Therefore, the $(k+1)$-step cost-to-go function for the optimal policy is:
+                             \[
+                             J_{k+1}^{\pi^*}(\x)=\min_{\u}[\x^T\Q\x+\u^T\R\u+J^{\pi^*}_k(A\x+B\u)]\tag{Bellman equation}
+                             \]
+                         </li>
+                     </ul>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="et">Dynamic Programming</h1>
+                     <ul>
+                         <li>
+                             Final state: When no step can be taken, there is a constant cost:
+                             $ J_0(\x)=\x^T\Q\x $. 
+                             \[
+                             \boxed{J_0(\x)=\x^T\P_0\x, \quad \mbox{where } \P_0=\Q}
+                             \]
+                         </li>
+                         <li>
+                             Last step ($n$-th step):
+                             \[
+                             \aligned{
+                             J_1(\x)&=\min_{\u}[\x^T\Q\x+\u^T\R\u+J_0(A\x+B\u)]\\
+                             &=\min_{\u}[\x^T\Q\x+\u^T\R\u+(A\x+B\u)^T\P_0(A\x+B\u)]&(1)
+                             }
+                             \]
+                             Setting the gradient w.r.t. to $\u$ to zero and solve $\u_1$:
+                             \[
+                             \aligned{
+                             \u_1=-(\R+B^T\Q B)^{-1}B^T\P_0 A\x=-\K_1\x &&(2)
+                             }
+                             \]
+                             (2) into (1): 
+                             \[
+                             \boxed{J_1(\x)=\x^T \P_1\x, \quad \mbox{where }\P_1=\Q+\K_1^T\R\K_1+(A-B\K_1)^T\P_0(A-B\K_1)}
+                             \]
+                         </li>
+                     </ul>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="vt">Dynamic Programming (cont')</h1>
+                     <ul>
+                         <li>
+                             $(n-1)$-th step:
+                             \[
+                             \boxed{J_2(\x)=\x^T\P_2\x, \quad \mbox{where }\P_2=\Q+\K_2^T \R \K_2+(A-B\K_2)^T\P_1(A-B\K_2)}
+                             \]
+                             Control signal: 
+                             $\u_2=-\K_2\x, \quad\mbox{where }\K_2=(\R+B^T\P_1 B)^{-1}B^T\P_1 A$.
+                         </li>
+                         <li>Notice the similarity between $\P_1$ and $\P_2$.</li>
+                     </ul>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="nt">Summary of Dynamic Programming for LQR</h1>
+                     <ol>
+                         <li>Set $\P_0=\Q$</li>
+                         <li>for $i=1,2,3,\dots$
+                             \[
+                             \aligned{
+                             &\K_i=(\R+B^T\P_{i-1}B)^{-1}B^T\P_{i-1}A\\
+                             &\P_i=\Q+\K_i^T\R\K_i+(A-B \K_i)^T\P_{i-1}(A-B\K_i)
+                             }
+                             \]
+                             The optimal policy for a $i$-step horizon is given by:
+                             \[
+                             \pi(\x)=\K_i\x
+                             \]
+                             The cost-to-go function for a $i$-step horizon is given by:
+                             $J_i(\x)=\x^T\P_i\x$
+                         </li>
+                     </ol>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="vt">Some Last Words about discrete LQR</h1>
+                     <ul>
+                         <li>Solving the infinite-horizon optimal policy in closed-form for discrete LQR is not easy. </li>
+                         <li>However, if we decide to back-up for infinite steps, DP converges to the infinite-horizon optimal policy <em>if and only if</em> the dynamics $(A,B)$ is such that there exists a policy that can drive the state to $0$ (<a href="https://people.eecs.berkeley.edu/~pabbeel/cs287-fa19/slides/Lec5-LQR.pdf"><em>source of information</em></a>). </li>
+                         <li>If converged, it is often most convenient to use the steady-state feedback $K$ for all times. </li>
+                         <li>Similar to the infinite-horizon LQR example, we can extend our method to more sophisticated scenarios using iterative LQR (iLQR).</li>
+                     </ul>
+                 </div>
+                 <div class="step slide">
+                     <h1 class="nt">What I would like to but do not have the bandwidth to cover</h1>
+                     <ul>
+                         <li>Stability theory</li>
+                         <li>Lyapunov analysis with convex optimization</li>
+                         <li>Trajectory optimization-based control</li>
+                         <li>Robust control</li>
+                         <li>Discrete/Continuous Hybrid control</li>
+                         <li>...</li>
+                     </ul>
+                     Recommend to check out <a href="http://underactuated.mit.edu/">Underactuated Robots</a> by Prof. Russ Tedrake if you are interested in these topics.
+                 </div>
+
+
+
+
+                 <div id="overview" class="step" data-x="4500" data-y="1500" data-scale="10" style="pointer-events: none;"></div>
+        </div>
+
+        <!--
+            Add navigation-ui controls: back, forward and a select list.
+            Add a progress indicator bar (current step / all steps)
+            Add the help popup plugin
+        -->
+        <div id="impress-toolbar"></div>
+
+        <div class="impress-progressbar"><div></div></div>
+        <div class="impress-progress"></div>
+
+        <div id="impress-help"></div>
+
+        <script type="text/javascript" src="../extras/highlight/highlight.pack.js"></script>
+        <script type="text/javascript" src="../extras/mermaid/mermaid.min.js"></script>
+        <script type="text/javascript" src="../extras/markdown/markdown.js"></script>
+        <!--
+            To make all described above really work, you need to include impress.js in the page.
+            You also need to call a `impress().init()` function to initialize impress.js presentation.
+            And you should do it in the end of your document. 
+        -->
+        <script type="text/javascript" src="../js/impress.js">
+        </script>
+        <script type="text/javascript">
+            (function(){
+                var vizPrefix = "language-viz-";
+                Array.prototype.forEach.call(document.querySelectorAll("[class^=" + vizPrefix + "]"), function(x){
+                    var engine;
+                    x.getAttribute("class").split(" ").forEach(function(cls){
+                        if (cls.startsWith(vizPrefix)) {
+                            engine = cls.substr(vizPrefix.length);
+                        }
+                    });
+                    var image = new DOMParser().parseFromString(Viz(x.innerText, {format:"svg", engine:engine}), "image/svg+xml");
+                    x.parentNode.insertBefore(image.documentElement, x);
+                    x.style.display = 'none'
+                    x.parentNode.style.backgroundColor = "white"
+                });
+            })();
+        </script>
+        <script type="text/javascript">
+            window.MathJax = {
+                tex2jax: {
+                    inlineMath: [['$','$'], ['\\(','\\)']],
+                    displayMath: [['$$','$$'], ['\\[','\\]']],
+                    processEscapes: true,
+                    processEnvironments: true,
+                    skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+                    TeX: { equationNumbers: { autoNumber: "AMS" },
+                        extensions: ["AMSmath.js", "AMSsymbols.js", "color.js"],
+                    },
+                    jax: ["input/TeX", "output/SVG"]
+                },
+                AuthorInit: function () {
+                    MathJax.Hub.Register.StartupHook("Begin",function () {
+                        MathJax.Hub.Queue(function() {
+                            var all = MathJax.Hub.getAllJax(), i;
+                            for(i = 0; i < all.length; i += 1) {
+                                all[i].SourceElement().parentNode.className += ' has-jax';
+                            }
+                        })
+                    });
+                }
+            };
+        </script>
+        <script type="text/javascript" src="../extras/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+        <script>impress().init();</script>
+        <!--            
+            <script>
+                function setSlideID() {
+            x = document.getElementsByClassName("slide");
+            const titleSet = new Set();
+            for (var i = 0; i < x.length; i++) {
+                h1 = x[i].getElementsByTagName("h1")[0];
+                // alert(title);
+                title = h1.innerHTML.replace(/\W/g, '_');
+                if (titleSet.has(title)) {
+                    continue;
+                }
+                x[i].id = title;
+                titleSet.add(title);
+            }
+        }
+            </script>
+            <script> setSlideID(); </script>
+            -->
+    </body>
+</html>
+<!-- discarded -->
+

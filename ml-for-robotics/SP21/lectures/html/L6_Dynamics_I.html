@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>L6</title>
+        <meta name="description" content="L6: Lagrangian" />
+        <meta name="author" content="Hao Su" />
+        <link rel="stylesheet" href="../extras/highlight/styles/github.css">
+        <link rel="stylesheet" href="../extras/mermaid/mermaid.forest.css">
+        <link href="../css/impress-common.css" rel="stylesheet" />   
+        <link href="css/classic-slides.css" rel="stylesheet" />
+        <!-- <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>-->
+        \[
+        \newcommand{\mc}[1]{\mathcal{#1}}
+        \newcommand{\mv}[1]{\boldsymbol{#1}}\newcommand{\mvinfty}{\boldsymbol{\infty}}\newcommand{\mvzero}{\boldsymbol{0}}
+        \newcommand{\f}[1]{\mathfrak{#1}}
+        \newcommand{\bb}[1]{\mathbb{#1}}
+        \newcommand{\d}[1]{\mathrm{d}#1}
+        \]
+    </head>
+    <body class="impress-not-supported">
+        <div class="fallback-message">
+            <p>Your browser <b>doesn't support the features required</b> by impress.js, so you are presented with a simplified version of this presentation.</p>
+            <p>For the best experience please use the latest <b>Chrome</b>, <b>Safari</b> or <b>Firefox</b> browser.</p>
+        </div>
+        <div id="impress"
+             data-width="1920"
+             data-height="1080"
+             data-max-scale="3"
+             data-min-scale="0"
+             data-perspective="1000"
+             data-transition-duration="0"
+             >
+             <div class="step slide title" data-x="-2200" data-y="-3000" id="title">
+                 <h1 class="nt">L6: Dynamics (I)</h1>
+                 <h2>Hao Su</h2>
+                 <h3>Spring, 2021</h3>
+             </div>
+             <!--
+             <div id="toc" class="step slide" data-rel-x="2200" data-rel-y="0">
+                 <h1 class="nt">Agenda</h1>
+                 <ul>
+                     <li><a href="#">Newtonian Dynamics</a></li>
+                 </ul>
+             </div>
+             -->
+             <div class="step slide" data-rel-x="2200" data-rel-y="0">
+                 <h1 class="vt">Kinematics v.s. Dynamics</h1>
+                 <ul>
+                     <li>
+                         <em>Kinematics</em> describes the motion of objects. We have been talking about rigid transformation and derivatives w.r.t. time.
+                     </li>
+                     <li>
+                         <em>Dynamics</em> describes the cause of motion. We will talk about mass, energy, momentum, and force.
+                     </li>
+                     <li>The basic law of dynamics, Newton's Law, describes the motion of a point mass:
+                         <span style="font-size:1.5em">
+                             \[
+                             \mv{f}=m\mv{a}
+                             \]
+                         </span>
+                     </li>
+                     <li>
+                         But there are caveats that you may not be aware of.
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="vt">Kinematics v.s. Dynamics</h1>
+                 <ul>
+                     <li>
+                         We start from point mass dynamics and will move on to rigid body dynamics.
+                     </li>
+                     <li>
+                         We will provide certain proofs but not all (many are very tricky and lengthy).
+                     </li>
+                 </ul>
+             </div>
+
+
+             <div class="step slide separator">
+                 <h1 class="nt">A Tale of Three Frames</h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Concepts</h1>
+                 <ul>
+                     <li class="substep">
+                         <strong>Observer's Frame</strong>: 
+                         <ul>
+                             <li>When we record any motion, we choose the observer's frame \(\cal{F}_{o}\), so that every point would have a coordinate and every vector will have a direction and length. </li>
+                             <li>For our symbols, this is on the superscript. </li>
+                             <li>If the frame is moving (e.g., taken to be the body frame), when recording motions, we first <i>clone a version</i> of this frame and <i>keep it static</i> for recording.</li>
+                         </ul>
+                     </li>
+                     <li class="substep">
+                         <strong>Body Frame</strong>: 
+                         <ul>
+                             <li>An rigid object moves in the space, and we bind a frame \(\cal{F}_{b(t)}\) tightly to it.</li>
+                         </ul>
+                     </li>
+                     <li class="substep">
+                         <strong>Reference Frame</strong>: 
+                         <ul>
+                             <li>When recording the movement of objects, we introduce a reference frame so that the notion of movement is <i>relative to</i> this frame.</li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Some Notes on Reference Frame</h1>
+                 <ul>
+                     <li>
+                         Reference Frame: 
+                         <ul>
+                             <li>When recording the movement of objects, we introduce a reference frame so that the notion of movement is <i>relative to</i> this frame.</li>
+                         </ul>
+                     </li>
+                     <li>
+                         We have not discussed this frame much in developing robot <strong>kinematics theories</strong>.
+                     </li>
+                     <p>
+                         <center>
+                             <span style="font-size:1.5em">
+                                 <div class="hl">In dynamics, the choice of reference frame is not arbitrary!</div>
+                             </span>
+                         </center>
+                     </p>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Recording a <em>Relative</em> Velocity</h1>
+                 <ul>
+                     <li>We introduce \(s(t)\) to denote a reference frame which may be moving.</li>
+                     <li>Then we denote the relative velocity as below: </li>
+                     <li>Relative velocity for a point mass</li>
+                     <ul>
+                         <li>\(\mv{v}^o_{s(t)\to b(t)}=\mv{v}^o_{o\to b(t)}-\mv{v}^o_{o\to s(t)}\)</li>
+                     </ul>
+                     <li>Relative velocity for rigid body</li>
+                     <ul>
+                         <li>\(\mv{\xi}^o_{s(t)\to b(t)}=\mv{\xi}^o_{b(t)}-\mv{\xi}^o_{s(t)}\)</li>
+                     </ul>
+                     <li>Consistency</li>
+                     \[
+                     \mv{v}^o_{s(t)\to b(t)}=\mv{\xi}^o_{s(t)\to b(t)}p^o
+                     \]
+                     where \(p^o\) is a point observed in \(\cal{F}_o\)
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Inertia Frame</h1>
+                 <ul>
+                     <li>
+                         Inertia frame refers to the choice of the <em>reference frame</em>.
+                     </li>
+                     <li>
+                         Only in an inertia frame can Newton's law be written as \(\mv{f}=m\mv{a}\).
+                     </li>
+                     <li>
+                         Definition of Inertia frame: 
+                         <ul>
+                             <li>Where the law of inertia (Newton's First Law) is satisfied.</li>
+                             <li>Any free motion has a constant magnitude and direction.</li>
+                         </ul>
+                     </li>
+                     <li>A clear notion of Newton's Second Law:
+                         \[
+                         \mv{f}^o=m\mv{a}^o_{s(t)\to b(t)}
+                         \]
+                         where \(s(t)\) is an inertia frame (\(o\) is static).
+                     </li>
+                 </ul>
+             </div>
+
+             <div class="step slide">
+                 <h1 class="nt">Fictitious Force</h1>
+                 <ul>
+                     <li>What if the reference frame is not an inertia frame?</li>
+                     <li>Assume we have two moving frames, \(\cal{F}_{s(t)} \) and \(\cal{F}_{b(t)}\)</li>
+                     <ul>
+                         <li>e.g., the earth and an object sitting on the earth</li>
+                     </ul>
+                     <li>We are interested in how the force \(\mv{f}^o\) affects the relative acceleration \(\mv{a}^o_{s(t)\to b(t)}\)</li>
+                 </ul>
+                 <ul>
+                     <li class="substep">For simplicity and illustration purpose, assume that \(\cal{F}_{s(t)}\) is moving with an angular velocity without linear acceleration.</li>
+                     <li class="substep">Some intuition that \(\mv{f}^o\neq m \mv{a}^o_{s(t)\to b(t)}\)
+                         <ul>
+                             <li class="substep">Since \(\cal{F}_{s(t)}\) is moving with an angular velocity, any object \(b(t)\) moving along with it must also have an acceleration to gain the same angular velocity. </li>
+                             <li class="substep">Computation shows that some additional force will be consumed to maintain the relative velocity of \(b(t)\) against \(s(t)\). </li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Fictitious Force</h1>
+                 <ul>
+                     <li>Computing \(\mv{f}^o=\d{(m\mv{v}^o_{s'\to b(t)})}/\d{t}\) (note: \(s'\) is chosen to be an inertia frame), and we have
+                         \[
+                         \mv{f}^o-m\frac{\d{\mv{\omega}^o}}{\d{t}}\times r^o-2m\mv{\omega}^o\times \mv{v}^o-m\mv{\omega}^o\times (\mv{\omega}^o\times r^o)=m\mv{a}^o
+                         \]<br/>
+                         where
+                         <ul>
+                             <li>\(\mv{f}^o\): the physical forces acting on the object</li>
+                             <li>\(\mv{\omega}^o:=\mv{\omega}^s_{s'\to s(t)}\)</li>
+                             <li>\(\mv{v}^o:=\mv{v}^o_{s(t)\to b(t)}\)</li>
+                             <li>\(\mv{r}^o:=\mv{r}^o_{s(t)\to b(t)}\) </li>
+                             <li>\(\mv{a}^o:=\mv{a}^o_{s(t)\to b(t)}\)</li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Fictitious Force</h1>
+                 <ul>
+                     \[
+                     \mv{f}^o-m\frac{\d{\mv{\omega}}}{\d{t}}\times r^o-2m\mv{\omega}^o\times \mv{v}^o-m\mv{\omega}^o\times (\mv{\omega}^o\times r^o)=m\mv{a}^o
+                     \]<br/>
+                     <li>Euler force: \(-m\frac{\d{\mv{\omega}^o}}{\d{t}}\times r^o\)</li>
+                     <li>Centrifugal force: \(-m\mv{\omega}^o\times (\mv{\omega}^o\times r^o)\)</li>
+                     <li>Coriolis force: \(-2m\mv{\omega}^o\times \mv{v}^o\)</li>
+                 </ul>
+             </div>
+
+             <div id="overview" class="step" data-x="4500" data-y="1500" data-scale="10" style="pointer-events: none;"></div>
+             <!--
+                 <div id="markdown" class="step slide markdown" data-rel-x="0" data-rel-y="900">
+                 </div>
+             -->
+        </div>
+
+        <!--
+            Add navigation-ui controls: back, forward and a select list.
+            Add a progress indicator bar (current step / all steps)
+            Add the help popup plugin
+        -->
+        <div id="impress-toolbar"></div>
+
+        <div class="impress-progressbar"><div></div></div>
+        <div class="impress-progress"></div>
+
+        <div id="impress-help"></div>
+
+        <!-- Extra modules
+            Load highlight.js, mermaid.js, markdown.js and MathJax.js from extras.
+            If you're curious about details, these are initialized in src/plugins/extras/extras.js -->
+            <script type="text/javascript" src="../extras/highlight/highlight.pack.js"></script>
+            <script type="text/javascript" src="../extras/mermaid/mermaid.min.js"></script>
+            <script type="text/javascript" src="../extras/markdown/markdown.js"></script>
+            <script type="text/javascript" src="../extras/mathjax/MathJax.js?config=TeX-AMS_CHTML"></script>
+            <!--
+                To make all described above really work, you need to include impress.js in the page.
+                You also need to call a `impress().init()` function to initialize impress.js presentation.
+                And you should do it in the end of your document. 
+            -->
+            <script type="text/javascript" src="../js/impress.js"></script>
+            <script>impress().init();</script>
+            <!--            <script>
+                function setSlideID() {
+                    x = document.getElementsByClassName("slide");
+                    const titleSet = new Set();
+                    for (var i = 0; i < x.length; i++) {
+                        h1 = x[i].getElementsByTagName("h1")[0];
+// alert(title);
+                        title = h1.innerHTML.replace(/\W/g, '_');
+                        if (titleSet.has(title)) {
+                            continue;
+                        }
+                        x[i].id = title;
+                        titleSet.add(title);
+                    }
+                }
+            </script>
+            <script> setSlideID(); </script>-->
+    </body>
+</html>
+<!-- discarded -->

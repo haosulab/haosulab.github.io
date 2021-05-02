@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>L7</title>
+        <meta name="description" content="" />
+        <meta name="author" content="Hao Su" />
+        <link rel="stylesheet" href="../extras/highlight/styles/github.css">
+        <link rel="stylesheet" href="../extras/mermaid/mermaid.forest.css">
+        <link href="../css/impress-common.css" rel="stylesheet" />   
+        <link href="css/classic-slides.css" rel="stylesheet" />
+        <!-- <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>-->
+        \[
+        \newcommand{\mc}[1]{\mathcal{#1}}
+        \newcommand{\mv}[1]{\boldsymbol{#1}}\newcommand{\mvinfty}{\boldsymbol{\infty}}\newcommand{\mvzero}{\boldsymbol{0}}
+        \newcommand{\f}[1]{\mathfrak{#1}}
+        \newcommand{\bb}[1]{\mathbb{#1}}
+        \newcommand{\d}[1]{\mathrm{d}#1}
+        \]
+    </head>
+    <body class="impress-not-supported">
+        <div class="fallback-message">
+            <p>Your browser <b>doesn't support the features required</b> by impress.js, so you are presented with a simplified version of this presentation.</p>
+            <p>For the best experience please use the latest <b>Chrome</b>, <b>Safari</b> or <b>Firefox</b> browser.</p>
+        </div>
+        <div id="impress"
+             data-width="1920"
+             data-height="1080"
+             data-max-scale="3"
+             data-min-scale="0"
+             data-perspective="1000"
+             data-transition-duration="0"
+             >
+             <div class="step slide title" data-x="-2200" data-y="-3000" id="title">
+                 <h1 class="nt">L7-1: Sampled-based Motion Planning</h1>
+                 <h2>Hao Su</h2>
+                 <h3>Spring, 2021</h3>
+             </div>
+             <div id="toc" class="step slide" data-rel-x="2200" data-rel-y="0">
+                 <h1 class="nt">Agenda</h1>
+                 <ul class="large">
+                     <li><a href="#form">Problem Formulation</a></li>
+                     <li><a href="#prm">Probabilistic Roadmap Method (PRM)</a></li>
+                     <li><a href="#rrt">Rapidly-exploring Random Trees (RRT)</a></li>
+                 </ul>
+                 click to jump to the section.
+             </div>
+
+             <div class="step slide separator" id="form">
+                 <h1 class="nt">Problem Formulation</h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Configuration Space</h1>
+                 <ul>
+                     <li>Configuration space (\(\cal{C}\)-space) is a subset of \(\bb{R}^n\) containing all possible states of the system(state space in RL).</li>
+                     <li>\(\cal{C}_{free}\subseteq \cal{C}\) contains all valid states.</li>
+                     <li>\(\cal{C}_{obs}\subseteq \cal{C}\) represents obstacles. </li>
+                     <li>Examples:
+                         <ul>
+                             <li>All valid poses of a robot.</li>
+                             <li>All valid joint values of a robot.</li>
+                             <li>...</li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Motion Planning</h1>
+                 <ul>
+                     <li>
+                         Problem:
+                         <ul>
+                             <li>Given a configuration space \(\cal{C}_{free}\)
+                             </li>
+                             <li>
+                                 Given start state \(q_{start}\)and goal state \(q_{goal}\) in \(\cal{C}_{free}\)
+                             </li>
+                             <li>
+                                 Calculate a sequence of actions that leads from start to goal
+                             </li>
+                         </ul>
+                     </li>
+                     <li>
+                         Challenge:
+                         <ul>
+                             <li>
+                                 Need to avoid obstacles
+                             </li>
+                             <li>
+                                 Long planning horizon
+                             </li>
+                             <li>
+                                 High-dimensional planning space
+                             </li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Motion Planning</h1>
+                 <img src="./L7_planning/planning_concept.png" width="65%"/>
+                 <div class="ack">LaValle, Steven M. Planning algorithms. Cambridge university press, 2006.</div>
+             </div>
+             <div class="step slide">
+                 <h1 class="et">Examples</h1>
+                 <img src="./L7_planning/planning_example.gif" width="65%"/>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Examples</h1>
+
+                 <div class="row">
+                     <div class="column">
+                         <img src="./L7_planning/eg1.png" width="80%"/>
+                         <div class="credit" style="margin-top: 200px">
+                             <ul>
+                                 <li>Ratliff N, Zucker M, Bagnell J A, et al. CHOMP: Gradient optimization techniques for efficient motion planning, ICRA 2009</li>
+                                 <li>Schulman, John, et al. Finding Locally Optimal, Collision-Free Trajectories with Sequential Convex Optimization, RSS 2013
+                                 </li>
+                             </ul>
+                         </div>
+                     </div>
+                     <div class="column">
+                         <div style=margin-top:200px>
+                             <img src="./L7_planning/eg2.png" width="80%"/>
+                         </div>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Sample-based Algorithm</h1>
+                 <ul>
+                     <li>The key idea is to explore a smaller subset of possibilities randomly without exhaustively exploring all possibilities.
+                     </li>
+                     <li>
+                         Pros:
+                         <ul>
+                             <li>
+                                 Probabilistically complete
+                             </li>
+                             <li>
+                                 Solve the problem after knowing partial of \(\cal{C}_{free}\)
+                             </li>
+                             <li>
+                                 Apply easily to high-dimensional \(\cal{C}\)-space
+
+                             </li>
+                         </ul>
+                     </li>
+                     <li>
+                         Cons:
+                         <ul>
+                             <li>
+                                 Requires to find path between two close points
+                             </li>
+                             <li>
+                                 Does not work well when the connection of \(\cal{C}_{free}\) is bad
+                             </li>
+                             <li>
+                                 Never optimal
+                             </li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide separator" id="prm">
+                 <h1 class="nt"> Probabilistic Roadmap Method (PRM) </h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt"> Probabilistic Roadmap(PRM) </h1>
+                 <ul>
+                     <li>The algorithm contains two stages:</li>
+                     <ul>
+                         <li>Map construction phase</li>
+                         <ul>
+                             <li>Randomly sample states in \(\cal{C}_{free}\)</li>
+                             <li>Connect every sampled state to its neighbors</li>
+                             <li>Connect the start and goal state to the graph</li>
+                         </ul>
+                     </ul>
+                     <li>Query phase</li>
+                     <ul>
+                         <li>Run path finding algorithms like Dijkstra</li>                
+                     </ul>
+                 </ul>
+                 <div class="ack">
+                     Kavraki, Lydia E., et al. "Probabilistic roadmaps for path planning in high-dimensional configuration spaces." IEEE transactions on Robotics and Automation 12.4 (1996): 566-580.
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="vt">Rejection Sampling</h1>
+                 <ul>
+                     <li>
+                         Aim to sample uniformly in \(\cal{C}_{free}\).
+                     </li>
+                     <li>
+                         Method
+                         <ul>
+                             <li>Sample uniformly over \(\cal{C}\).</li>
+                             <li>Reject the sample not in the feasible area.</li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="et">Pipeline</h1>
+                 <img src="./L7_planning/pipeline_prm.png" width="80%"/>
+             </div>
+             <div class="step slide">
+                 <h1 class="vt">Challenges</h1>
+                 <ul>
+                     <li>
+                         Connect neighboring points: 
+                         <ul><li>In general it requires solving dynamics</li></ul>
+                     </li>
+                     <li>Collision checking:
+                         <ul><li>It takes a lot of time to check if the edges are in the configuration space.</li></ul>
+                     </li>             
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Example</h1>
+                 PRM generates a graph \(G=(V,E)\) such that every edge is in the configuration space without colliding with obstacles.
+                 <p><img src="./L7_planning/prm_map.png" width="50%"/></p>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Example</h1>
+                 Find the path from start state \(q_{start}\) to goal state \(q_{goal}\)
+                 <p><img src="./L7_planning/prm_planning.png" width="50%"/></p>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Limitations: Narrow Passages</h1>
+                 It is unlikely to sample the points in the narrow bridge 
+                 <p><img src="./L7_planning/prm_limitation.png" width="50%"/></p>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Gaussian Sampling</h1>
+                 <ul>
+                     <li>Generate one sample \(q_1\) uniformly in the configuration space</li>
+                     <li>Generate another sample \(q_2\) from a Gaussian distribution \(\cal{N}(q_1, \sigma^2)\)</li>
+                     <li>If \(q_1\in\cal{C}_{free}\) and  \(q_2\neq \cal{C}_{free}\) then add \(q_1\)</li>
+                 </ul>
+                 <div class="row">
+                     <div class="column">
+                         <img src="./L7_planning/uniform.png" width="50%"></img>
+                     </div>
+                     <div class="column">
+                         <img src="./L7_planning/gaussian.png" width="50%"></img>
+                     </div>
+                 </div>
+                 <div class="rby">Read by Yourself</div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Bridge Sampling</h1>
+                 <ul>
+                     <li>Generate one sample \(q_1\) uniformly in the configuration space</li>
+                     <li>Generate another sample \(q_2\) from a Gaussian distribution \(\cal{N}(q_1, \sigma^2)\)</li>
+                     <li>\(q_3=\frac{q_1+q_2}{2}\)</li>
+                     <li>If \(q_1\), \(q_2\) are not in \(\cal{C}_{free}\) then add \(q_3\)</li>
+                 </ul>
+                 <table>
+                     <tr>
+                         <td><img src="./L7_planning/uniform.png" width="80%"/></td>
+                         <td><img src="./L7_planning/bridge.png" width="80%"/></td>
+                         <td><img src="./L7_planning/bridge_2.png" width="80%"/></td>
+                     </tr>
+                 </table>
+                 <div class="rby">Read by Yourself</div>
+             </div>
+             <div class="step slide separator" id="rrt">
+                 <h1 class="nt">Rapidly-exploring Random Trees (RRT)</h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="vt">Rapidly-exploring Random Tree(RRT) </h1>
+                 <ul>
+                     <li>RRT grows a tree rooted at the start state by using random samples from configuration space.</li>
+                     <li>As each sample is drawn, a connection is attempted between it and the nearest state in the tree. If the connection is in the configuration space, this results in a new state in the tree.</li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Extend Operation</h1>
+                 <img src="./L7_planning/extend.png" width="60%"/>
+             </div>
+             <div class="step slide">
+                 <h1 class="et">Pipeline</h1>
+                 <img src="./L7_planning/pipeline_rrt.png" width="70%">
+             </div>
+             <div class="step slide">
+                 <h1 class="et">Examples</h1>
+                 <img src="./L7_planning/RRT_demo.gif" width="70%">
+             </div>
+             <div class="step slide">
+                 <h1 class="vt">Challenges</h1>
+                 <ul>
+                     <li>Find nearest neighbor in the tree</li>
+                     <ul>
+                         <li>We need to support online quick query</li>
+                         <li>Examples: KD Trees</li>
+                     </ul>
+                     <li>Need to choose a good \(\epsilon\) to expand the tree efficiently</li>
+                     <ul>
+                         <li>Large \(\epsilon\): hard to generate new samples </li>
+                         <li>Small \(\epsilon\): too many samples in the tree</li>
+                     </ul>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="vt">RRT-Connect</h1>
+                 <ul>
+                     <li>Grow two trees starting from \(q_{start}\) and \(q_{start}\) respectively instead of just one.</li>
+                     <li>Grow the trees towards each other rather than random configurations</li>
+                     <li>Use stronger greediness by growing the tree with multiple epsilon steps instead of a single one.</li>
+                 </ul>
+                 <div class="ack">
+                     Kuffner, James J., and Steven M. LaValle. "RRT-connect: An efficient approach to single-query path planning." Proceedings 2000 ICRA. Millennium Conference. IEEE International Conference on Robotics and Automation. Symposia Proceedings (Cat. No. 00CH37065). Vol. 2. IEEE, 2000.
+                 </div>
+             </div>
+
+             <div class="step slide">
+                 <h1 class="et">Pseudo Code</h1>
+                 <iframe src="./L7_planning/RRT_Connect.pdf" width="100%" height="800px"></iframe>
+             </div>
+
+             <!--<div class="step slide">-->
+                 <!--<h1 class="nt">A Single RRT-Connect Iteration</h1>-->
+                 <!--<img src="./L7_planning/image20.png" width="80%"/>-->
+             <!--</div>-->
+             <!--<div class="step slide">-->
+                 <!--<h1 class="nt">A Single RRT-Connect Iteration</h1>-->
+                 <!--<img src="./L7_planning/image21.png" width="80%"/>-->
+             <!--</div>-->
+             <!--<div class="step slide">-->
+                 <!--<h1 class="nt">A Single RRT-Connect Iteration</h1>-->
+                 <!--<img src="./L7_planning/image22.png" width="80%"/>-->
+             <!--</div>-->
+             <!--<div class="step slide">-->
+                 <!--<h1 class="nt">A Single RRT-Connect Iteration</h1>-->
+                 <!--<img src="./L7_planning/image23.png" width="80%"/>-->
+             <!--</div>-->
+             <!--<div class="step slide">-->
+                 <!--<h1 class="nt">A Single RRT-Connect Iteration</h1>-->
+                 <!--<img src="./L7_planning/image24.png" width="80%"/>-->
+             <!--</div>-->
+             <!--<div class="step slide">-->
+                 <!--<h1 class="nt">A Single RRT-Connect Iteration</h1>-->
+                 <!--<img src="./L7_planning/image25.png" width="80%"/>-->
+             <!--</div>-->
+             <!--<div class="step slide">-->
+                 <!--<h1 class="nt">A Single RRT-Connect Iteration</h1>-->
+                 <!--<img src="./L7_planning/image26.png" width="80%"/>-->
+             <!--</div>-->
+             <!--<div class="step slide">-->
+                 <!--<h1 class="nt">A Single RRT-Connect Iteration</h1>-->
+                 <!--<img src="./L7_planning/image27.png" width="80%"/>-->
+             <!--</div>-->
+             <!--<div class="step slide">-->
+                 <!--<h1 class="nt">A Single RRT-Connect Iteration</h1>-->
+                 <!--<img src="./L7_planning/image28.png" width="80%"/>-->
+             <!--</div>-->
+             <!--             <div class="step slide">
+                 <h1 class="nt">Local Planners</h1>
+                 <ul>
+                 <li>Both RRT and PRM rely on a local planner which gives a sequence of action to connect two states.</li>
+                 <li>RL can give local planners without solving the dynamics equations explicitly. </li>
+                 <li>RL cannot solve long term high dimensional planning problem efficiently due to the exploration.</li>
+                 </ul>
+                 </div>-->
+
+                 <!--<div id="overview" class="step" data-x="4500" data-y="1500" data-scale="10" style="pointer-events: none;"></div>-->
+                 <!--
+                     <div id="markdown" class="step slide markdown" data-rel-x="0" data-rel-y="900">
+                     </div>
+                 -->
+        </div>
+
+        <!--
+            Add navigation-ui controls: back, forward and a select list.
+            Add a progress indicator bar (current step / all steps)
+            Add the help popup plugin
+        -->
+        <div id="impress-toolbar"></div>
+
+        <div class="impress-progressbar"><div></div></div>
+        <div class="impress-progress"></div>
+
+        <div id="impress-help"></div>
+
+        <!-- Extra modules
+            Load highlight.js, mermaid.js, markdown.js and MathJax.js from extras.
+            If you're curious about details, these are initialized in src/plugins/extras/extras.js -->
+            <script type="text/javascript" src="../extras/highlight/highlight.pack.js"></script>
+            <script type="text/javascript" src="../extras/mermaid/mermaid.min.js"></script>
+            <script type="text/javascript" src="../extras/markdown/markdown.js"></script>
+            <script type="text/javascript" src="../extras/mathjax/MathJax.js?config=TeX-AMS_CHTML"></script>
+            <!--
+                To make all described above really work, you need to include impress.js in the page.
+                You also need to call a `impress().init()` function to initialize impress.js presentation.
+                And you should do it in the end of your document. 
+            -->
+            <script type="text/javascript" src="../js/impress.js"></script>
+            <script>impress().init();</script>
+            <!--            <script>
+                function setSlideID() {
+                    x = document.getElementsByClassName("slide");
+                    const titleSet = new Set();
+                    for (var i = 0; i < x.length; i++) {
+                        h1 = x[i].getElementsByTagName("h1")[0];
+                // alert(title);
+                        title = h1.innerHTML.replace(/\W/g, '_');
+                        if (titleSet.has(title)) {
+                            continue;
+                        }
+                        x[i].id = title;
+                        titleSet.add(title);
+                    }
+                }
+            </script>
+            <script> setSlideID(); </script>-->
+    </body>
+</html>
+<!-- discarded -->

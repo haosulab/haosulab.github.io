@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>L8</title>
+        <meta name="description" content="" />
+        <meta name="author" content="Hao Su" />
+        <link rel="stylesheet" href="../extras/highlight/styles/github.css">
+        <link rel="stylesheet" href="../extras/mermaid/mermaid.forest.css">
+        <link href="../css/impress-common.css" rel="stylesheet" />   
+        <link href="css/classic-slides.css" rel="stylesheet" />
+        <!-- <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>-->
+        \[
+        \newcommand{\mc}[1]{\mathcal{#1}}
+        \newcommand{\mv}[1]{\boldsymbol{#1}}\newcommand{\mvinfty}{\boldsymbol{\infty}}\newcommand{\mvzero}{\boldsymbol{0}}
+        \newcommand{\f}[1]{\mathfrak{#1}}
+        \newcommand{\bb}[1]{\mathbb{#1}}
+        \newcommand{\d}[1]{\mathrm{d}#1}
+        \]
+    </head>
+    <body class="impress-not-supported">
+        <div class="fallback-message">
+            <p>Your browser <b>doesn't support the features required</b> by impress.js, so you are presented with a simplified version of this presentation.</p>
+            <p>For the best experience please use the latest <b>Chrome</b>, <b>Safari</b> or <b>Firefox</b> browser.</p>
+        </div>
+        <div id="impress"
+             data-width="1920"
+             data-height="1080"
+             data-max-scale="3"
+             data-min-scale="0"
+             data-perspective="1000"
+             data-transition-duration="0"
+             >
+             <div class="step slide title" data-x="-2200" data-y="-3000" id="title">
+                 <h1 class="nt">L8: Basic Concepts of Rigid-Body Dynamics</h1>
+                 <h2>Hao Su</h2>
+                 <h3>Spring, 2021</h3>
+             </div>
+             <div class="step slide" data-rel-x="2200" data-rel-y="0">
+                 <h1 class="et">Some Further Clarifications on Velocity</h1>
+                 <ul>
+                     <li>Consider we observe the motion of a moving body $b(t)$ from a moving observer's frame $o(t)$, and the recording of motion is relative to $s(t)$.</li>
+                     <li><strong>velocity</strong> observed from an arbitrary frame (e.g., point linear velocity, angular velocity, and twist) is:
+                         \[
+                         \mv{v}^{o(t_0)}_{s(t_0)\to b(t_0)}=\left.\frac{\d{}}{\d{t}}p^{o(t_0)}_{\color{red}{s(t) \to b(t)}}\right\vert_{t=t_0}, \qquad \mbox{where}\  p^{o(t_0)}_{s(t) \to b(t)}=p^{o(t_0)}_{o(t_0)\to b(t)}-p^{o(t_0)}_{o(t_0) \to s(t)}
+                         \]
+                     </li>
+                     <li class="substep">Note: above is a general rule of <strong>taking derivative of coordinate w.r.t. time</strong> (so that body velocity/twist is non-zero). 
+                         <ul>
+                             <li>e.g., when we derive the body-frame Euler equation last lecture, body inertia is defined by body frame coordinates, more precisely,  
+                                 <!--
+                                     -$\left.I^{b(t_0)}_{b(t)}\right\vert_{t=t_0}$, where
+                                 -->
+                                 \(
+                                 I^{b(t_0)}_{b(t)}=\int \d{V}\rho(r^{b(t_0)}_{b(t)\to x(t)})[r^{b(t_0)}_{b(t)\to x(t)}][r^{b(t_0)}_{b(t)\to x(t)}]
+                                 \)
+                             </li>
+                             <li>Therefore, while $I$ is an invariant w.r.t. $t$ (since $\left.r^{b(t_0)}_{b(t)\to x(t)}\right\vert_{t=t_0}$ is invariant), its derivative (taken only w.r.t. the subscript) is non-zero. </li>
+                             <li>This is exactly the case that body-frame coordinate is a constant for body points, but they have velocity.
+                             </li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+             <div id="toc" class="step slide">
+                 <h1 class="nt">Agenda</h1>
+                 <ul class="large">
+                     <li><a href="#ken">Kinetic Energy</a></li>
+                     <li><a href="#genf">Change of Frame for Various Quantities</a></li>
+                     <li><a href="#fid">Forward and Inverse Dynamics</a></li>
+                 </ul>
+                 click to jump to the section.
+             </div>
+             <div class="step slide separator" id="ken">
+                 <h1 class="nt">Kinetic Energy</h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="vt">Kinetic Energy for Point Mass</h1>
+                 <ul>
+                     <li>If a point mass \(m\) is moving with velocity \(\mv{v}^o_{s(t)\to b(t)}\) (\(s(t)\) is an inertia frame and the origin of \(b(t)\) is the point), then the kinetic energy of the point mass is 
+                         \[
+                         T_{s(t)\to b(t)}=\frac{1}{2}m\|\mv{v}^o_{s(t)\to b(t)}\|^2 \tag{kinetic energy}
+                         \]
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Observer-Independence of Kinetic Energy</h1>
+                 <ul>
+                     <li>Note that we omit observer's frame when describing kinetic energy, because it is independent of the observer's frame.
+                     </li>
+                     <li>
+                         We prove by showing that \(\|\mv{v}^{o_1}_{s(t)\to b(t)}\|=\|\mv{v}^{o_2}_{s(t)\to b(t)}\|\)
+                     </li>
+                     <li class="substep">
+                         \(\mbox{Proof:}\\
+                         \begin{aligned}
+                         \mv{v}^{o_1}_{s(t)\to b(t)}&=\mv{v}^{o_1}_{b(t)}-\mv{v}^{o_1}_{s(t)}=[\mv{\xi}^{o_1}_{b(t)}-\mv{\xi}^{o_1}_{s(t)}]p^{o_1}
+                         =T^{-1}_{o_2\to o_1}[\mv{\xi}^{o_2}_{b(t)}-\mv{\xi}^{o_2}_{s(t)}]T_{o_2\to o_1}p^{o_1}\\
+                         &=T^{-1}_{o_2\to o_1}[\mv{\xi}^{o_2}_{b(t)}-\mv{\xi}^{o_2}_{s(t)}]p^{o_2}
+                         =T^{-1}_{o_2\to o_1}(\mv{v}^{o_2}_{b(t)}-\mv{v}^{o_2}_{s(t)})
+                         =T^{-1}_{o_2\to o_1}\mv{v}^{o_2}_{s(t)\to b(t)}\\
+                         &=
+                         \begin{bmatrix}
+                         R^T_{o_2\to o_1} & -R^T_{o_2\to o_1}t_{o_2\to o_1}\\
+                         0 & 1
+                         \end{bmatrix}
+                         \begin{bmatrix}
+                         \mv{v}^{o_2}_{s(t)\to b(t)}\vert_{3\times 1}\\ 0
+                         \end{bmatrix}
+                         =
+                         \begin{bmatrix}
+                         R_{o_1\to o_2}\mv{v}^{o_2}_{s(t)\to b(t)}\vert_{3\times 1}
+                         \\ 0
+                         \end{bmatrix}
+                         \end{aligned}\\
+                         \therefore \|\mv{v}^{o_1}_{s(t)\to b(t)}\|=\|\mv{v}^{o_2}_{s(t)\to b(t)}\|
+                         \)
+                     </li>
+                     <li class="substep">
+                         <div style="margin-top: 50px">
+                             We have also derived 
+                             \(
+                             \mv{v}^{o_1}_{s(t)\to b(t)}= R_{o_1\to o_2}\mv{v}^{o_2}_{s(t)\to b(t)} \mbox{ for }\mv{v}\in\bb{R}^3
+                             \tag{change of frame for velocities}
+                             \)
+                         </div>
+                     </li>
+                 </ul>
+             </div>
+
+             <div class="step slide">
+                 <h1 class="nt">Kinetic Energy for Rigid Body</h1>
+                 <ul>
+                     <li>Integrate kinetic energy of every point mass over the body</li>
+                     <li>We choose the body frame \(\cal{F}_{b(t)}\) to start the derivation. Using the independence of observer's frame, we derive the formula to compute the energy in other frames. </li>
+                     <li><em>The origin of our body frame is always at the center of mass of the body</em></li>
+                     <li class="substep">The velocity of a body point \(\mv{r}^{b(t)}\) is
+                         \[
+                         \begin{aligned}
+                         \mv{v}^{b(t)}_{s(t)\to b(t)}&=[\mv{\xi}^{b(t)}_{s(t)\to b(t)}]\mv{r}^{b(t)}\\
+                         &=
+                         \begin{bmatrix}
+                         [\mv{\omega}^{b(t)}_{s(t)\to b(t)}] & \dot{\mv{t}}^{b(t)}_{s(t)\to b(t)} \\
+                         0 & 0
+                         \end{bmatrix}\mv{r}^{b(t)}
+                         \end{aligned}
+                         \]
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Kinetic Energy for Rigid Body</h1>
+                 <ul>
+                     Therefore,
+                     \[
+                     \begin{aligned}
+                     T_{s(t)\to b(t)}&=\int_{\mv{r}^b\in B}\frac{1}{2} \rho(x)\d{V} \|\mv{v}^{b(t)}_{s(t)\to b(t)}\|^2
+                     % &=\int_{\mv{r}^b\in B}\frac{1}{2} \rho(x)\d{V}\left\|\begin{bmatrix}
+                     % [\mv{\omega}^{b(t)}_{s(t)\to b(t)}] & \dot{\mv{t}}^{b(t)}_{s(t)\to b(t)} \\
+                     %     0 & 0
+                     %     \end{bmatrix}\mv{r}^{b(t)} \right\|^2\\
+                     =\int_{\mv{r}^b\in B}\frac{1}{2} \rho(x) \d{V}\|[\mv{\omega}^{b(t)}_{s(t)\to b(t)}]\mv{r}^{b(t)}+\dot{\mv{t}}^{b(t)}_{s(t)\to b(t)}\|^2 \\
+                     &= \mbox{(some derivations using } [\mv{\omega}]\mv{r}=-[\mv{r}]\mv{\omega}\mbox{)} \\
+                     &= \frac{1}{2}m\|\dot{\mv{t}}^{b(t)}_{s(t)\to b(t)}\|^2 + \frac{1}{2} (\mv{\omega}^{b(t)}_{s(t)\to b(t)})^T \mv{I}^{b}\mv{\omega}^{b(t)}_{s(t)\to b(t)}\\
+                     &=\frac{1}{2} (\mv{\xi}^{b(t)}_{s(t)\to b(t)})^T \mv{\f{M}}^{b} \mv{\xi}^{b(t)}_{s(t)\to b(t)}
+                     \end{aligned}
+                     \]
+                     where 
+                     \[
+                     \mv{\f{M}}^b=\begin{bmatrix}
+                     m \rm{Id}_{3\times 3} & 0\\
+                     0 & \mv{I}^{b}
+                     \end{bmatrix}\in\bb{R}^{6\times 6}
+                     \]
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Kinetic Energy for Rigid Body</h1>
+                 <li>Next, we introduce kinetic energy formula in other frames</li>
+                 <ul class="substep">
+                     <li>Consider two frames \(\cal{F}_{1}\) and \(\cal{F}_{2}\). Let \(T_{1\to 2}\) be the change of coordinate transformation.  </li>
+                     <li>To ensure that energy must be independent of the observer's frame, we <strong>define</strong> \(\mv{\f{M}}^2\) so that
+                         \[
+                         \frac{1}{2}(\mv{\xi}^1)^T \mv{\f{M}}^1 \mv{\xi}^1=\frac{1}{2}(\mv{\xi}^2)^T \mv{\f{M}}^2 \mv{\xi}^2
+                         \]
+                     </li>
+                     <li class="substep">Recall that 
+                         \(
+                         \mv{\xi}^1=[\rm{Ad}_{1\to 2}]\mv{\xi}^2
+                         \), and we conclude that
+                         \[
+                         \mv{\f{M}}^2=[\rm{Ad}_{1\to 2}]^T \mv{\f{M}}^1[\rm{Ad}_{1\to 2}]
+                         \tag{change of frame}
+                         \]
+                     </li>
+                 </ul>
+             </div>
+
+             <div class="step slide">
+                 <h1 class="nt">Change of Observer's Frame <br/> for Rotational Inertia Matrix</h1>
+                 <ul>
+                     <li>A side-product of introducing \(\mv{\f{M}}^o\) is that we can compute the inertia matrix in other frames conveniently</li>
+                     <li>We derived the change of frame formula for different body frames. <strong>What about frame change between general observer's frames?</strong></li>
+                     <li class="substep">One can verify that, <center><strong><div style="font-size: 1.2em">the bottom-right \(3\times 3\) block of \(\mv{\f{M}}^2\) is the rotational inertial matrix in \(\cal{F}_2\)</div></strong></center></li>
+                 </ul>
+             </div>
+             <div class="step slide separator" id="genf">
+                 <h1 class="nt">Change of Frame for Various Quantities</h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Motivating Example: Grasp Problem</h1>
+                 <div class="row">
+                     <div class="column">
+                         <ul>
+                             <li>Consider the right grasp problem
+                             </li>
+                             <ul>
+                                 <li class="substep">
+                                     Assume that we are grasping this box using two arms
+                                 </li>
+                                 <li class="substep">
+                                     We apply torques at each joint through the installed motors 
+                                 </li>
+                                 <li class="substep">
+                                     These torques will be passed to the tips of the fingers. 
+                                 </li>
+                                 <li class="substep">
+                                     The contact area will create certain force and torque at the contact point
+                                     <ul>
+                                         <li>force: pressure and friction</li>
+                                         <li>torque: e.g., anti-twisting friction force caused by the area contact</li>
+                                     </ul>
+                                 </li>
+                             </ul>
+                         </ul>
+                     </div>
+                     <div class="column">
+                         <img src="L7/multifingers.png" width="100%"/>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Contact Coordinate Frame</h1>
+                 <div class="row">
+                     <div class="column">
+                         <ul>
+                             <li>We build a <strong>contact frame</strong> \(C_i\) at each contact point</li>
+                             <li>The \(z\)-axis of the frame points inward along <em>surface normal</em></li>
+                             <li>When recording force and torque at the contact point, it is natural to set \(C_i\) as the <em>observer's frame</em>, i.e., \[
+                                 \mv{F}^{C_i}=\begin{bmatrix}\mv{f}^{C_i}\\\mv{\tau}^{C_i}\end{bmatrix}
+                                 \]
+                             </li>
+                         </ul>
+                     </div>
+                     <div class="column">
+                         <img src="L7/contact_frame.png" width="100%"/>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="vt">Some Kinds of Contact Forces</h1>
+                 <center>
+                     <table class="bordertable">
+                         <tr>
+                             <td style="text-align: center">Contact Type</td>
+                             <td>Frictionless point contact</td>
+                             <td>Point contact with friction</td>
+                             <td>Soft-finger</td>
+                         </tr>
+                         <tr>
+                             <td style="text-align: center">
+                                 \(\mv{F}^C\)
+                             </td>
+                             <td style="font-size: 0.8em; text-align: center">
+                                 \(\begin{bmatrix}
+                                 0 \\ 0 \\ f_z \\ 0 \\ 0 \\ 0
+                                 \end{bmatrix}\)
+                             </td>
+                             <td style="font-size: 0.8em; text-align: center">
+                                 \(\begin{bmatrix}
+                                 f_x \\ f_y \\ f_z \\  0 \\ 0 \\ 0
+                                 \end{bmatrix}\)
+                             </td>
+                             <td style="font-size: 0.8em; text-align: center">
+                                 \(\begin{bmatrix}
+                                 f_x \\ f_y \\ f_z \\  0 \\ 0 \\ \tau_z
+                                 \end{bmatrix}\)
+                             </td>
+                         </tr>
+                     </table>
+                 </center>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Adding Forces and Torques</h1>
+                 <div class="row">
+                     <div class="column">
+                         <ul>
+                             <li>Suppose we have calculated \(\mv{F}^{C_i}\) at each contact (will learn later)</li>
+                             <li>What is the combined force and torque?</li>
+                             <li class="substep">We <strong>cannot</strong> directly add forces and torques recorded using different observer frames </li>
+                             <li class="substep">However, we can change all to the same frame (e.g., body frame) and add together!</li>
+                         </ul>
+                     </div>
+                     <div class="column">
+                         <img src="L7/contact_frame.png" width="100%"/>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Change of Observer's Frame for Force and Torque</h1>
+                 Consider the question of changing the observer's frame for force and torque
+                 <ul>
+                     <li>We would relate 
+                         <ul>
+                             <li>\(\mv{f}^1\) and \(\mv{f}^2\)</li>
+                             <li>\(\mv{\tau}^1=\mv{r}^1\times \mv{f}^1\) and \(\mv{\tau}^2=\mv{r}^2\times \mv{f}^2 \)</li>
+                         </ul>
+                     </li>
+                     <li>Note that 
+                         \[
+                         \begin{aligned}
+                         \mv{r}^2&=R_{2\to 1}\mv{r}^1+\mv{t}_{2\to 1}\\
+                         \mv{f}^2&=R_{2\to 1}\mv{f}^1\\
+                         \end{aligned}
+                         \]
+                     </li>
+                     <li>Plug in the definition, and we derive that
+                         \[
+                         \begin{aligned}
+                         \begin{bmatrix}
+                         \mv{f}^2\\\mv{\tau}^2
+                         \end{bmatrix}
+                         &=\begin{bmatrix}
+                         R_{2\to 1} & 0\\ [\mv{t}_{2\to 1}]R_{2\to 1} & R_{2\to 1}
+                         \end{bmatrix}
+                         \begin{bmatrix}
+                         \mv{f}^1\\\mv{\tau}^1
+                         \end{bmatrix}=(\rm{Ad}_{1\to 2})^T
+                         \begin{bmatrix}
+                         \mv{f}^1\\\mv{\tau}^1
+                         \end{bmatrix}
+                         \end{aligned}
+                         \]
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Change of Observer's Frame for Force and Torque</h1>
+                 <ul>
+                     <li>Define
+                         \(
+                         \mv{F}^o=\begin{bmatrix}
+                         \mv{f}^o \\ \mv{\tau}^o
+                         \end{bmatrix}
+                         \), then formula for change of frame is:
+                         \[
+                         \mv{F}^2=(\rm{Ad}_{1\to 2})^T\mv{F}^1
+                         \tag{change of frame}
+                         \]
+                     </li>
+                     <li>Using definitions and frame change equations, it is easy to verify that the following equation to compute the <strong>power</strong> of the system input (change rate of kinetic energy):
+                         \[
+                         (\mv{F}^b)^T\mv{\xi}^b=(\mv{F}^o)^T\mv{\xi}^o=\frac{\d{T}}{\d{t}}
+                         \tag{system input power}
+                         \]
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Solution to Adding Forces and Torques</h1>
+                 <div class="row">
+                     <div class="column large">
+                         <div style="margin-top: 100px">
+                             \[
+                             \mv{F}^{b}=\sum_{i=1}^k [\rm{Ad}_{C_i\to b}]^T\mv{F}^{C_i}
+                             \]
+                         </div>
+                     </div>
+                     <div class="column">
+                         <img src="L7/contact_frame.png" width="100%"/>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Change of Observer's Frame for<br/>Momentum and Angular Momentum</h1>
+                 Consider the question of changing the observer's frame for momentum and angular momentum
+                 <ul>
+                     <li>We would relate 
+                         <ul>
+                             <li>\(\mv{p}^1=m\mv{v}^1\) and \(\mv{p}^2=m\mv{v}^2 \)</li>
+                             <li>\(\mv{L}^1=\mv{r}^1\times m\mv{v}^1\) and \(\mv{L}^2=\mv{r}^2\times m\mv{v}^2 \)</li>
+                         </ul>
+
+                     </li>
+                     <li>Note that 
+                         \[
+                         \begin{aligned}
+                         \mv{r}^2&=R_{2\to 1}\mv{r}^1+\mv{t}_{2\to 1}\\
+                         \mv{v}^2&=R_{2\to 1}\mv{v}^1\\
+                         \end{aligned}
+                         \]
+                     </li>
+                     <li>The same derivation as force and torque pair, and we get 
+                         \(
+                         \begin{aligned}
+                         \begin{bmatrix}
+                         \mv{p}^2\\\mv{L}^2
+                         \end{bmatrix}
+                         =(\rm{Ad}_{1\to 2})^T
+                         \begin{bmatrix}
+                         \mv{p}^1\\\mv{L}^1
+                         \end{bmatrix}
+                         \end{aligned}
+                         \)
+                     </li>
+                 </ul>
+                 <div class="rby">Read by Yourself</div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Change of Observer's Frame for<br/>Momentum and Angular Momentum</h1>
+                 <ul>
+                     <li>Define
+                         \(
+                         \mv{P}^o=\begin{bmatrix}
+                         \mv{p}^o \\ \mv{L}^o
+                         \end{bmatrix}
+                         \), and the formula for change of frame is:
+                         \[
+                         \mv{P}^2=(\rm{Ad}_{1\to 2})^T\mv{P}^1
+                         \tag{change of frame}
+                         \]
+                     </li>
+                     <li>Note: similar to linear momentum that \(\mv{p}^o=\frac{\d{T}}{\d{\mv{v}^o}}\) for translation-only motion, it is straight-forward to verify that
+                         \[
+                         \mv{P}^o = \frac{d{T}}{d{\mv{\xi}^o}}=\mv{\f{M}}^o\xi^o
+                         \tag{generalized angular momentum}
+                         \]
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="vt">Summary</h1>
+                 <ul>
+                     <li>We have learned basic concepts for body motion dynamics</li>
+                     <ul>
+                         <li>Properties of objects: mass, rotational inertia</li>
+                         <li>Motion state: momentum, angular momentum</li>
+                         <li>Action: force, torque</li>
+                         <li>Energy perspective: kinetic energy</li>
+                     </ul>
+                     <li>We have also introduced various equations for changing the observer's frame</li>
+                 </ul>
+             </div>
+             <div class="step slide separator" id="fid">
+                 <h1 class="nt">Forward and Inverse Dynamics</h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Dynamics Example: Grasp</h1>
+                 <div class="row">
+                     <div class="column">
+                         <ul>
+                             <li>Consider the right grasp problem
+                             </li>
+                             <ul>
+                                 <li class="substep">
+                                     Assume that we are grasping this box using two arms
+                                 </li>
+                                 <li class="substep">
+                                     We apply torques at each joint through the installed motors 
+                                 </li>
+                                 <li class="substep">
+                                     <strong>These torques will be passed to the tips of the fingers.</strong>
+                                 </li>
+                                 <li class="substep">
+                                     ...
+                                 </li>
+                             </ul>
+                         </ul>
+                         <div class="substep"><strong>Q1: How to compute force at the tips from the torques at joints?</strong></div>
+                         <div class="substep"><strong>Q2: To keep the box static, what is the balance condition?</strong></div>
+                     </div>
+                     <div class="column">
+                         <img src="L7/multifingers.png" width="100%"/>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Dynamics Example: Grasp</h1>
+                 <ul style="margin-top: 50px">
+                     <li>Parameterization</li>
+                     <ul>
+                         <li>\(\theta \in\bb{R}^n\): vector of joint variables</li>
+                         <li>\(\tau \in\bb{R}^n\): vector of joint forces/torques</li>
+                     </ul>
+                 </ul>
+                 <ul class="substep" style="margin-top: 50px">
+                     <li>Task</li>
+                     <ul>
+                         <li>
+                             <strong>Forward dynamics:</strong> Determine acceleration \(\ddot{\theta}\) given the state \((\theta, \dot{\theta})\) and the joint forces/torques
+                             \[\ddot{\theta}=f(\tau; \theta, \dot{\theta})\]
+                         </li>
+                         <li>
+                             <strong>Inverse dynamics:</strong> Finding torques/forces given state \(\theta, \dot{\theta}\) and desired acceleration \(\ddot{\theta}\)
+                             \[
+                             \tau=g(\ddot{\theta}; \theta, \dot{\theta})
+                             \]
+                         </li>
+                     </ul>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Lagrangian vs. Newton-Euler Methods</h1>
+                 <ul>
+                     <li>There are typically two ways to derive the equation of motion for an
+                         open-chain robot: Lagrangian method and Newton-Euler method</li>
+                 </ul>
+                 <div class="row" style="margin-top: 100px">
+                     <div class="column">
+                         <strong><div style="text-align: center; font-size: 1.2em">Lagrangian Formulation</div></strong>
+                         <ul>
+                             <ul>
+                                 <li>Energy-based method</li>
+                                 <li>Dynamic equations in closed form</li>
+                                 <li>Often used for study of dynamic properties and analysis of control methods</li>
+                             </ul>
+                         </ul>
+                     </div>
+                     <div class="column">
+                         <strong><div style="text-align: center; font-size: 1.2em">Newton-Euler Formulation</div></strong>
+                         <ul>
+                             <ul>
+                                 <li>Balance of forces/torques</li>
+                                 <li>Dynamic equations numeric/recursive form</li>
+                                 <li>Often used for numerical solution of forward/inverse dynamics</li>
+                             </ul>
+                         </ul>
+                     </div>
+                 </div>
+             </div>
+
+        </div>
+
+        <div id="impress-toolbar"></div>
+
+        <div class="impress-progressbar"><div></div></div>
+        <div class="impress-progress"></div>
+
+        <div id="impress-help"></div>
+
+        <!-- Extra modules Load highlight.js, mermaid.js, markdown.js and MathJax.js from extras.  If you're curious about details, these are initialized in src/plugins/extras/extras.js -->
+        <script type="text/javascript" src="../extras/highlight/highlight.pack.js"></script>
+        <script type="text/javascript" src="../extras/mermaid/mermaid.min.js"></script>
+        <script type="text/javascript" src="../extras/markdown/markdown.js"></script>
+        <!--
+            To make all described above really work, you need to include impress.js in the page.
+            You also need to call a `impress().init()` function to initialize impress.js presentation.
+            And you should do it in the end of your document. 
+        -->
+        <script type="text/javascript" src="../js/impress.js"></script>
+        <script>impress().init();</script>
+        <script type="text/javascript">
+            window.MathJax = {
+                tex2jax: {
+                    inlineMath: [['$','$'], ['\\(','\\)']],
+                    displayMath: [['$$','$$'], ['\\[','\\]']],
+                    processEscapes: true,
+                    processEnvironments: true,
+                    skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+                    TeX: { equationNumbers: { autoNumber: "AMS" },
+                        extensions: ["AMSmath.js", "AMSsymbols.js", "color.js"],
+                    },
+                    jax: ["input/TeX", "output/SVG"]
+                },
+                AuthorInit: function () {
+                    MathJax.Hub.Register.StartupHook("Begin",function () {
+                        MathJax.Hub.Queue(function() {
+                            var all = MathJax.Hub.getAllJax(), i;
+                            for(i = 0; i < all.length; i += 1) {
+                                all[i].SourceElement().parentNode.className += ' has-jax';
+                            }
+                        })
+                    });
+                }
+            };
+        </script>
+        <script type="text/javascript" src="../extras/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+        <!--            <script>
+            function setSlideID() {
+                    x = document.getElementsByClassName("slide");
+                    const titleSet = new Set();
+                    for (var i = 0; i < x.length; i++) {
+                        h1 = x[i].getElementsByTagName("h1")[0];
+            // alert(title);
+                        title = h1.innerHTML.replace(/\W/g, '_');
+                        if (titleSet.has(title)) {
+                            continue;
+                        }
+                        x[i].id = title;
+                        titleSet.add(title);
+                    }
+                }
+        </script>
+        <script> setSlideID(); </script>-->
+    </body>
+</html>
+<!-- discarded -->
