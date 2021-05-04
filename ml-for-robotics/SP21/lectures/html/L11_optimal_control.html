@@ -199,7 +199,6 @@
                          <ul>
                              <li><strong>Second-order</strong> control dynamical system: $\ddotq=f(\q, \dotq, \u, t)$</li>
                              <li>Control vector: $\mv{u}\in\cal{U}$</li>
-                             <li>State: $\mv{x}=(\q, \dotq)\in\cal{X}$ </li>
                          </ul>
                          <li><strong>Underactuated Control Differential Equations</strong>:
                              <blockquote>
@@ -213,7 +212,7 @@
                                  time $t$).
                              </blockquote>
                          </li>
-                         <li>It is beyond the comfort zone of PID controllers for underactuated systems.</li>
+                         <li>For example, our cart pole system is underactuated (1-D $f$ has to control $\ddot{x}$ and $\ddot{\theta}$).</li>
                      </ul>
                  </div>
                  <div class="step slide">
@@ -311,7 +310,10 @@
                      <ul>
                          <li>Understanding the linear transition function $\dot{\x}=A\x+B\u$ is fundamentally important, because <em>locally</em> it approximates any differentiable transitions. 
                              <ul>
-                                 <li>For example, around stationary state $\x^*$, $0=f(\x^*, \u^*)$. Take $\x'=\x-\x^*, \u'=\u-\u_*$, plug in the transition function, and use Taylor's expansion to approximate $f$ around $\x^*$ and $\u^*$, then </li>
+                                 <li>For example, we do Taylor's expansion around stationary state $\x^*$, $0=f(\x^*, \u^*)$ . 
+                                     <ul><li>Stationary state: both velocity and acceleration are $0$.</li></ul>
+                                 </li>
+                                 <li>Take $\x'=\x-\x^*, \u'=\u-\u_*$, plug in the transition function, and use Taylor's expansion to approximate $f$ around $\x^*$ and $\u^*$, then </li>
                                  \[
                                  \dot{\x'}\approx\nabla_{\x}f(\x^*,\u^*) \x' + \nabla_{\u}f(\x^*,\u^*) \u'
                                  \]
@@ -340,7 +342,7 @@
                  <div class="step slide">
                      <h1 class="nt">Cost-to-go Function</h1>
                      <ul>
-                         <li>Consider a <em>time-invariant</em> dynamic system $\dot{x}=f(\x, \u)$ with an <em>infinite-horizon</em> additive cost $\int_{0}^{\infty} \ell(\x, \u)\d{t}$ 
+                         <li>Consider a <em>time-invariant</em> dynamic system $\dot{\x}=f(\x, \u)$ with an <em>infinite-horizon</em> additive cost $\int_{0}^{\infty} \ell(\x, \u)\d{t}$ 
                              <ul>
                                  <li>Time-invariant: $f$ and $\ell$ do not directly depend on $t$.</li>
                              </ul>
@@ -571,12 +573,9 @@
                      </ul>
                  </div>
                  <div class="step slide">
-                     <h1 class="nt">Example: Cart Pole</h1>
-                     TODO: add the example here.
-                     <ul>
-                         <li>
-                         </li>
-                     </ul>
+                     <h1 class="et">Example: Cart Pole</h1>
+                     <img src="./L11/cartpole.gif" width="60%">
+                     However, it does not always converge, if the initial perturbation stage gets longer.
                  </div>
 
 
