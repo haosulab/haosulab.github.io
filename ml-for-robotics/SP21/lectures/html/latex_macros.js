@@ -1,4 +1,5 @@
 var latex_macro = String.raw`\[
+    \newcommand{\th}{\theta}
     \newcommand{\mc}[1]{\mathcal{#1}}
     \newcommand{\mv}[1]{\boldsymbol{#1}}
     \newcommand{\mvinfty}{\boldsymbol{\infty}}

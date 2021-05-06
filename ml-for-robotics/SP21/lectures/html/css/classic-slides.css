@@ -519,6 +519,7 @@ table.bordertable  tfoot td {
     font-style: italic;
 }
 
+/* text area */
 /* normal text area */
 .nt {
     margin-bottom: 2em;
@@ -557,6 +558,7 @@ table.bordertable  tfoot td {
     font-size: 2em
 }
 
+/* embedded code style */
 code, pre {
 	font-family: Consolas, Monaco, 'Andale Mono', 'Lucida Console', monospace;
 	hyphens: none;

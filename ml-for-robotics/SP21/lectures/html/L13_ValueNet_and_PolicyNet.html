@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>L13</title>
+        <meta name="description" content="" />
+        <meta name="author" content="Hao Su" />
+        <link rel="stylesheet" href="../extras/highlight/styles/github.css">
+        <!--
+           -<link rel="stylesheet" href="../extras/mermaid/mermaid.forest.css">
+           -->
+        <link rel="stylesheet" href="../extras/mermaid/mermaid.dark.css">
+        <link href="../css/impress-common.css" rel="stylesheet" />   
+        <link href="css/classic-slides.css" rel="stylesheet" />
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/1.7.1/viz.js"> </script>
+        <link rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/vs.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+    </head>
+    <body class="impress-not-supported">
+        <div class="fallback-message">
+            <p>Your browser <b>doesn't support the features required</b> by impress.js, so you are presented with a simplified version of this presentation.</p>
+            <p>For the best experience please use the latest <b>Chrome</b>, <b>Safari</b> or <b>Firefox</b> browser.</p>
+        </div>
+        <div id="latex-macros"></div>
+        <script src="./latex_macros.js"></script>
+        <div id="impress"
+             data-width="1920"
+             data-height="1080"
+             data-max-scale="3"
+             data-min-scale="0"
+             data-perspective="1000"
+             data-transition-duration="0"
+             >
+            <div class="step slide title" data-x="-2200" data-y="-3000" id="title">
+                <h1 class="nt">L13: A Taste of Deep RL Algorithms</h1>
+                <h2>Hao Su</h2>
+                <h3>Spring, 2021</h3>
+                <div class="ack">Contents are based on <a href="https://mitpress.mit.edu/books/reinforcement-learning-second-edition">Reinforcement Learning: An Introduction</a> from Prof. Richard S. Sutton and Prof. Andrew G. Barto, and <a href="https://www.davidsilver.uk/teaching/">COMPM050/COMPGI13</a> taught at UCL by Prof. David Silver.</div>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide" data-rel-x="2200" data-rel-y="0">
+                <h1 class="nt">Review: Visualizations for MC and TD</h1>
+                <div class="row">
+                    <div class="column" style="flex: 10%">
+                        <img src="./L12/mc.png" width="80%"></img>
+                    </div>
+                    <div class="column" style="flex: 10%">
+                        <img src="./L12/td.png" width="80%"></img>
+                    </div>
+                </div>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="vt">Review: Monte-Carlo Methods</h1>
+                <ul>
+                    <li>Quick facts:
+                        <ul>
+                            <li>MC methods learn directly from episodes of experience</li>
+                            <li>MC is model-free: no knowledge of MDP transitions / rewards</li>
+                            <li>MC uses the simplest possible idea: <b>value = mean return</b></li>
+                        </ul>
+                    </li>
+                    <li>Caveat: can only apply MC to episodic MDPs
+                        <ul>
+                            <li>All episodes must terminate</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="vt">Review: Temporal-Difference Methods</h1>
+                <ul>
+                    <li>Quick facts:
+                        <ul>
+                            <li>TD methods learn directly from episodes of experience</li>
+                            <li>TD is model-free: no knowledge of MDP transitions / rewards</li>
+                            <li>TD learns from incomplete episodes, by <b>bootstrapping</b></li>
+                            <li>TD updates a guess towards a guess</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Review: Pros and Cons of MC vs. TD</h1>
+                <ul>
+                    <li>TD can learn <i>before</i> knowing the final outcome
+                        <ul>
+                            <li>TD can learn online after every step</li>
+                            <li>MC must wait until end of episode before return is known</li>
+                        </ul>
+                    </li>
+                    <li>TD can learn <i>without</i> the final outcome
+                        <ul>
+                            <li>TD can learn from incomplete sequences</li>
+                            <li>MC can only learn from complete sequences</li>
+                            <li>TD works in continuing (non-terminating) environments</li>
+                            <li>MC only works for episodic (terminating) environments</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Review: Pros and Cons of MC vs. TD (2)</h1>
+                <ul>
+                    <li>MC has high variance, zero bias
+                        <ul>
+                            <li>Good convergence properties(even with function approximation)</li>
+                            <li>Not very sensitive to initial value</li>
+                            <li>Very simple to understand and use</li>
+                        </ul>
+                    </li>
+                    <li>TD has low variance, some bias
+                        <ul>
+                            <li>Usually more efficient than MC</li>
+                            <li>TD(0) converges to $V_\pi(s)$ (but not always with function approximation)</li>
+                            <li>More sensitive to initial value</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="vt">Monte-Carlo-based versus TD-based RL</h1>
+                <ul>
+                    <li>Monte-Carlo and TD are two fundamental ideas of value estimation for policies.</li>
+                    <li>Each has its Pros and Cons. </li>
+                    <li>Based on them, there are two families of model-free RL algorithms, both well developed. 
+                    Some algorithms leverage both.</li>
+                    <li>Fundamentally, it is about the balance between bias and variance (sample complexity).</li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="vt">This Lecture: REINFORCE and Deep Q-Learning</h1>
+                <ul>
+                    <li>Reason I:
+                        <ul>
+                            <li>REINFORCE is Monte-Carlo-based</li>
+                            <li>Deep Q-Learning (DQN) is TD-based</li>
+                        </ul>
+                    </li>
+                    <li>Reason II:</li>
+                    <ul>
+                        <li>REINFORCE only has a <b>policy network</b> </li>
+                        <li>DQN only has a <b>value network</b> </li>
+                    </ul>
+                </ul>
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt">A Taxonomy of RL Algorithms and Examples</h1>
+                <div class="mermaid" style="text-align:center">
+                    graph TD
+                    l1("RL Algorithms") 
+                    l11("Model-Free RL")
+                    l12("Model-Based RL")
+                    l111("w/o Experience Buffer<br/> (Monte-Carlo based)")
+                    l112("with Experience Buffer<br/> (TD based)")
+                    l121("Learn the Model")
+                    l122("Given the Model")
+                    l1111("REINFORCE")
+                    l1121("Deep Q-Network")
+                    l1-->l11 
+                    l1-->l12
+                    l11-->l111
+                    l11-->l112
+                    l12-->l121
+                    l12-->l122
+                    l111-->l1111
+                    l112-->l1121
+                    style l11 fill:#eadfa4
+                    style l111 fill:#eadfa4
+                    style l112 fill:#eadfa4
+                    style l1111 fill:#eadfa4
+                    style l1121 fill:#eadfa4
+                </div>
+            </div>
+            <div id="toc" class="step slide">
+                <h1 class="nt">Agenda</h1>
+                <ul class="large">
+                    <li><a href="#">Value-based RL</a></li>
+                    <ul>
+                        <li>Q-Learning</li>
+                        <li>Deep Q-Learning (DQN)</li>
+                    </ul>
+                    <li><a href="#">Policy-based RL</a></li>
+                    <ul>
+                        <li>REINFORCE</li>
+                    </ul>
+                </ul>
+                click to jump to the section.
+            </div>
+            <!-- ######################### New Section ############################# -->
+            <div class="step slide separator">
+                <h1 class="nt">Value-based RL</h1>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="et">The Anatomy of an RL algorithm</h1>
+                <div style=margin-top:50px>
+                    <img src="./L12/RL_anatomy.png" width="100%"/>
+                </div>
+                <div class="credit"><a href="http://rail.eecs.berkeley.edu/deeprlcourse/static/slides/lec-4.pdf">CS285</a> taught at UC Berkeley by Prof. Sergey Levine.</div>
+            </div>
+
+
+            <!-- ################################################################### -->
+            <!-- # New section                                                     # -->
+            <!-- ################################################################### -->
+            <div class="step slide separator" id="algo">
+                <h1 class="nt">Q-Learning</h1>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="et">Q-Learning for Tabular RL</h1>
+                <ul>
+                    <li>
+                        Suppose we are going to learn the Q-function, let us follow the above flow chart. We answer three questions:
+                    </li>
+                    <ol>
+                        <li>Given transitions $\{(s,a,s',r)\}$ from some trajectories, how to improve the current Q-function?
+                            <ul class="substep">
+                                <li>By Temporal Difference learning, the update target for $Q(S,A)$ is
+                                    <ul>
+                                        <li>$R+\gamma\max_a Q(S', a)$</li>
+                                    </ul>
+                                </li>
+                                <li>Take a small step towards the target
+                                    <ul>
+                                        <li>$Q(S,A)	\leftarrow Q(S,A)+\alpha[R+\gamma\max_a Q(S', a)-Q(S,A)]$</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>Given $Q$, how to improve policy?
+                            <ul class="substep">
+                                <li>Take the greedy policy based on the current $Q$
+                                    <ul>
+                                        <li>$\pi(s)=\text{argmax}_a Q(s,a)$</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>Given $\pi$, how to generate trajectories?
+                            <ul class="substep">
+                                <li>Simply run the greedy policy in the environment. </li>
+                                <li>Any issues? </li>
+                            </ul>
+                        </li>
+                    </ol>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Failure Example</h1>
+                <div class="row">
+                    <div class="column">
+                        <ul>
+                            <li>Initialize Q
+                                <ul>
+                                    <li>$Q(s_0,a_1)=0,Q(s_0,a_2)=0$</li>
+                                    <li>$\pi(s_0)=a_1$</li>
+                                </ul>
+                            </li>
+                            <li>Iteration 1: take $a_1$ and update $Q$
+                                <ul>
+                                    <li>$Q(s_0,a_1)=1,Q(s_0,a_2)=0$</li>
+                                    <li>$\pi(s_0)=a_1$</li>
+                                </ul>
+                            </li>
+                            <li>Iteration 2: take $a_1$ and update $Q$
+                                <ul>
+                                    <li>$Q(s_0,a_1)=1,Q(s_0,a_2)=0$</li>
+                                    <li>$\pi(s_0)=a_1$</li>
+                                </ul>
+                            </li>
+                            <li>...</li>
+                            <li><b>$Q$ stops to improve because the agent is too greedy!</b></li>
+                        </ul>
+                    </div>
+                    <div class="column" style="flex:30%">
+                        <div style=margin-top:10px>
+                            <img src="./L12/eps_greedy_mdp.png" width="70%"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">$\epsilon$-Greedy Exploration</h1>
+                <ul>
+                    <li>The simplest and most effective idea for ensuring continual exploration</li>
+                    <li>With probability $1-\epsilon$ choose the greedy action</li>
+                    <li>With probability $\epsilon$ choose an action at random</li>
+                    <li>All $m$ actions should be tried with non-zero probability</li>
+                    <li>Formally,
+                        \[
+                        \pi_*(a|s)=
+                        \begin{cases}
+                        \epsilon/m + 1-\epsilon, & \text{if}~~a=\text{argmax}_{a\in\mc{A}}~Q(s,a) \\  
+                        \epsilon/m, & \text{otherwise}   
+                        \end{cases}
+                        \]
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="et">Q-Learning</h1>
+                <div style=margin-top:100px>
+                    <img src="./L12/q_learning_code.png" width="100%"/>
+                </div>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Maze Example</h1>
+                <div class="row">
+                    <div class="column" style="flex: 30%">
+                        <ul>
+                            <li>States: Agent's location</li>
+                            <li>Actions: N, E, S, W, stay</li>
+                            <li>Reward: -1 per time-step</li>
+                            <li>Termination: Reach goal</li>
+                        </ul>
+                    </div>
+                    <div class="column" style="flex: 30%">
+                        <img src="./L12/maze.png"></img>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <!-- <ul>
+                    <li>Iteratively updating Q function to convergence, we get</li>
+                    </ul> -->
+                    <img src="./L12/maze_q_value.png" width="55%"/>
+                    <p>Running Q-learning on Maze</p>
+                    <div class="credit">Plot with the tools in <a href="https://drive.google.com/file/d/177mrb9B4rqNrdTLtZSgPRdCnrhVlJdEx/view">an awesome playground for value-based RL</a> from Justin Fu</div>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Convergence of Q-Learning</h1>
+                <ul>
+                    <li>tongzhou: add a proof here.
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Exploration vs. Exploitation</h1>
+                <ul>
+                    <li>Two fundamental behaviours of RL agents
+                        <ul>
+                            <li>Reinforcement learning is like trial-and-error learning</li>
+                            <li>The agent should discover a good policy</li>
+                            <li>From its experiences of the environment</li>
+                            <li>Without losing too much reward along the way</li>
+                        </ul>
+                    </li>
+                    <li>Exploration
+                        <ul>
+                            <li>finds more information about the environment</li>
+                            <li>may waste some time</li>
+                        </ul>
+                    </li>
+                    <li>Exploitation
+                        <ul>
+                            <li>exploits known information to maximize reward</li>
+                            <li>may miss potential better policy</li>
+                        </ul>
+                    </li>
+                    <li>Balancing exploration and exploitation is a key problem of RL</li>
+                </ul>
+            </div>
+
+            <!-- ######################### New Section ############################# -->
+            <div class="step slide separator">
+                <h1 class="nt">Deep Q-Learning</h1>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Challenge of Representing $Q$</h1>
+                <ul>
+                    <li>How do we represent $Q(s,a)$? </li>
+                    <li>Maze has a discrete and small <i>state space</i> that we can deal with by an array. </li>
+                    <li>However, for many cases the state space is continuous, or discrete but huge: </li>
+                    <p>
+                        <iframe width="560" height="315" src="https://www.youtube.com/embed/V1eYniJ0Rnk?start=22" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </p>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Deep Q Network</h1>
+                <ul>
+                    <li>Use a neural network to parameterize $Q$:</li>
+                    <ul>
+                        <li>Input: state $s\in\bb{R}^n$</li>
+                        <li>Output: each dimension for the value of an action $Q(s, a;\theta)$</li>
+                    </ul>
+                    <img src="./L13/network.png" height="400px">
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Training Deep Q Network</h1>
+                <ul>
+                    <li>Last lecture, we explained tabular TD learning:
+                        <ul>
+                            <li>TD error: $\delta_t=R_{t+1}+\gamma V(S_{t+1})-V(S_t)$</li>
+                            <li>TD update: $V(S_t) \leftarrow V(S_t) + \alpha(G_t-V(S_t))$</li>
+                        </ul>
+
+                    </li>
+                    <li>Temporal Difference can also be plugged in an optimization objective to derive the update of the $Q$ network</li>
+                </ul>
+                <ul class="substep">
+                    <li>Recall the Bellman optimality equation for action-value function:
+                        \[
+                        Q^*(s,a)=\bb{E}[R_{t+1}+\gamma \max_{a'}Q^*(S_{t+1}, a')|S_t=s, A_t=a]
+                        \]
+                    </li>
+                    <li>We create a least-square regression problem accordingly:
+                        \[
+                        \sum_{s\in\cal{S}, a\in\cal{A}}\|Q_{\th}(s,a)-\bb{E}_{s'\sim P(s'|s,a)}[R(s,a,s')+\gamma \max_{a'}Q_{\th}(s',a')]\|^2,\quad \mbox{where } R_{t+1}=R(s,a,s')
+                        \]
+                    </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Optimization Formulation of TD Learning</h1>
+                <ul>
+                    <li>However, the objective is still intractable
+                        \[
+                        \sum_{\color{red}{s\in\cal{S}, a\in\cal{A}}}\|Q_{\th}(s,a)-\bb{E}_{\color{red}{s'\sim P(s'|s,a)}}[R_{t+1}+\gamma \max_{a'}Q_{\th}(s',a')]\|^2
+                        \]
+                    </li>
+                    <li>It is natural to build a <i>new optimization problem</i> that approximates the above:
+                        \[
+                        L(\th)=\bb{E}_{\color{red}{(s,a,s')\sim Env}}[TD_{\th}(s,a,s')] \tag{TD loss}
+                        \]
+                        where $TD_{\th}(s,a,s')=\|Q_{\th}(s,a)-[R(s,a,s')+\gamma\max_{a'}Q_{\th}(s',a')]\|^2$.
+                    </li>
+                    <li>Note: How to obtain the $Env$ distribution has many options! 
+                        <ul>
+                            <li>It does not necessarily sample from the optimal policy.</li>
+                            <li>A suboptimal, or even bad policy (e.g., random policy), may allow us to learn a good $Q$.</li>
+                            <li>It is a cutting-edge research topic of showing suboptimality bound for non-optimal $Env$ distribution.</li>
+                        </ul>   
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Online Deep Q-Learning</h1>
+                <ul>
+                    <li>As in the previous Q-learning, we consider a routine that we take turns to</li>
+                    <ul>
+                        <li>Sample certain transitions using the current $Q_{\th}$</li>
+                        <li>Update $Q_{\th}$ by minimizing the TD loss</li>
+                    </ul>
+                    <li><b>Exploration</b> Replay buffer stores all transitions sampled from the environment with the current network</li>
+                    <li><b>Exploitation</b> Sample transitions from the replay buffer to  update the network</li>
+                    <img src="./L13/DQN.png" width="70%">
+                </ul>
+            </div>
+
+
+
+
+
+
+            <div class="step slide">
+            </div>
+
+            <div id="overview" class="step" data-x="4500" data-y="1500" data-scale="10" style="pointer-events: none;"></div>
+        </div>
+
+        <!--
+            Add navigation-ui controls: back, forward and a select list.
+            Add a progress indicator bar (current step / all steps)
+            Add the help popup plugin
+        -->
+        <div id="impress-toolbar"></div>
+
+        <div class="impress-progressbar"><div></div></div>
+        <div class="impress-progress"></div>
+
+        <div id="impress-help"></div>
+
+        <script type="text/javascript" src="../extras/highlight/highlight.pack.js"></script>
+        <script src="../extras/mermaid/mermaid.min.js"></script>
+        <script type="text/javascript" src="../extras/markdown/markdown.js"></script>
+        <!--
+            To make all described above really work, you need to include impress.js in the page.
+            You also need to call a `impress().init()` function to initialize impress.js presentation.
+            And you should do it in the end of your document. 
+        -->
+        <script type="text/javascript" src="../js/impress.js">
+        </script>
+        <script type="text/javascript">
+            (function(){
+                var vizPrefix = "language-viz-";
+                Array.prototype.forEach.call(document.querySelectorAll("[class^=" + vizPrefix + "]"), function(x){
+                    var engine;
+                    x.getAttribute("class").split(" ").forEach(function(cls){
+                        if (cls.startsWith(vizPrefix)) {
+                            engine = cls.substr(vizPrefix.length);
+                        }
+                    });
+                    var image = new DOMParser().parseFromString(Viz(x.innerText, {format:"svg", engine:engine}), "image/svg+xml");
+                    x.parentNode.insertBefore(image.documentElement, x);
+                    x.style.display = 'none'
+                    x.parentNode.style.backgroundColor = "white"
+                });
+            })();
+            window.MathJax = {
+                tex2jax: {
+                    inlineMath: [['$','$'], ['\\(','\\)']],
+                    displayMath: [['$$','$$'], ['\\[','\\]']],
+                    processEscapes: true,
+                    processEnvironments: true,
+                    skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+                    TeX: { equationNumbers: { autoNumber: "AMS" },
+                        extensions: ["AMSmath.js", "AMSsymbols.js", "color.js"],
+                    },
+                    jax: ["input/TeX", "output/SVG"]
+                },
+                AuthorInit: function () {
+                    MathJax.Hub.Register.StartupHook("Begin",function () {
+                        MathJax.Hub.Queue(function() {
+                            var all = MathJax.Hub.getAllJax(), i;
+                            for(i = 0; i < all.length; i += 1) {
+                                all[i].SourceElement().parentNode.className += ' has-jax';
+                            }
+                        })
+                    });
+                }
+            };
+        </script>
+        <script type="text/javascript" src="../extras/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+        <script>impress().init();</script>
+        <!--            
+            <script>
+                function setSlideID() {
+        x = document.getElementsByClassName("slide");
+        const titleSet = new Set();
+        for (var i = 0; i < x.length; i++) {
+            h1 = x[i].getElementsByTagName("h1")[0];
+                // alert(title);
+            title = h1.innerHTML.replace(/\W/g, '_');
+            if (titleSet.has(title)) {
+                continue;
+            }
+            x[i].id = title;
+            titleSet.add(title);
+        }
+    }
+            </script>
+            <script> setSlideID(); </script>
+            -->
+    </body>
+</html>
+<!-- discarded -->

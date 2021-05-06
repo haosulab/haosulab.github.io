@@ -180,9 +180,9 @@ def main():
     Beval = B.subs(M, links[1].get_mass()).subs(m, links[3].get_mass()).subs(l, 1).subs(th, 0)
 
     Qmat = eye(2*dof, 2*dof)
-    Qmat[0, 0] = 1000
-    Qmat[1, 1] = 10
-    Qmat[2, 2] = 1000
+    Qmat[0, 0] = 1
+    Qmat[1, 1] = 100
+    Qmat[2, 2] = 1
     Qmat[3, 3] = 1
     Rmat = eye(1, 1)
 
@@ -196,7 +196,7 @@ def main():
     print('K', K)
 
     images = []
-    perturb_round = 50
+    perturb_round = 0
     while not viewer.closed:
         pos = cartpole.get_qpos()[0]
         vel = cartpole.get_qvel()[0]
@@ -213,7 +213,7 @@ def main():
             print('perturbing the system')
             cartpole.set_qf(np.array([0, 10, 0]))
 
-        if steps % 10 == 0:
+        if steps % 1 == 0:
             viewer.render()
             scene.update_render()
             rgba = viewer.window.download_float_target('Color')
@@ -228,8 +228,8 @@ def main():
                 draw.text((0, 0), 'controlling the system, at step %d, f=%f' % (steps-perturb_round, f[0]), (0,0,0), font=font)
 
             images.append(rgba_pil)
-            # if steps > 2000:
-            #    break
+            if steps > 100:
+               break
 
         scene.step()
         steps += 1
