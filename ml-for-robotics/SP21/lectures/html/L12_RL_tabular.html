@@ -41,16 +41,12 @@
 
             <div id="toc" class="step slide" data-rel-x="2200" data-rel-y="0">
                 <h1 class="nt">Agenda</h1>
-                <ul class="large">
-                    <li><a href="#examples">Examples</a></li>
-                    <li><a href="#setup">Environment Description and Learning Objective</a></li>
-                    <li><a href="#agent">Inside an RL Agent</a></li>
-                </ul>
+                <ul class="large" id="agenda"></ul>
                 click to jump to the section.
             </div>
 
             <!-- ################################################################### -->
-            <div class="step slide separator" id="examples">
+            <div class="step slide separator">
                 <h1 class="nt">Examples</h1>
             </div>
 
@@ -171,7 +167,7 @@
             <!-- ################################################################### -->
             <!-- # New section                                                     # -->
             <!-- ################################################################### -->
-            <div class="step slide separator" id="setup">
+            <div class="step slide separator">
                 <h1 class="nt">Environment Description and Learning Objective</h1>
             </div>
             <!-- ################################################################### -->
@@ -723,46 +719,23 @@
             And you should do it in the end of your document. 
         -->
         <script>
-            function setSlideID() {
-                x = document.getElementsByClassName("slide");
-                const titleSet = new Set();
-                var titleDict = {};
-                for (var i = 2; i < x.length; i++) {
-                    h1 = x[i].getElementsByTagName("h1")[0];
-                    if (h1) {
-                        // alert(title);
-                        title = '--'+h1.innerHTML.replace(/\W/g, '_');
-                        if (titleSet.has(title)) {
-                            titleDict[title] += 1;
-                            title = title + '_' + titleDict[title].toString();
-                        }
-                        else {
-                            titleSet.add(title);
-                            titleDict[title] = 1;
-                        }
-                        x[i].id = title;
-                    }
-                }
-            }
-            setSlideID(); 
-        </script>
-        <script>
             function getTitles() {
                 var secs = document.getElementsByClassName("separator");
                 var titleList = [];
                 var titleIdList = [];
                 const titleIdSet = new Set();
-                for (var i = 2; i < secs.length; i++) {
+                for (var i = 0; i < secs.length; i++) {
                     h1 = secs[i].getElementsByTagName("h1")[0];
-                    titleList.push(h1.innerHTML);
-                    titleId = 'Sec:'+h1.innerHTML.replace(/\W/g, '_');
+                    titleId = 'Sec:'+h1.innerHTML.replace(/\W/g, '');
                     if (titleIdSet.has(titleId)) {
                         continue;
                     }
                     titleIdSet.add(titleId);
+                    titleList.push(h1.innerHTML);
                     titleIdList.push(titleId);
                     secs[i].id = titleId;
                 }
+                console.log(titleList);
                 return [titleList, titleIdList];
             }
 
@@ -796,8 +769,6 @@
                     x.parentNode.style.backgroundColor = "white"
                 });
             })();
-        </script>
-        <script type="text/javascript">
             window.MathJax = {
                 tex2jax: {
                     inlineMath: [['$','$'], ['\\(','\\)']],
