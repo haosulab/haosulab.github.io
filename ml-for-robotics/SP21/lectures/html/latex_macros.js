@@ -11,6 +11,7 @@ var latex_macro = String.raw`\[
     \newcommand{\u}{\mv{u}}
     \newcommand{\K}{\mv{K}}
     \newcommand{\P}{\mv{P}}
+    \newcommand{\rmP}{\mathrm{P}}
     \newcommand{\Q}{\mv{Q}}
     \newcommand{\R}{\mv{R}}
     \newcommand{\S}{\mv{S}}
