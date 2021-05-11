@@ -6,6 +6,9 @@
         <meta name="description" content="" />
         <meta name="author" content="Hao Su" />
         <link rel="stylesheet" href="../extras/highlight/styles/github.css">
+        <!--
+            -<link rel="stylesheet" href="../extras/mermaid/mermaid.forest.css">
+        -->
         <link rel="stylesheet" href="../extras/mermaid/mermaid.dark.css">
         <link href="../css/impress-common.css" rel="stylesheet" />   
         <link href="css/classic-slides.css" rel="stylesheet" />
@@ -42,6 +45,7 @@
                  <ul class="large" id="agenda"></ul>
                  click to jump to the section.
              </div>
+
              <!-- ################################################################### -->
              <!-- # New section                                                     # -->
              <!-- ################################################################### -->
@@ -192,9 +196,12 @@
              <div class="step slide">
                  <h1 class="nt">Monte-Carlo Policy Evaluation</h1>
                  <ul>
-                     <li>Learn $V_\pi$ from episodes of experience under policy $\pi$
+                     <li>Basic idea: MC uses the simplest possible idea: <b>value = mean return</b></li>
+                 </ul>
+                 <ul class="substep">
+                     <li>Learn $V_\pi$ from $K$ episodes under policy $\pi$
                          <ul>
-                             <li>$S_0, A_0, R_1, S_1, A_1, R_2, ..., S_T\sim\pi$</li>
+                             <li>$\{S_{k,0}, A_{k,0}, R_{k,1}, ..., S_{k,T}\}_{k=1}^K\sim\pi$</li>
                          </ul>
                      </li>
                      <li>Recall that the <i>return</i> is the total discounted reward:
@@ -214,58 +221,63 @@
              <div class="step slide">
                  <h1 class="nt">Monte-Carlo Policy Evaluation</h1>
                  <ul>
-                     <li>Suppose that we have collected a number of trajectories, Monte-Carlo policy evaluation uses <i>empirical mean return</i> instead of <i>expected return</i>
+                     <li>Suppose that we have collected a number of trajectories. Monte-Carlo policy evaluation uses <i>empirical mean return</i> instead of <i>expected return</i>
                          <ul>
-                             <li>Every time-step $t$ that state $s$ is visited in an episode
-                                 <ul>
-                                     <li>Increment state visit counter $N(s) \leftarrow N(s) + 1$</li>
-                                     <li>Increment total return $S(s) \leftarrow S(s) + G_t$</li>
-                                 </ul>
-                             </li>
+                             <li>For each episode:
+                             <ul>
+                                 <li>For each time step $t$:
+                                     <ul>
+                                         <li>Compute empirical return $G_t$ from the current state $s$</li>
+                                         <li>Increment total return $S(s) \leftarrow S(s) + G_t$</li>
+                                         <li>Increment state visit counter $N(s) \leftarrow N(s) + 1$</li>
+                                     </ul>
+                                 </li>
+                             </ul>
                              <li>Value is estimated by mean return $V(s)=S(s)/N(s)$</li>
-                             <li>By law of large numbers, $V(s) \to V_\pi(s)$ as $N(s)\to\infty$</li>
                          </ul>
                      </li>
                  </ul>
              </div>
 
-             <!-- ################################################################### -->
-             <div class="step slide">
-                 <h1 class="nt">Incremental Monte-Carlo Updates</h1>
-                 <ul>
-                     <li>We can also update $V(s)$ incrementally after episode $S_0, A_0, R_1, ..., S_T$.</li>
-                     <li class="substep">Consider a general problem of computing the mean for stream data
-                         <ul>
-                             <li>The mean $\mu_1, \mu_2, ...$ of a sequence of general vectors $x_1, x_2, ...$ can be computed incrementally,</li>
-                             <li>$\mu_k=\mu_{k-1}+\frac{1}{k}(x_k-\mu_{k-1})$</li>
-                         </ul>
-                     </li>
-                     <li class="substep">For each state $S_t$ with return $G_t$
-                         <ul>
-                             <li>$N(S_t) \leftarrow N(S_t) + 1$</li>
-                             <li>$V(S_t) \leftarrow V(S_t) + \frac{1}{N(S_t)}(G_t-V(S_t))$</li>
-                             <li>It can be proved that $V(s)\to V_{\pi}(s)$.</li>
-                         </ul>
-                     </li>
-                     <li class="substep">In non-stationary problems, it can be useful to track a running mean, i.e. forget old episodes.
-                         <ul>
-                             <li>$V(S_t) \leftarrow V(S_t) + \alpha(G_t-V(S_t))$</li>
-                             <li>You may regard the $\alpha$ as the learning rate in supervised learning</li>
-                             <li>May <b>not</b> converge for stationary problems. For small $\alpha$, good enough.</li>
-                         </ul>
-                     </li>
-                 </ul>
-             </div>
+             <!--
+                 -[> ################################################################### <]
+                 -<div class="step slide">
+                 -    <h1 class="nt">Incremental Monte-Carlo Updates</h1>
+                 -    <ul>
+                 -        <li>We can also update $V(s)$ incrementally after episode $S_0, A_0, R_1, ..., S_T$.</li>
+                 -        <li class="substep">Consider a general problem of computing the mean for stream data
+                 -            <ul>
+                 -                <li>The mean $\mu_1, \mu_2, ...$ of a sequence of general vectors $x_1, x_2, ...$ can be computed incrementally,</li>
+                 -                <li>$\mu_k=\mu_{k-1}+\frac{1}{k}(x_k-\mu_{k-1})$</li>
+                 -            </ul>
+                 -        </li>
+                 -        <li class="substep">For each state $S_t$ with return $G_t$
+                 -            <ul>
+                 -                <li>$N(S_t) \leftarrow N(S_t) + 1$</li>
+                 -                <li>$V(S_t) \leftarrow V(S_t) + \frac{1}{N(S_t)}(G_t-V(S_t))$</li>
+                 -                <li>It can be proved that $V(s)\to V_{\pi}(s)$.</li>
+                 -            </ul>
+                 -        </li>
+                 -        <li class="substep">In non-stationary problems, it can be useful to track a running mean, i.e. forget old episodes.
+                 -            <ul>
+                 -                <li>$V(S_t) \leftarrow V(S_t) + \alpha(G_t-V(S_t))$</li>
+                 -                <li>You may regard the $\alpha$ as the learning rate in supervised learning</li>
+                 -                <li>May <b>not</b> converge for stationary problems. For small $\alpha$, good enough.</li>
+                 -            </ul>
+                 -        </li>
+                 -    </ul>
+                 -</div>
+             -->
 
              <!-- ################################################################### -->
              <div class="step slide">
-                 <h1 class="vt">Monte-Carlo Methods</h1>
+                 <h1 class="nt">Monte-Carlo Methods</h1>
                  <ul>
                      <li>Quick facts:
                          <ul>
+                             <li>MC is unbiased (average of the empirical return is the true return)</li>
                              <li>MC methods learn directly from episodes of experience</li>
                              <li>MC is model-free: no knowledge of MDP transitions / rewards</li>
-                             <li>MC uses the simplest possible idea: <b>value = mean return</b></li>
                          </ul>
                      </li>
                      <li>Caveat: can only apply MC to episodic MDPs
@@ -278,28 +290,40 @@
 
              <!-- ################################################################### -->
              <div class="step slide">
-                 <h1 class="nt">Temporal-Difference Learning</h1>
+                 <h1 class="vt">Temporal-Difference Learning</h1>
                  <ul>
-                     <li>Learn $V_\pi$ online from experience under policy $\pi$
-                         <ul>
-                             <li>$S_1, A_1, R_2, S_2, A_2, R_3, ..., S_T\sim\pi$</li>
-                         </ul>
+                     <li>Basic idea: TD leverages <b>Bellman expectation equation</b> to update the value function.
+                    \[
+                    V_{\pi}(s)= \bb{E}_{\pi}[R_{t+1}+\gamma V_{\pi}(S_{t+1})|S_t=s]
+                    \]
                      </li>
-                     <li>Recall: Incremental Monte-Carlo
+                 </ul>
+             </div>
+
+             <!-- ################################################################### -->
+             <div class="step slide">
+                 <h1 class="et">Temporal-Difference Learning</h1>
+                 \[
+                 V_{\pi}(s)= \bb{E}_{\pi}[R_{t+1}+\gamma V_{\pi}(S_{t+1})|S_t=s]
+                 \]
+                 <ul>
+                     <li>Learn $V_\pi$ from $K$ episodes under policy $\pi$
                          <ul>
-                             <li>Update value $V(S_t)$ toward actual return $\color{red}{G_t}$</li>
-                             <li>$V(S_t) \leftarrow V(S_t) + \alpha(\color{red}{G_t}-V(S_t))$</li>
+                             <li>$\{S_{k,0}, A_{k,0}, R_{k,1}, ..., S_{k,T}\}_{k=1}^K\sim\pi$</li>
                          </ul>
                      </li>
                      <li>Simplest temporal-difference learning algorithm: TD(0)
                          <ul>
-                             <li>Update value $V(S_t)$ toward estimated return $\color{red}{R_{t+1}+\gamma V(S_{t+1})}$</li>
-                             <li>$V(S_t) \leftarrow V(S_t) + \alpha(\color{red}{R_{t+1}+\gamma V(S_{t+1})}-V(S_t))$</li>
+                             <li>Loop for a new iterations:</li>
+                             <ul>
+                                 <li>Sample $(S_t, A_t, R_{t+1}, S_{t+1})$ with replacement from the transitions in the episodes </li>
+                                 <li>Update value $V(S_t)$ toward estimated return $\color{red}{R_{t+1}+\gamma V(S_{t+1})}$:</li>
+                                 <ul><li>$V(S_t) \leftarrow V(S_t) + \alpha(\color{red}{R_{t+1}+\gamma V(S_{t+1})}-V(S_t))$</li></ul>                             </ul>
                              <li>$R_{t+1}+\gamma V(S_{t+1})$ is called the <i>TD target</i></li>
                              <li>$\delta_t=R_{t+1}+\gamma V(S_{t+1})-V(S_t)$ is called the <i>TD error</i></li>
                          </ul>
                      </li>
-                     <li>If we expand one step further, we got TD(1)
+                     <li class="substep">If we expand one step further, we got TD(1)
                          <ul>
                              <li>$V(S_t) \leftarrow V(S_t) + \alpha(R_{t+1}+\gamma R_{t+1} + \gamma^2 V(S_{t+2})-V(S_t))$</li>
                              <li>Similarly, we can have TD(2), TD(3), ... </li>
@@ -310,7 +334,7 @@
 
              <!-- ################################################################### -->
              <div class="step slide">
-                 <h1 class="vt">Temporal-Difference Learning</h1>
+                 <h1 class="nt">Temporal-Difference Learning</h1>
                  <ul>
                      <li>Quick facts:
                          <ul>
@@ -322,65 +346,88 @@
                      </li>
                  </ul>
              </div>
+
              <!-- ################################################################### -->
-             <div class="step slide" >
-                 <h1 class="nt">Visualizations for MC and TD</h1>
-                 <div class="row">
-                     <div class="column" style="flex: 10%">
-                         <img src="./L12/mc.png" width="80%"></img>
-                     </div>
-                     <div class="column" style="flex: 10%">
-                         <img src="./L12/td.png" width="80%"></img>
+             <div class="step slide">
+                 <h1 class="nt">Key Differences between MC and TD</h1>
+                 <ul>
+                     <li>MC estimates values based on <i>rollout</i></li>
+                     <li>TD estimates values based on Bellman equation</li>
+                 </ul>
+                 <div class="column">
+                     <div class="row">
+                         <div class="column" style="flex: 10%">
+                             <img src="./L12/mc.png" width="80%"></img>
+                         </div>
+                         <div class="column" style="flex: 10%">
+                             <img src="./L12/td.png" width="80%"></img>
+                         </div>
                      </div>
                  </div>
              </div>
+
              <!-- ################################################################### -->
              <div class="step slide">
                  <h1 class="nt">Pros and Cons of MC vs. TD</h1>
+                 <img src="./L13/policy.svg" width="50%"/>
                  <ul>
                      <li>TD can learn <i>before</i> knowing the final outcome
                          <ul>
+                             <li>MC must wait until the end of episodes</li>
                              <li>TD can learn online after every step</li>
-                             <li>MC must wait until end of episode before return is known</li>
-                         </ul>
-                     </li>
-                     <li>TD can learn <i>without</i> the final outcome
-                         <ul>
-                             <li>TD can learn from incomplete sequences</li>
-                             <li>MC can only learn from complete sequences</li>
-                             <li>TD works in continuing (non-terminating) environments</li>
-                             <li>MC only works for episodic (terminating) environments</li>
                          </ul>
                      </li>
                  </ul>
              </div>
+             <!-- ################################################################### -->
+             <div class="step slide">
+                 <h1 class="nt">Pros and Cons of MC vs. TD</h1>
+                 <img src="./L13/policy.svg" width="50%"/>
+                 <ul>
+                     <li>TD can learn <i>without</i> the final outcome
+                         <ul>
+                             <li>MC can only learn from complete sequences</li>
+                             <li>When some episodes are incomplete, TD can still learn</li>
+                             <li>MC only works for episodic (terminating) environments</li>
+                             <li>TD works in non-terminating environments</li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+
+
              <!-- ################################################################### -->
              <div class="step slide">
                  <h1 class="nt">Bias/Variance Trade-Off</h1>
                  <ul>
                      <li>Return $G_t=R_{t+1}+\gamma R_{t+2}+...+\gamma^{T-t-1}R_T$ is always an unbiased estimate of $V_\pi(S_t)$</li>
-                     <li>True TD target $R_{t+1}+\gamma V_\pi(S_{t+1})$ is an unbiased estimate of $V_\pi(S_t)$</li>
-                     <li>However, if we will update $\pi$ along the learning process, the TD target $R_{t+1}+\gamma V(S_{t+1})$ is a biased estimate of $V_\pi(S_t)$
+                     <li>The true TD target $R_{t+1}+\gamma V_\pi(S_{t+1})$ is an unbiased estimate of $V_\pi(S_t)$</li>
+                     <li>If we will <b>update $\pi$</b> slowly along the learning process,  
                          <ul>
-                             <li>Note that $V(S_{t+1})$ is an estimation from previous $\pi$ instead of the true value</li>
-                         </ul>
-                     </li>
-                     <li>When $\pi$ is being updated slowly (e.g., through some sort of gradient descent), TD target has much lower variance than the return:
-                         <ul>
-                             <li>Return depends on many random actions, transitions, rewards</li>
-                             <li>TD target depends on <i>one</i> random action, transition, reward</li>
+                             <li class="substep">the TD target $R_{t+1}+\gamma V(S_{t+1})$ becomes a <i>biased estimate</i> of $V_\pi(S_t)$, because 
+                                 <ul>
+                                     <li>$V(S_{t+1})$ is a return estimation from the previous $\pi$. </li>
+                                 </ul> 
+                             </li>
+                             <li class="substep">However, the TD target also has <i>much lower variance</i> than the return $G_t$, because
+                                 <ul>
+                                     <li>the return $G_t$ is from a single rollout, heavily affected by the randomness (actions, transitions, and rewards) in all the future steps; </li>
+                                     <li>whereas the TD target is affected by the randomness in the <i>next one step</i>, and the low variance of the $V(S_{t+1})$ estimation from many historical rollouts.</li>
+                                 </ul>
+                             </li>
                          </ul>
                      </li>
                  </ul>
              </div>
+
              <!-- ################################################################### -->
              <div class="step slide">
-                 <h1 class="nt">Pros and Cons of MC vs. TD (2)</h1>
+                 <h1 class="nt">Pros and Cons of MC vs TD (2)</h1>
                  <ul>
                      <li>MC has high variance, zero bias
                          <ul>
-                             <li>Good convergence properties(even with function approximation)</li>
-                             <li>Not very sensitive to initial value</li>
+                             <li>Good convergence properties (even with function approximation)</li>
+                             <li>Independent of the initial value of $V$</li>
                              <li>Very simple to understand and use</li>
                          </ul>
                      </li>
@@ -388,7 +435,7 @@
                          <ul>
                              <li>Usually more efficient than MC</li>
                              <li>TD(0) converges to $V_\pi(s)$ (but not always with function approximation)</li>
-                             <li>More sensitive to initial value</li>
+                             <li>Has certain dependency on the initial value of $V$</li>
                          </ul>
                      </li>
                  </ul>
@@ -451,10 +498,10 @@
              -->
              <!-- ################################################################### -->
              <div class="step slide">
-                 <h1 class="vt">MC-based RL vs TD-based RL</h1>
+                 <h1 class="vt">Bellman, or no Bellman, that is the question</h1>
                  <ul>
-                     <li>Monte-Carlo and TD are two fundamental ideas of value estimation for policies.</li>
-                     <li>Each has its Pros and Cons. </li>
+                     <li><i>Monte-Carlo sampling</i> and <i>Bellman equation</i> are two fundamental tools of value estimation for policies.</li>
+                     <li>Each has its pros and cons. </li>
                      <li>Based on them, there are two families of model-free RL algorithms, both well developed. 
                          Some algorithms leverage both.</li>
                      <li>Fundamentally, it is about the balance between bias and variance (sample complexity).</li>
@@ -466,8 +513,8 @@
                  <ul>
                      <li>Reason I:
                          <ul>
-                             <li>REINFORCE is MC-based</li>
-                             <li>Deep Q-Learning (DQN) is TD-based</li>
+                             <li>REINFORCE uses Monte-Carlo sampling</li>
+                             <li>Deep Q-Learning (DQN) uses Bellman equation</li>
                          </ul>
                      </li>
                      <li>Reason II:</li>
@@ -479,14 +526,14 @@
              </div>
 
              <div class="step slide">
-                 <h1 class="nt">A Taxonomy of RL Algorithms and Examples</h1>
+                 <h1 class="nt"> Taxonomy of RL Algorithms and Examples</h1>
                  <div class="mermaid" style="text-align:center">
                      graph TD
                      l1("RL Algorithms") 
                      l11("Model-Free RL")
                      l12("Model-Based RL")
-                     l111("w/o Replay Buffer<br/> (MC based)")
-                     l112("with Replay Buffer<br/> (TD based)")
+                     l111("MC Sampling<br/>")
+                     l112("Bellman based<br/>")
                      l121("Learn the Model")
                      l122("Given the Model")
                      l1111("REINFORCE")
@@ -511,6 +558,7 @@
              <!-- ################################################################### -->
              <div class="step slide separator" id="algo">
                  <h1 class="nt">Q-Learning for Tabular RL</h1>
+                 <h2><span style="font-weight:normal"><i>Tabular RL: RL with discrete and finite state space, convenient for algorithm development and convergence analysis</i></span></h2>
              </div>
              <!-- ################################################################### -->
              <div class="step slide">
@@ -620,16 +668,18 @@
 
              <!-- ################################################################### -->
              <div class="step slide">
-                 <h1 class="nt">Exploration vs. Exploitation</h1>
+                 <h1 class="nt">Exploration vs Exploitation</h1>
                  <ul>
-                     <li>Two fundamental behaviours of RL agents
-                         <ul>
-                             <li>Reinforcement learning is like trial-and-error learning</li>
-                             <li>The agent should discover a good policy</li>
-                             <li>From its experiences of the environment</li>
-                             <li>Without losing too much reward along the way</li>
-                         </ul>
-                     </li>
+                     <!--
+                        -<li>Two fundamental behaviours of RL agents
+                        -    <ul>
+                        -        <li>Reinforcement learning is like trial-and-error learning</li>
+                        -        <li>The agent should discover a good policy</li>
+                        -        <li>From its experiences of the environment</li>
+                        -        <li>Without losing too much reward along the way</li>
+                        -    </ul>
+                        -</li>
+                        -->
                      <li>Exploration
                          <ul>
                              <li>finds more information about the environment</li>
@@ -647,7 +697,7 @@
              </div>
              <!-- ################################################################### -->
              <div class="step slide">
-                 <h1 class="et">Q-Learning</h1>
+                 <h1 class="et">Q-Learning Algorithm</h1>
                  <div style=margin-top:100px>
                      <img src="./L12/q_learning_code.png" width="100%"/>
                  </div>
@@ -693,39 +743,25 @@
              <!-- ################################################################### -->
              <div class="step slide">
                  <h1 class="nt">Training Deep Q Network</h1>
+<!--
+   -                 <ul>
+   -                     <li>Recall TD in tabular Q-learning:
+   -                         <ul>
+   -                             <li>TD error: $\delta_t=\underbrace{R_{t+1}+\gamma \max_{a'} Q(S_{t+1}, a')}_{target\ value}-Q(S_t, a)$</li>
+   -                             [><li>TD update: $Q(S_t, a) \leftarrow Q(S_t, a) + \alpha(R_{t+1}+\gamma \max_{a'}Q(S_{t+1}, a')-Q(S_t, a))$</li><]
+   -                         </ul>
+   -
+   -                     </li>
+   -                     <li>Temporal Difference can also be plugged in an optimization objective to derive the update of the $Q$ network</li>
+   -                 </ul>
+   -->
                  <ul>
-                     <li>Last lecture, we explained tabular TD learning:
-                         <ul>
-                             <li>TD error: $\delta_t=R_{t+1}+\gamma V(S_{t+1})-V(S_t)$</li>
-                             <li>TD update: $V(S_t) \leftarrow V(S_t) + \alpha(G_t-V(S_t))$</li>
-                         </ul>
-
-                     </li>
-                     <li>Temporal Difference can also be plugged in an optimization objective to derive the update of the $Q$ network</li>
-                 </ul>
-                 <ul class="substep">
                      <li>Recall the Bellman optimality equation for action-value function:
                          \[
                          Q^*(s,a)=\bb{E}[R_{t+1}+\gamma \max_{a'}Q^*(S_{t+1}, a')|S_t=s, A_t=a]
                          \]
                      </li>
-                     <li>We create a least-square regression problem accordingly:
-                         \[
-                         \sum_{s\in\cal{S}, a\in\cal{A}}\|Q_{\th}(s,a)-\bb{E}_{s'\sim P(s'|s,a)}[R(s,a,s')+\gamma \max_{a'}Q_{\th}(s',a')]\|^2,\quad \mbox{where } R_{t+1}=R(s,a,s')
-                         \]
-                     </li>
-                 </ul>
-             </div>
-             <!-- ################################################################### -->
-             <div class="step slide">
-                 <h1 class="nt">Optimization Formulation of TD Learning</h1>
-                 <ul>
-                     <li>However, the objective is still intractable
-                         \[
-                         \sum_{\color{red}{s\in\cal{S}, a\in\cal{A}}}\|Q_{\th}(s,a)-\bb{E}_{\color{red}{s'\sim P(s'|s,a)}}[R_{t+1}+\gamma \max_{a'}Q_{\th}(s',a')]\|^2
-                         \]
-                     </li>
-                     <li>It is natural to build a <i>new optimization problem</i> that approximates the above:
+                     <li>It is natural to build an <i>optimization problem</i>:
                          \[
                          L(\th)=\bb{E}_{\color{red}{(s,a,s')\sim Env}}[TD_{\th}(s,a,s')] \tag{TD loss}
                          \]
@@ -735,7 +771,7 @@
                          <ul>
                              <li>It does not necessarily sample from the optimal policy.</li>
                              <li>A suboptimal, or even bad policy (e.g., random policy), may allow us to learn a good $Q$.</li>
-                             <li>It is a cutting-edge research topic of showing suboptimality bound for non-optimal $Env$ distribution.</li>
+                             <li>It is a cutting-edge research topic of studying how well we can do for non-optimal $Env$ distribution.</li>
                          </ul>   
                      </li>
                  </ul>
@@ -743,7 +779,7 @@
 
              <!-- ################################################################### -->
              <div class="step slide">
-                 <h1 class="et">Replay Buffer</h1>
+                 <h1 class="nt">Replay Buffer</h1>
                  <ul>
                      <li>As in the previous Q-learning, we consider a routine that we take turns to</li>
                      <ul>
@@ -770,7 +806,7 @@
              <div class="step slide">
                  <h1 class="nt">Deep Q-Learning Algorithm</h1>
                  <ul>
-                     <li>Initialize replay buffer $D$ and Q network $Q_{\th}$.</li>
+                     <li>Initialize the replay buffer $D$ and Q network $Q_{\th}$.</li>
                      <li>For every episode:
                          <ul>
                              <li>Sample the initial state $s_0\sim P(s_0)$</li>
@@ -790,7 +826,31 @@
              </div>
              <!-- ################################################################### -->
              <div class="step slide">
-                 <h1 class="nt">Something More about $Q$-Learning</h1>
+                 <h1 class="nt">Some Engineering Concerns about<br/> Deep $Q$-Learning </h1>
+                 <ul>
+                     <li>States and value network architecture</li>
+                     <ul>
+                         <li>First of all, a good computer vision problem worth research.</li>
+                         <li>Need to ensure that states are sufficient statistics for decision-making
+                             <ul>
+                                 <li>Common practice: Stack a fixed number of frames (e.g., 4 frames) and pass through ConvNet</li>
+                                 <li>If long-term history is important, may use LSTM/GRU/Transformer/... to aggregate past history</li>
+                             </ul>
+                         </li>
+                         <li>May add other computing structures that are effective for video analysis, e.g., optical flow map</li>
+                         <li>Not all vision layers can be applied without verification (e.g., batch normalization layer may be harmful)</li>
+                     </ul>
+                     <li>Replay buffer</li>
+                     <ul>
+                         <li>Replay buffer size matters. </li>
+                         <li>When sampling from the replay buffer, relatively large batch size helps stabilizing training.</li>
+                     </ul>
+                 </ul>
+             </div>
+
+             <!-- ################################################################### -->
+             <div class="step slide">
+                 <h1 class="nt">Some Theoretical Concerns about $Q$-Learning</h1>
                  <ul>
                      <li>Behavior/Target Network: Recall that 
                          $TD_{\th}(s,a,s')=\|\color{blue}{Q_{\th}(s,a)}-[R(s,a,s')+\gamma\max_{a'}\color{red}{Q_{\th}(s',a')}]\|^2$. We keep two $Q$ networks in practice. We only update the blue network by gradient descent and use it to sample new trajectories. Every few episodes we replace the red one by the blue one. The reason is that the blue one changes too fast. The red one is called <i>target network</i> (to build target), and the blue one is called <i>behavior network</i> (to sample actions).
@@ -982,6 +1042,8 @@
                 }
             }
             setSlideID(); 
+        </script>
+        <script>
             function getTitles() {
                 var secs = document.getElementsByClassName("separator");
                 var titleList = [];
