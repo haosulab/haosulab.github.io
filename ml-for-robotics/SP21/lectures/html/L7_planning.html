@@ -10,14 +10,19 @@
         <link href="../css/impress-common.css" rel="stylesheet" />   
         <link href="css/classic-slides.css" rel="stylesheet" />
         <!-- <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>-->
+        \[
+        \newcommand{\mc}[1]{\mathcal{#1}}
+        \newcommand{\mv}[1]{\boldsymbol{#1}}\newcommand{\mvinfty}{\boldsymbol{\infty}}\newcommand{\mvzero}{\boldsymbol{0}}
+        \newcommand{\f}[1]{\mathfrak{#1}}
+        \newcommand{\bb}[1]{\mathbb{#1}}
+        \newcommand{\d}[1]{\mathrm{d}#1}
+        \]
     </head>
     <body class="impress-not-supported">
         <div class="fallback-message">
             <p>Your browser <b>doesn't support the features required</b> by impress.js, so you are presented with a simplified version of this presentation.</p>
             <p>For the best experience please use the latest <b>Chrome</b>, <b>Safari</b> or <b>Firefox</b> browser.</p>
         </div>
-        <div id="latex-macros"></div>
-        <script src="./latex_macros.js"></script>
         <div id="impress"
              data-width="1920"
              data-height="1080"
@@ -33,7 +38,11 @@
              </div>
              <div id="toc" class="step slide" data-rel-x="2200" data-rel-y="0">
                  <h1 class="nt">Agenda</h1>
-                 <ul class="large" id="agenda"></ul>
+                 <ul class="large">
+                     <li><a href="#form">Problem Formulation</a></li>
+                     <li><a href="#prm">Probabilistic Roadmap Method (PRM)</a></li>
+                     <li><a href="#rrt">Rapidly-exploring Random Trees (RRT)</a></li>
+                 </ul>
                  click to jump to the section.
              </div>
 
@@ -375,114 +384,37 @@
 
         <div id="impress-help"></div>
 
-        <script type="text/javascript" src="../extras/highlight/highlight.pack.js"></script>
-        <script src="../extras/mermaid/mermaid.min.js"></script>
-        <script type="text/javascript" src="../extras/markdown/markdown.js"></script>
-        <!--
-            To make all described above really work, you need to include impress.js in the page.
-            You also need to call a `impress().init()` function to initialize impress.js presentation.
-            And you should do it in the end of your document. 
-        -->
-        <script>
-            function setSlideID() {
-                x = document.getElementsByClassName("slide");
-                const titleSet = new Set();
-                var titleDict = {};
-                for (var i = 2; i < x.length; i++) {
-                    h1 = x[i].getElementsByTagName("h1")[0];
-                    if (h1) {
-                        // alert(title);
-                        title = '--'+h1.innerHTML.replace(/\W/g, '');
+        <!-- Extra modules
+            Load highlight.js, mermaid.js, markdown.js and MathJax.js from extras.
+            If you're curious about details, these are initialized in src/plugins/extras/extras.js -->
+            <script type="text/javascript" src="../extras/highlight/highlight.pack.js"></script>
+            <script type="text/javascript" src="../extras/mermaid/mermaid.min.js"></script>
+            <script type="text/javascript" src="../extras/markdown/markdown.js"></script>
+            <script type="text/javascript" src="../extras/mathjax/MathJax.js?config=TeX-AMS_CHTML"></script>
+            <!--
+                To make all described above really work, you need to include impress.js in the page.
+                You also need to call a `impress().init()` function to initialize impress.js presentation.
+                And you should do it in the end of your document. 
+            -->
+            <script type="text/javascript" src="../js/impress.js"></script>
+            <script>impress().init();</script>
+            <!--            <script>
+                function setSlideID() {
+                    x = document.getElementsByClassName("slide");
+                    const titleSet = new Set();
+                    for (var i = 0; i < x.length; i++) {
+                        h1 = x[i].getElementsByTagName("h1")[0];
+                // alert(title);
+                        title = h1.innerHTML.replace(/\W/g, '_');
                         if (titleSet.has(title)) {
-                            titleDict[title] += 1;
-                            title = title + '_' + titleDict[title].toString();
-                        }
-                        else {
-                            titleSet.add(title);
-                            titleDict[title] = 1;
+                            continue;
                         }
                         x[i].id = title;
+                        titleSet.add(title);
                     }
                 }
-            }
-            setSlideID(); 
-        </script>
-        <script>
-            function getTitles() {
-                var secs = document.getElementsByClassName("separator");
-                var titleList = [];
-                var titleIdList = [];
-                const titleIdSet = new Set();
-                for (var i = 0; i < secs.length; i++) {
-                    h1 = secs[i].getElementsByTagName("h1")[0];
-                    titleId = 'Sec:'+h1.innerHTML.replace(/\W/g, '');
-                    if (titleIdSet.has(titleId)) {
-                        continue;
-                    }
-                    titleIdSet.add(titleId);
-                    titleList.push(h1.innerHTML);
-                    titleIdList.push(titleId);
-                    secs[i].id = titleId;
-                }
-                console.log(titleList);
-                return [titleList, titleIdList];
-            }
-
-            function addToC(titleList, titleIdList){
-                var agenda = document.getElementById("agenda");
-                agenda.innerHTML = '';
-                for (var i = 0; i < titleList.length; i++) {
-                    agenda.innerHTML += '<li><a href="#'+titleIdList[i]+'">'+titleList[i]+'</a></li>';
-                }
-            }
-
-            res = getTitles();
-            titleList = res[0]; titleIdList  = res[1];
-            addToC(titleList, titleIdList);
-        </script>
-        <script type="text/javascript" src="../js/impress.js"></script>
-        <script type="text/javascript">
-            (function(){
-                var vizPrefix = "language-viz-";
-                Array.prototype.forEach.call(document.querySelectorAll("[class^=" + vizPrefix + "]"), function(x){
-                    var engine;
-                    x.getAttribute("class").split(" ").forEach(function(cls){
-                        if (cls.startsWith(vizPrefix)) {
-                            engine = cls.substr(vizPrefix.length);
-                        }
-                    });
-                    var image = new DOMParser().parseFromString(Viz(x.innerText, {format:"svg", engine:engine}), "image/svg+xml");
-                    x.parentNode.insertBefore(image.documentElement, x);
-                    x.style.display = 'none'
-                    x.parentNode.style.backgroundColor = "white"
-                });
-            })();
-            window.MathJax = {
-                tex2jax: {
-                    inlineMath: [['$','$'], ['\\(','\\)']],
-                    displayMath: [['$$','$$'], ['\\[','\\]']],
-                    processEscapes: true,
-                    processEnvironments: true,
-                    skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
-                    TeX: { equationNumbers: { autoNumber: "AMS" },
-                        extensions: ["AMSmath.js", "AMSsymbols.js", "color.js"],
-                    },
-                    jax: ["input/TeX", "output/SVG"]
-                },
-                AuthorInit: function () {
-                    MathJax.Hub.Register.StartupHook("Begin",function () {
-                        MathJax.Hub.Queue(function() {
-                            var all = MathJax.Hub.getAllJax(), i;
-                            for(i = 0; i < all.length; i += 1) {
-                                all[i].SourceElement().parentNode.className += ' has-jax';
-                            }
-                        })
-                    });
-                }
-            };
-        </script>
-        <script type="text/javascript" src="../extras/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
-        <script>impress().init();</script>
+            </script>
+            <script> setSlideID(); </script>-->
     </body>
 </html>
 <!-- discarded -->

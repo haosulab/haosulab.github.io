@@ -1,0 +1,1062 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>L13</title>
+        <meta name="description" content="" />
+        <meta name="author" content="Hao Su" />
+        <link rel="stylesheet" href="../extras/highlight/styles/github.css">
+        <!--
+           -<link rel="stylesheet" href="../extras/mermaid/mermaid.forest.css">
+           -->
+        <link rel="stylesheet" href="../extras/mermaid/mermaid.dark.css">
+        <link href="../css/impress-common.css" rel="stylesheet" />   
+        <link href="css/classic-slides.css" rel="stylesheet" />
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/1.7.1/viz.js"> </script>
+        <link rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/vs.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+    </head>
+    <body class="impress-not-supported">
+        <div class="fallback-message">
+            <p>Your browser <b>doesn't support the features required</b> by impress.js, so you are presented with a simplified version of this presentation.</p>
+            <p>For the best experience please use the latest <b>Chrome</b>, <b>Safari</b> or <b>Firefox</b> browser.</p>
+        </div>
+        <div id="latex-macros"></div>
+        <script src="./latex_macros.js"></script>
+        <div id="impress"
+             data-width="1920"
+             data-height="1080"
+             data-max-scale="3"
+             data-min-scale="0"
+             data-perspective="1000"
+             data-transition-duration="0"
+             >
+            <div class="step slide title" data-x="-2200" data-y="-3000" id="title">
+                <h1 class="nt">L13: Basic Deep RL Algorithms</h1>
+                <h2>Hao Su</h2>
+                <h3>Spring, 2021</h3>
+                <div class="ack">Contents are based on <a href="https://mitpress.mit.edu/books/reinforcement-learning-second-edition">Reinforcement Learning: An Introduction</a> from Prof. Richard S. Sutton and Prof. Andrew G. Barto, and <a href="https://www.davidsilver.uk/teaching/">COMPM050/COMPGI13</a> taught at UCL by Prof. David Silver.</div>
+            </div>
+
+            <div id="toc" class="step slide" data-rel-x="2200" data-rel-y="0">
+                <h1 class="nt">Agenda</h1>
+                <ul class="large" id="agenda">
+                </ul>
+                click to jump to the section.
+            </div>
+            <!-- ################################################################### -->
+            <!-- # New section                                                     # -->
+            <!-- ################################################################### -->
+            <div class="step slide separator" id="optimal">
+                <h1 class="nt">Optimal Policy and Optimal Value Function</h1>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="vt">Optimal Value Function</h1>
+                <ul>
+                    <li>Due to the Markovian property, the return starting from a state $s$ is independent of its history. Therefore, we can compare the return of all policies starting from $s$ and find the optimal one.</li>
+                    <li>The optimal state-value function $V^*(s)$ is the maximum value function over all policies
+                        <ul>
+                            <li>$V^*(s)=\max_\pi V_\pi(s)$</li>
+                        </ul>
+                    </li>
+                    <li>The optimal action-value function $Q_*(s,a)$ is the maximum action-value function over all policies
+                        <ul>
+                            <li>$Q^*(s,a)=\max_\pi Q_\pi(s,a)$</li>
+                        </ul>
+                    </li>
+                    <li>The optimal value function specifies the best possible performance in the MDP.</li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Optimal Policy</h1>
+                <ul>
+                    <li>Define a partial ordering over policies
+                        \[
+                        \pi\ge\pi'\mbox{ if }V_\pi(s)\ge V_{\pi'}(s), \forall s
+                        \]
+                    </li>
+                    <blockquote>
+                        Theorem: For any Markov Decision Process
+                        <ul>
+                            <li>There exists an optimal policy $\pi_*$ that is better than, or equal to, all other policies, $\pi_*\ge\pi,~\forall\pi$</li>
+                            <li>All optimal policies achieve the optimal value function, $V_{\pi^*}(s)=V^*(s)$</li>
+                            <li>All optimal policies achieve the optimal action-value function, $Q_{\pi^*}(s,a)=Q^*(s,a)$</li>
+                        </ul>
+                    </blockquote>
+                    <!-- <li>An optimal policy can be found by maximising over $q_*(s,a)$,</li> -->
+                    <li>An optimal policy can be found by maximizing over $Q^*(s,a)$,
+                        \[
+                        \pi^*(a|s)=
+                        \begin{cases}
+                        1, & \text{if}~~a=\text{argmax}_{a\in\mc{A}}~Q^*(s,a) \\  
+                        0, & \text{otherwise}   
+                        \end{cases}
+                        \]
+                    </li>
+
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Bellman Optimality Equation</h1>
+                <ul>
+                    <li>Optimal value functions also satisfy recursive relationships
+                        \[
+                        \begin{aligned}
+                        V^*(s)
+                        & = \max_a\bb{E}_{\pi_*}[G_t|S_t=s, A_t=a] \\
+                        & = \max_a\bb{E}_{\pi_*}[R_{t+1}+\gamma G_{t+1}|S_t=s, A_t=a] \\
+                        & = \max_a\bb{E}[R_{t+1}+\gamma V^*(S_{t+1})|S_t=s, A_t=a] \\
+                        \end{aligned}
+                        \]
+                    </li>
+                    <li>Similarly, for action-value function, we have</li>
+                    \[
+                    Q^*(s,a)=\bb{E}[R_{t+1}+\gamma \max_{a'}Q^*(S_{t+1}, a')|S_t=s, A_t=a]
+                    \]
+                    <li>They are called <b>Bellman Optimality Equations</b></li>
+                </ul>
+            </div>
+            <!--
+                -[> ################################################################### <]
+                -<div class="step slide">
+                -    <h1 class="nt">Visualizations of Bellman Optimality Equations</h1>
+                -    <div class="row">
+                -        <div class="column" style="flex: 20%">
+                -            <div style=margin-top:10px>
+                -                <img src="./L12/bellman_opt_v.png" width="85%"/>
+                -            </div>
+                -        </div>
+                -        <div class="column" style="flex: 20%">
+                -            <div style=margin-top:10px>
+                -                <img src="./L12/bellman_opt_q.png" width="100%"/>
+                -            </div>
+                -        </div>
+                -    </div>
+                -</div>
+            -->
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="vt">Solving the Bellman Optimality Equation</h1>
+                <ul>
+                    <li>Bellman Optimality Equation is non-linear (because there is the max operation).</li>
+                    <li>No closed form solution (in general)</li>
+                    <li>Many iterative solution methods:
+                        <ul>
+                            <li>Value Iteration</li>
+                            <li>Policy Iteration</li>
+                            <li>Q-learning (we will talk about this later)</li>
+                            <li>SARSA</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <!-- # New section                                                     # -->
+            <!-- ################################################################### -->
+            <div class="step slide separator" id="estimate_value">
+                <h1 class="nt">Estimating Value Function for a Given Policy</h1>
+            </div>
+
+            <!--
+                -[> ################################################################### <]
+                -<div class="step slide">
+                -    <h1 class="nt">Visualizations of Bellman Expectation Equations</h1>
+                -    <div class="row">
+                -        <div class="column" style="flex: 20%">
+                -            <div style=margin-top:10px>
+                -                <img src="./L12/bellman_v.png" width="85%"/>
+                -            </div>
+                -        </div>
+                -        <div class="column" style="flex: 20%">
+                -            <div style=margin-top:10px>
+                -                <img src="./L12/bellman_q.png" width="100%"/>
+                -            </div>
+                -        </div>
+                -    </div>
+                -</div>
+            -->
+
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <div style="margin-top: 400px"></div>
+                <center>
+                    <div class="large"><b>Goal</b>: Given a policy $\pi(a|s)$, estimate the value of the policy.</div>
+                </center>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Monte-Carlo Policy Evaluation</h1>
+                <ul>
+                    <li>Learn $V_\pi$ from episodes of experience under policy $\pi$
+                        <ul>
+                            <li>$S_0, A_0, R_1, S_1, A_1, R_2, ..., S_T\sim\pi$</li>
+                        </ul>
+                    </li>
+                    <li>Recall that the <i>return</i> is the total discounted reward:
+                        <ul>
+                            <li>$G_t=R_{t+1}+\gamma R_{t+2}+...+\gamma^{T-t-1}R_T$</li>
+                        </ul>
+                    </li>
+                    <li>Recall that the value function is the expected return:
+                        <ul>
+                            <li>$V_\pi(s)=\bb{E}_\pi[G_t|S_t=s]$</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Monte-Carlo Policy Evaluation</h1>
+                <ul>
+                    <li>Suppose that we have collected a number of trajectories, Monte-Carlo policy evaluation uses <i>empirical mean return</i> instead of <i>expected return</i>
+                        <ul>
+                            <li>Every time-step $t$ that state $s$ is visited in an episode
+                                <ul>
+                                    <li>Increment state visit counter $N(s) \leftarrow N(s) + 1$</li>
+                                    <li>Increment total return $S(s) \leftarrow S(s) + G_t$</li>
+                                </ul>
+                            </li>
+                            <li>Value is estimated by mean return $V(s)=S(s)/N(s)$</li>
+                            <li>By law of large numbers, $V(s) \to V_\pi(s)$ as $N(s)\to\infty$</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Incremental Monte-Carlo Updates</h1>
+                <ul>
+                    <li>We can also update $V(s)$ incrementally after episode $S_0, A_0, R_1, ..., S_T$.</li>
+                    <li class="substep">Consider a general problem of computing the mean for stream data
+                        <ul>
+                            <li>The mean $\mu_1, \mu_2, ...$ of a sequence of general vectors $x_1, x_2, ...$ can be computed incrementally,</li>
+                            <li>$\mu_k=\mu_{k-1}+\frac{1}{k}(x_k-\mu_{k-1})$</li>
+                        </ul>
+                    </li>
+                    <li class="substep">For each state $S_t$ with return $G_t$
+                        <ul>
+                            <li>$N(S_t) \leftarrow N(S_t) + 1$</li>
+                            <li>$V(S_t) \leftarrow V(S_t) + \frac{1}{N(S_t)}(G_t-V(S_t))$</li>
+                            <li>It can be proved that $V(s)\to V_{\pi}(s)$.</li>
+                        </ul>
+                    </li>
+                    <li class="substep">In non-stationary problems, it can be useful to track a running mean, i.e. forget old episodes.
+                        <ul>
+                            <li>$V(S_t) \leftarrow V(S_t) + \alpha(G_t-V(S_t))$</li>
+                            <li>You may regard the $\alpha$ as the learning rate in supervised learning</li>
+                            <li>May <b>not</b> converge for stationary problems. For small $\alpha$, good enough.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="vt">Monte-Carlo Methods</h1>
+                <ul>
+                    <li>Quick facts:
+                        <ul>
+                            <li>MC methods learn directly from episodes of experience</li>
+                            <li>MC is model-free: no knowledge of MDP transitions / rewards</li>
+                            <li>MC uses the simplest possible idea: <b>value = mean return</b></li>
+                        </ul>
+                    </li>
+                    <li>Caveat: can only apply MC to episodic MDPs
+                        <ul>
+                            <li>All episodes must terminate</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Temporal-Difference Learning</h1>
+                <ul>
+                    <li>Learn $V_\pi$ online from experience under policy $\pi$
+                        <ul>
+                            <li>$S_1, A_1, R_2, S_2, A_2, R_3, ..., S_T\sim\pi$</li>
+                        </ul>
+                    </li>
+                    <li>Recall: Incremental Monte-Carlo
+                        <ul>
+                            <li>Update value $V(S_t)$ toward actual return $\color{red}{G_t}$</li>
+                            <li>$V(S_t) \leftarrow V(S_t) + \alpha(\color{red}{G_t}-V(S_t))$</li>
+                        </ul>
+                    </li>
+                    <li>Simplest temporal-difference learning algorithm: TD(0)
+                        <ul>
+                            <li>Update value $V(S_t)$ toward estimated return $\color{red}{R_{t+1}+\gamma V(S_{t+1})}$</li>
+                            <li>$V(S_t) \leftarrow V(S_t) + \alpha(\color{red}{R_{t+1}+\gamma V(S_{t+1})}-V(S_t))$</li>
+                            <li>$R_{t+1}+\gamma V(S_{t+1})$ is called the <i>TD target</i></li>
+                            <li>$\delta_t=R_{t+1}+\gamma V(S_{t+1})-V(S_t)$ is called the <i>TD error</i></li>
+                        </ul>
+                    </li>
+                    <li>If we expand one step further, we got TD(1)
+                        <ul>
+                            <li>$V(S_t) \leftarrow V(S_t) + \alpha(R_{t+1}+\gamma R_{t+1} + \gamma^2 V(S_{t+2})-V(S_t))$</li>
+                            <li>Similarly, we can have TD(2), TD(3), ... </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="vt">Temporal-Difference Learning</h1>
+                <ul>
+                    <li>Quick facts:
+                        <ul>
+                            <li>TD methods learn directly from episodes of experience</li>
+                            <li>TD is model-free: no knowledge of MDP transitions / rewards</li>
+                            <li>TD learns from incomplete episodes, by <b>bootstrapping</b></li>
+                            <li>TD updates a guess towards a guess</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide" >
+                <h1 class="nt">Visualizations for MC and TD</h1>
+                <div class="row">
+                    <div class="column" style="flex: 10%">
+                        <img src="./L12/mc.png" width="80%"></img>
+                    </div>
+                    <div class="column" style="flex: 10%">
+                        <img src="./L12/td.png" width="80%"></img>
+                    </div>
+                </div>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Pros and Cons of MC vs. TD</h1>
+                <ul>
+                    <li>TD can learn <i>before</i> knowing the final outcome
+                        <ul>
+                            <li>TD can learn online after every step</li>
+                            <li>MC must wait until end of episode before return is known</li>
+                        </ul>
+                    </li>
+                    <li>TD can learn <i>without</i> the final outcome
+                        <ul>
+                            <li>TD can learn from incomplete sequences</li>
+                            <li>MC can only learn from complete sequences</li>
+                            <li>TD works in continuing (non-terminating) environments</li>
+                            <li>MC only works for episodic (terminating) environments</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Bias/Variance Trade-Off</h1>
+                <ul>
+                    <li>Return $G_t=R_{t+1}+\gamma R_{t+2}+...+\gamma^{T-t-1}R_T$ is always an unbiased estimate of $V_\pi(S_t)$</li>
+                    <li>True TD target $R_{t+1}+\gamma V_\pi(S_{t+1})$ is an unbiased estimate of $V_\pi(S_t)$</li>
+                    <li>However, if we will update $\pi$ along the learning process, the TD target $R_{t+1}+\gamma V(S_{t+1})$ is a biased estimate of $V_\pi(S_t)$
+                        <ul>
+                            <li>Note that $V(S_{t+1})$ is an estimation from previous $\pi$ instead of the true value</li>
+                        </ul>
+                    </li>
+                    <li>When $\pi$ is being updated slowly (e.g., through some sort of gradient descent), TD target has much lower variance than the return:
+                        <ul>
+                            <li>Return depends on many random actions, transitions, rewards</li>
+                            <li>TD target depends on <i>one</i> random action, transition, reward</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Pros and Cons of MC vs. TD (2)</h1>
+                <ul>
+                    <li>MC has high variance, zero bias
+                        <ul>
+                            <li>Good convergence properties(even with function approximation)</li>
+                            <li>Not very sensitive to initial value</li>
+                            <li>Very simple to understand and use</li>
+                        </ul>
+                    </li>
+                    <li>TD has low variance, some bias
+                        <ul>
+                            <li>Usually more efficient than MC</li>
+                            <li>TD(0) converges to $V_\pi(s)$ (but not always with function approximation)</li>
+                            <li>More sensitive to initial value</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <!--
+                -[> ################################################################### <]
+                -[> # New section                                                     # <]
+                -[> ################################################################### <]
+                -<div class="step slide separator" id="discussion">
+                -    <h1 class="nt">Discussion</h1>
+                -    <div class="rby">Read by Yourself</div>
+                -</div>
+                -[> ################################################################### <]
+                -<div class="step slide">
+                -    <h1 class="nt">Reinforcement Learning vs. Planning</h1>
+                -    <ul>
+                -        <li>Two fundamental problems in sequential decision making</li>
+                -        <li>Reinforcement Learning:
+                -            <ul>
+                -                <li>The environment is initially unknown</li>
+                -                <li>The agent interacts with the environment</li>
+                -                <li>The agent improves its policy</li>
+                -            </ul>
+                -        </li>
+                -        <li>Planning:
+                -            <ul>
+                -                <li>A model of the environment is known</li>
+                -                <li>The agent performs computations with its model (without any external interaction)</li>
+                -                <li>The agent improves its policy</li>
+                -                <li>a.k.a. deliberation, reasoning, introspection, pondering, thought, search</li>
+                -            </ul>
+                -        </li>
+                -    </ul>
+                -    <div class="rby">Read by Yourself</div>
+                -</div>
+                -[> ################################################################### <]
+                -<div class="step slide">
+                -    <h1 class="nt">Reinforcement Learning vs. Supervised Learning</h1>
+                -    <ul>
+                -        <li>Two fundamental learning paradigms</li>
+                -        <li>Supervised Learning:
+                -            <ul>
+                -                <li>Learning from labels</li>
+                -                <li>Dataset is given</li>
+                -                <li>Data distribution is fixed</li>
+                -                <li>Focus more on generalization</li>
+                -            </ul>
+                -        </li>
+                -        <li>Reinforcement Learning:
+                -            <ul>
+                -                <li>Learning from rewards</li>
+                -                <li>Agent needs to collect dataset by itself</li>
+                -                <li>Data distribution is shifting</li>
+                -                <li>Focus more on optimization</li>
+                -            </ul>
+                -        </li>
+                -    </ul>
+                -    <div class="rby">Read by Yourself</div>
+                -</div>
+            -->
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="vt">MC-based RL vs TD-based RL</h1>
+                <ul>
+                    <li>Monte-Carlo and TD are two fundamental ideas of value estimation for policies.</li>
+                    <li>Each has its Pros and Cons. </li>
+                    <li>Based on them, there are two families of model-free RL algorithms, both well developed. 
+                        Some algorithms leverage both.</li>
+                    <li>Fundamentally, it is about the balance between bias and variance (sample complexity).</li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="vt">We start from REINFORCE and Deep Q-Learning</h1>
+                <ul>
+                    <li>Reason I:
+                        <ul>
+                            <li>REINFORCE is MC-based</li>
+                            <li>Deep Q-Learning (DQN) is TD-based</li>
+                        </ul>
+                    </li>
+                    <li>Reason II:</li>
+                    <ul>
+                        <li>REINFORCE only has a <b>policy network</b> </li>
+                        <li>DQN only has a <b>value network</b> </li>
+                    </ul>
+                </ul>
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt">A Taxonomy of RL Algorithms and Examples</h1>
+                <div class="mermaid" style="text-align:center">
+                    graph TD
+                    l1("RL Algorithms") 
+                    l11("Model-Free RL")
+                    l12("Model-Based RL")
+                    l111("w/o Replay Buffer<br/> (MC based)")
+                    l112("with Replay Buffer<br/> (TD based)")
+                    l121("Learn the Model")
+                    l122("Given the Model")
+                    l1111("REINFORCE")
+                    l1121("Deep Q-Network")
+                    l1-->l11 
+                    l1-->l12
+                    l11-->l111
+                    l11-->l112
+                    l12-->l121
+                    l12-->l122
+                    l111-->l1111
+                    l112-->l1121
+                    style l11 fill:#eadfa4
+                    style l111 fill:#eadfa4
+                    style l112 fill:#eadfa4
+                    style l1111 fill:#eadfa4
+                    style l1121 fill:#eadfa4
+                </div>
+            </div>
+            <!-- ################################################################### -->
+            <!-- # New section                                                     # -->
+            <!-- ################################################################### -->
+            <div class="step slide separator" id="algo">
+                <h1 class="nt">Q-Learning for Tabular RL</h1>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="et">The Anatomy of an RL algorithm</h1>
+                <div style=margin-top:50px>
+                    <img src="./L12/RL_anatomy.png" width="100%"/>
+                </div>
+                <div class="credit"><a href="http://rail.eecs.berkeley.edu/deeprlcourse/static/slides/lec-4.pdf">CS285</a> taught at UC Berkeley by Prof. Sergey Levine.</div>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <!--<h1 class="et">Q-Learning for Tabular RL</h1>-->
+                <div style="margin-top: 100px"></div>
+                <ul>
+                    <li>
+                        Suppose we are going to learn the Q-function. Let us follow the previous flow chart and answer three questions:
+                    </li>
+                    <ol>
+                        <li>Given transitions $\{(s,a,s',r)\}$ from some trajectories, how to improve the current Q-function?
+                            <ul class="substep">
+                                <li>By Temporal Difference learning, the update target for $Q(S,A)$ is
+                                    <ul>
+                                        <li>$R+\gamma\max_a Q(S', a)$</li>
+                                    </ul>
+                                </li>
+                                <li>Take a small step towards the target
+                                    <ul>
+                                        <li>$Q(S,A)	\leftarrow Q(S,A)+\alpha[R+\gamma\max_a Q(S', a)-Q(S,A)]$</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>Given $Q$, how to improve policy?
+                            <ul class="substep">
+                                <li>Take the greedy policy based on the current $Q$
+                                    <ul>
+                                        <li>$\pi(s)=\text{argmax}_a Q(s,a)$</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>Given $\pi$, how to generate trajectories?
+                            <ul class="substep">
+                                <li>Simply run the greedy policy in the environment. </li>
+                                <li>Any issues? </li>
+                            </ul>
+                        </li>
+                    </ol>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Failure Example</h1>
+                <div class="row">
+                    <div class="column">
+                        <ul>
+                            <li>Initialize Q
+                                <ul>
+                                    <li>$Q(s_0,a_1)=0,Q(s_0,a_2)=0$</li>
+                                    <li>$\pi(s_0)=a_1$</li>
+                                </ul>
+                            </li>
+                            <li>Iteration 1: take $a_1$ and update $Q$
+                                <ul>
+                                    <li>$Q(s_0,a_1)=1,Q(s_0,a_2)=0$</li>
+                                    <li>$\pi(s_0)=a_1$</li>
+                                </ul>
+                            </li>
+                            <li>Iteration 2: take $a_1$ and update $Q$
+                                <ul>
+                                    <li>$Q(s_0,a_1)=1,Q(s_0,a_2)=0$</li>
+                                    <li>$\pi(s_0)=a_1$</li>
+                                </ul>
+                            </li>
+                            <li>...</li>
+                            <li><b>$Q$ stops to improve because the agent is too greedy!</b></li>
+                        </ul>
+                    </div>
+                    <div class="column" style="flex:30%">
+                        <div style=margin-top:10px>
+                            <img src="./L12/eps_greedy_mdp.png" width="70%"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">$\epsilon$-Greedy Exploration</h1>
+                <ul>
+                    <li>The simplest and most effective idea for ensuring continual exploration</li>
+                    <li>With probability $1-\epsilon$ choose the greedy action</li>
+                    <li>With probability $\epsilon$ choose an action at random</li>
+                    <li>All $m$ actions should be tried with non-zero probability</li>
+                    <li>Formally,
+                        \[
+                        \pi_*(a|s)=
+                        \begin{cases}
+                        \epsilon/m + 1-\epsilon, & \text{if}~~a=\text{argmax}_{a\in\mc{A}}~Q(s,a) \\  
+                        \epsilon/m, & \text{otherwise}   
+                        \end{cases}
+                        \]
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Exploration vs. Exploitation</h1>
+                <ul>
+                    <li>Two fundamental behaviours of RL agents
+                        <ul>
+                            <li>Reinforcement learning is like trial-and-error learning</li>
+                            <li>The agent should discover a good policy</li>
+                            <li>From its experiences of the environment</li>
+                            <li>Without losing too much reward along the way</li>
+                        </ul>
+                    </li>
+                    <li>Exploration
+                        <ul>
+                            <li>finds more information about the environment</li>
+                            <li>may waste some time</li>
+                        </ul>
+                    </li>
+                    <li>Exploitation
+                        <ul>
+                            <li>exploits known information to maximize reward</li>
+                            <li>may miss potential better policy</li>
+                        </ul>
+                    </li>
+                    <li>Balancing exploration and exploitation is a key problem of RL. We use will spend a lecture to discuss advanced exploration strategies.</li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="et">Q-Learning</h1>
+                <div style=margin-top:100px>
+                    <img src="./L12/q_learning_code.png" width="100%"/>
+                </div>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <!-- <ul>
+                    <li>Iteratively updating Q function to convergence, we get</li>
+                    </ul> -->
+                    <img src="./L12/maze_q_value.png" width="55%"/>
+                    <p>Running Q-learning on Maze</p>
+                    <div class="credit">Plot with the tools in <a href="https://drive.google.com/file/d/177mrb9B4rqNrdTLtZSgPRdCnrhVlJdEx/view">an awesome playground for value-based RL</a> from Justin Fu</div>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Convergence of Q-Learning</h1>
+                <ul>
+                    <li>tongzhou: add a proof here.
+                    </li>
+                </ul>
+            </div>
+
+
+            <!-- ######################### New Section ############################# -->
+            <div class="step slide separator">
+                <h1 class="nt">Deep Q-Learning</h1>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Challenge of Representing $Q$</h1>
+                <ul>
+                    <li>How do we represent $Q(s,a)$? </li>
+                    <li>Maze has a discrete and small <i>state space</i> that we can deal with by an array. </li>
+                    <li>However, for many cases the state space is continuous, or discrete but huge, array does not work. </li>
+                    <p>
+                        <!--<iframe width="720" height="500" src="https://www.youtube.com/embed/V1eYniJ0Rnk?start=22" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>-->
+                    </p>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Deep Value Network</h1>
+                <ul>
+                    <li>Use a neural network to parameterize $Q$:</li>
+                    <ul>
+                        <li>Input: state $s\in\bb{R}^n$</li>
+                        <li>Output: each dimension for the value of an action $Q(s, a;\theta)$</li>
+                    </ul>
+                    <img src="./L13/network.png" height="400px">
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Training Deep Q Network</h1>
+                <ul>
+                    <li>Last lecture, we explained tabular TD learning:
+                        <ul>
+                            <li>TD error: $\delta_t=R_{t+1}+\gamma V(S_{t+1})-V(S_t)$</li>
+                            <li>TD update: $V(S_t) \leftarrow V(S_t) + \alpha(G_t-V(S_t))$</li>
+                        </ul>
+
+                    </li>
+                    <li>Temporal Difference can also be plugged in an optimization objective to derive the update of the $Q$ network</li>
+                </ul>
+                <ul class="substep">
+                    <li>Recall the Bellman optimality equation for action-value function:
+                        \[
+                        Q^*(s,a)=\bb{E}[R_{t+1}+\gamma \max_{a'}Q^*(S_{t+1}, a')|S_t=s, A_t=a]
+                        \]
+                    </li>
+                    <li>We create a least-square regression problem accordingly:
+                        \[
+                        \sum_{s\in\cal{S}, a\in\cal{A}}\|Q_{\th}(s,a)-\bb{E}_{s'\sim P(s'|s,a)}[R(s,a,s')+\gamma \max_{a'}Q_{\th}(s',a')]\|^2,\quad \mbox{where } R_{t+1}=R(s,a,s')
+                        \]
+                    </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Optimization Formulation of TD Learning</h1>
+                <ul>
+                    <li>However, the objective is still intractable
+                        \[
+                        \sum_{\color{red}{s\in\cal{S}, a\in\cal{A}}}\|Q_{\th}(s,a)-\bb{E}_{\color{red}{s'\sim P(s'|s,a)}}[R_{t+1}+\gamma \max_{a'}Q_{\th}(s',a')]\|^2
+                        \]
+                    </li>
+                    <li>It is natural to build a <i>new optimization problem</i> that approximates the above:
+                        \[
+                        L(\th)=\bb{E}_{\color{red}{(s,a,s')\sim Env}}[TD_{\th}(s,a,s')] \tag{TD loss}
+                        \]
+                        where $TD_{\th}(s,a,s')=\|Q_{\th}(s,a)-[R(s,a,s')+\gamma\max_{a'}Q_{\th}(s',a')]\|^2$.
+                    </li>
+                    <li>Note: How to obtain the $Env$ distribution has many options! 
+                        <ul>
+                            <li>It does not necessarily sample from the optimal policy.</li>
+                            <li>A suboptimal, or even bad policy (e.g., random policy), may allow us to learn a good $Q$.</li>
+                            <li>It is a cutting-edge research topic of showing suboptimality bound for non-optimal $Env$ distribution.</li>
+                        </ul>   
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="et">Replay Buffer</h1>
+                <ul>
+                    <li>As in the previous Q-learning, we consider a routine that we take turns to</li>
+                    <ul>
+                        <li>Sample certain transitions using the current $Q_{\th}$</li>
+                        <li>Update $Q_{\th}$ by minimizing the TD loss</li>
+                    </ul>
+                    <li><b>Exploration:</b> 
+                        <ul>
+                            <li>We use $\epsilon$-greedy strategy to sample transitions, and add $(s,a,s',r)$ in a <b>replay buffer</b> (e.g., maintained by FIFO).</li>
+                        </ul>
+                    <li><b>Exploitation:</b> 
+                        <ul>
+                            <li>We sample a batch of transitions and train the network by gradient descent:
+                                \[
+                                \nabla_{\th}L(\th)=\bb{E}_{(s,a,s')\sim \rm{Replay Buffer}}[\nabla_{\th}TD_{\th}(s,a,s')]
+                                \]
+                            </li>
+                        </ul>
+                    </li>
+                    <!--<img src="./L13/DQN.png" width="70%">-->
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Deep Q-Learning Algorithm</h1>
+                <ul>
+                    <li>Initialize replay buffer $D$ and Q network $Q_{\th}$.</li>
+                    <li>For every episode:
+                        <ul>
+                            <li>Sample the initial state $s_0\sim P(s_0)$</li>
+                            <li>Repeat until the episode is over
+                                <ul>
+                                    <li>Let $s$ be the current state</li>
+                                    <li>With prob. $\epsilon$ sample a random action $a$. Otherwise select $a=\arg\max_a Q_{\th}(s,a)$ </li>
+                                    <li>Execute $a$ in the environment, and receive the reward $r$ and the next state $s'$</li>
+                                    <li>Add transitions $(s,a,s')$ in $D$</li>
+                                    <li>Sample a random batch from $D$ and build the batch TD loss</li>
+                                    <li>Perform one or a few gradient descent steps on the TD loss</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Something More about $Q$-Learning</h1>
+                <ul>
+                    <li>Behavior/Target Network: Recall that 
+                        $TD_{\th}(s,a,s')=\|\color{blue}{Q_{\th}(s,a)}-[R(s,a,s')+\gamma\max_{a'}\color{red}{Q_{\th}(s',a')}]\|^2$. We keep two $Q$ networks in practice. We only update the blue network by gradient descent and use it to sample new trajectories. Every few episodes we replace the red one by the blue one. The reason is that the blue one changes too fast. The red one is called <i>target network</i> (to build target), and the blue one is called <i>behavior network</i> (to sample actions).
+                    </li>
+                    <li>Value overestimation: Note that the TD loss takes the maximal $a$ for each $Q(s,\cdot)$. Since TD loss is not unbiased, the max operator will cause the $Q$-value to be overestimated! There are methods to mitigate (e.g., double Q-learning) or work around (e.g., advantage function) the issue. 
+                    </li>
+                    <li>Uncertainty of $Q$ estimation: Obviously, the $Q$ value at some $(s,a)$ are estimated from more samples, and should be more trustable. Those high $Q$ value with low confidence are quite detrimental to performance. Distributional Q-Learning quantifies the confidence of $Q$ and leverages the confidence to recalibrate target values and conduct exploration.
+                    </li>
+                    <li>Theoretically, $Q$-learning (more precisely, a variation of it) is an <b>optimal online learning algorithm</b> for tabular RL.</li>
+                </ul>
+            </div>
+            <!-- ######################### New Section ############################# -->
+            <div class="step slide separator">
+                <h1 class="nt">REINFORCE</h1>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="vt">Key Idea</h1>
+                <ul>
+                    <li>Unlike Q-learning, REINFORCE method does not need to maintain the value function of states or state-action pairs!  </li>
+                    <li>It uses a neural network to parameterize the policy. </li>
+                    <li>We update the policy network by applying stochastic gradient descent of the return. </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Policy Gradient</h1>
+                <ul>
+                    <li>The return of a policy $\pi_{\th}$ parameterized by a neural network is:
+                        \[
+                        J(\th)=\bb{E}_{\tau\sim P(\pi_{\th}}[R(\tau)]=\int_{\tau} P(\tau)R(\tau) \d{\tau}
+                        \]
+                    </li>
+                    <li>Its gradient is
+                        \[
+                        \nabla_{\th}J(\th)=\nabla_{\th}\int_{\tau}R(\tau)\rmP(\tau|\th)\d{\tau}=\int_{\tau}R(\tau)\nabla_{\th}\rmP(\tau|\th)\d{\tau}
+                        \]
+                    </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Policy Gradient</h1>
+                <ul>
+                    <li>Note that
+                        \[
+                        \nabla_{\th} f(\th)=\frac{\nabla f(\th)}{f(\th)}\Rightarrow \nabla f(\th)=f(\th)\nabla \log f(\th)
+                        \]
+                    </li>
+                    <li>Therefore,
+                        \[
+                        \aligned{
+                        \nabla_{\th}J(\th)&=\nabla_{\th}\int_{\tau}R(\tau)\rmP(\tau|\th)\d{\tau}=\int_{\tau}R(\tau)\nabla_{\th}\rmP(\tau|\th)\d{\tau}\\
+                        &=\int_\tau \color{red}{\rmP(\tau|\th)}R(\tau) \nabla_\th \log \rmP(\tau|\th)\d{\tau}\\
+                        &\approx \frac{1}{n} \sum_k R(\tau_k)\nabla_\th \log \rmP(\tau_k|\th)
+                        }
+                        \]
+                    </li>
+                    <li>We can estimate the gradient of $J(\th)$ by empirical mean!</li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Policy Gradient</h1>
+                <ul>
+                    <li>Note that 
+                        \[
+                        \mathrm{P}(\tau|\th)=\log \mathrm{P}(s_0)+\sum_{i}\log \pi_{\th}(a_i|s_i)+\log \mathrm{P}(s_{i+1}|s_i,a_i)
+                        \]
+                    </li>
+                    <li>The environment model does not depend on $\th$. Therefore, the gradient of the return is
+                        \[
+                        \boxed{\nabla_\th J(\th)\approx \frac{1}{n}\sum_k R(\tau_k)\sum_i\nabla_\th \pi_{\th}(a_i|s_i)}
+                        \]
+                    </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="vt">Intuitive Explanation</h1>
+                \[
+                \nabla_\th J(\th)\approx \frac{1}{n}\sum_k R(\tau_k)\sum_i\nabla_\th \pi_{\th}(a_i|s_i)
+                \]
+                <ul>
+                    <li>Weighted sum of policy gradients for all the trajectories. </li>
+                    <li>Higher weights for trajectories with higher rewards. </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="vt">Implementing Policy Gradient</h1>
+                <ul>
+                    <li>For discrete actions, $\pi_\th$ is a soft-max function.</li>
+                    <li>For continuous actions, $\pi_\th$ is a Gaussian distribution. We use the policy network to predict the mean and variance. </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Policy Gradient Algorithm</h1>
+                <ul>
+                    <li>Initialize a policy network $\pi_\th$. </li>
+                    <li>Repeat
+                        <ul>
+                            <li>Sample trajectories $\{\tau^k_{1:T}\}_{k\le n}$</li>
+                            <li>Compute the gradient $\nabla J$ by policy gradient
+                                \[
+                \nabla_\th J(\th)\approx \frac{1}{n}\sum_k R(\tau_k)\sum_i\nabla_\th \pi_{\th}(a_i|s_i)
+                                \]
+                            </li>
+                            <li>Update
+                                \[
+                                \th\leftarrow \th+\alpha \nabla J(\th)
+                                \]
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="vt">Some Comments on Policy Gradient Algorithm</h1>
+                <ul>
+                    <li>We will introduce improved version of policy gradient in subsequent lectures. </li>
+                    <li>As an MC-based method, the gradient estimation is unbiased. </li>
+                    <li>However, its estimate of gradient has a large variance. Therefore, stabilizing the update of $\pi_\th$ is the key.</li>
+                    <li>As a high-variance method, it is not quite efficient (even its improved version, e.g, TRPO/PPO). But since it is unbiased, for some hard tasks, it may outperform seemingly more sample-efficient Q-learning methods. </li>
+                </ul>
+            </div>
+        </div>
+
+        <!--
+            Add navigation-ui controls: back, forward and a select list.
+            Add a progress indicator bar (current step / all steps)
+            Add the help popup plugin
+        -->
+        <div id="impress-toolbar"></div>
+
+        <div class="impress-progressbar"><div></div></div>
+        <div class="impress-progress"></div>
+
+        <div id="impress-help"></div>
+
+        <script type="text/javascript" src="../extras/highlight/highlight.pack.js"></script>
+        <script src="../extras/mermaid/mermaid.min.js"></script>
+        <script type="text/javascript" src="../extras/markdown/markdown.js"></script>
+        <!--
+            To make all described above really work, you need to include impress.js in the page.
+            You also need to call a `impress().init()` function to initialize impress.js presentation.
+            And you should do it in the end of your document. 
+        -->
+        <script>
+            function setSlideID() {
+                x = document.getElementsByClassName("slide");
+                const titleSet = new Set();
+                var titleDict = {};
+                for (var i = 2; i < x.length; i++) {
+                    h1 = x[i].getElementsByTagName("h1")[0];
+                    if (h1) {
+                        // alert(title);
+                        title = '--'+h1.innerHTML.replace(/\W/g, '');
+                        if (titleSet.has(title)) {
+                            titleDict[title] += 1;
+                            title = title + '_' + titleDict[title].toString();
+                        }
+                        else {
+                            titleSet.add(title);
+                            titleDict[title] = 1;
+                        }
+                        x[i].id = title;
+                    }
+                }
+            }
+            setSlideID(); 
+        </script>
+        <script>
+            function getTitles() {
+                var secs = document.getElementsByClassName("separator");
+                var titleList = [];
+                var titleIdList = [];
+                const titleIdSet = new Set();
+                for (var i = 0; i < secs.length; i++) {
+                    h1 = secs[i].getElementsByTagName("h1")[0];
+                    titleId = 'Sec:'+h1.innerHTML.replace(/\W/g, '');
+                    if (titleIdSet.has(titleId)) {
+                        continue;
+                    }
+                    titleIdSet.add(titleId);
+                    titleList.push(h1.innerHTML);
+                    titleIdList.push(titleId);
+                    secs[i].id = titleId;
+                }
+                console.log(titleList);
+                return [titleList, titleIdList];
+            }
+
+            function addToC(titleList, titleIdList){
+                var agenda = document.getElementById("agenda");
+                agenda.innerHTML = '';
+                for (var i = 0; i < titleList.length; i++) {
+                    agenda.innerHTML += '<li><a href="#'+titleIdList[i]+'">'+titleList[i]+'</a></li>';
+                }
+            }
+
+            res = getTitles();
+            titleList = res[0]; titleIdList  = res[1];
+            addToC(titleList, titleIdList);
+        </script>
+        <script type="text/javascript" src="../js/impress.js">
+        </script>
+        <script type="text/javascript">
+            (function(){
+                var vizPrefix = "language-viz-";
+                Array.prototype.forEach.call(document.querySelectorAll("[class^=" + vizPrefix + "]"), function(x){
+                    var engine;
+                    x.getAttribute("class").split(" ").forEach(function(cls){
+                        if (cls.startsWith(vizPrefix)) {
+                            engine = cls.substr(vizPrefix.length);
+                        }
+                    });
+                    var image = new DOMParser().parseFromString(Viz(x.innerText, {format:"svg", engine:engine}), "image/svg+xml");
+                    x.parentNode.insertBefore(image.documentElement, x);
+                    x.style.display = 'none'
+                    x.parentNode.style.backgroundColor = "white"
+                });
+            })();
+            window.MathJax = {
+                tex2jax: {
+                    inlineMath: [['$','$'], ['\\(','\\)']],
+                    displayMath: [['$$','$$'], ['\\[','\\]']],
+                    processEscapes: true,
+                    processEnvironments: true,
+                    skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+                    TeX: { equationNumbers: { autoNumber: "AMS" },
+                        extensions: ["AMSmath.js", "AMSsymbols.js", "color.js"],
+                    },
+                    jax: ["input/TeX", "output/SVG"]
+                },
+                AuthorInit: function () {
+                    MathJax.Hub.Register.StartupHook("Begin",function () {
+                        MathJax.Hub.Queue(function() {
+                            var all = MathJax.Hub.getAllJax(), i;
+                            for(i = 0; i < all.length; i += 1) {
+                                all[i].SourceElement().parentNode.className += ' has-jax';
+                            }
+                        })
+                    });
+                }
+            };
+        </script>
+        <script type="text/javascript" src="../extras/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+        <script>impress().init();</script>
+    </body>
+</html>
+<!-- discarded -->

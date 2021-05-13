@@ -49,7 +49,12 @@
              </div>
              <div id="toc" class="step slide" data-rel-x="2200" data-rel-y="0">
                  <h1 class="nt">Agenda</h1>
-                 <ul class="large" id="agenda"></ul>
+                 <ul class="large">
+                     <li><a href="#constrained_lagrangian">Constrained Lagrangian Method</a></li>
+                     <li><a href="#variational_method">Variational Method</a></li>
+                     <li><a href="#control">Control</a></li>
+                     <li><a href="#PID">PID Control</a></li>
+                 </ul>
                  click to jump to the section.
              </div>
              <div class="step slide">
@@ -955,64 +960,8 @@
                 You also need to call a `impress().init()` function to initialize impress.js presentation.
                 And you should do it in the end of your document. 
             -->
-            <script>
-                function setSlideID() {
-                    x = document.getElementsByClassName("slide");
-                    const titleSet = new Set();
-                    var titleDict = {};
-                    for (var i = 2; i < x.length; i++) {
-                        h1 = x[i].getElementsByTagName("h1")[0];
-                        if (h1) {
-                            // alert(title);
-                            title = '--'+h1.innerHTML.replace(/\W/g, '');
-                            if (titleSet.has(title)) {
-                                titleDict[title] += 1;
-                                title = title + '_' + titleDict[title].toString();
-                            }
-                            else {
-                                titleSet.add(title);
-                                titleDict[title] = 1;
-                            }
-                            x[i].id = title;
-                        }
-                    }
-                }
-                setSlideID(); 
+            <script type="text/javascript" src="../js/impress.js">
             </script>
-            <script>
-                function getTitles() {
-                    var secs = document.getElementsByClassName("separator");
-                    var titleList = [];
-                    var titleIdList = [];
-                    const titleIdSet = new Set();
-                    for (var i = 0; i < secs.length; i++) {
-                        h1 = secs[i].getElementsByTagName("h1")[0];
-                        titleId = 'Sec:'+h1.innerHTML.replace(/\W/g, '');
-                        if (titleIdSet.has(titleId)) {
-                            continue;
-                        }
-                        titleIdSet.add(titleId);
-                        titleList.push(h1.innerHTML);
-                        titleIdList.push(titleId);
-                        secs[i].id = titleId;
-                    }
-                    console.log(titleList);
-                    return [titleList, titleIdList];
-                }
-
-                function addToC(titleList, titleIdList){
-                    var agenda = document.getElementById("agenda");
-                    agenda.innerHTML = '';
-                    for (var i = 0; i < titleList.length; i++) {
-                        agenda.innerHTML += '<li><a href="#'+titleIdList[i]+'">'+titleList[i]+'</a></li>';
-                    }
-                }
-
-                res = getTitles();
-                titleList = res[0]; titleIdList  = res[1];
-                addToC(titleList, titleIdList);
-            </script>
-            <script type="text/javascript" src="../js/impress.js"></script>
             <script type="text/javascript">
                 (function(){
                     var vizPrefix = "language-viz-";
@@ -1029,6 +978,8 @@
                         x.parentNode.style.backgroundColor = "white"
                     });
                 })();
+            </script>
+            <script type="text/javascript">
                 window.MathJax = {
                     tex2jax: {
                         inlineMath: [['$','$'], ['\\(','\\)']],
@@ -1055,6 +1006,24 @@
             </script>
             <script type="text/javascript" src="../extras/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
             <script>impress().init();</script>
+            <!--            <script>
+                function setSlideID() {
+                    x = document.getElementsByClassName("slide");
+                    const titleSet = new Set();
+                    for (var i = 0; i < x.length; i++) {
+                        h1 = x[i].getElementsByTagName("h1")[0];
+                // alert(title);
+                        title = h1.innerHTML.replace(/\W/g, '_');
+                        if (titleSet.has(title)) {
+                            continue;
+                        }
+                        x[i].id = title;
+                        titleSet.add(title);
+                    }
+                }
+            </script>
+            <script> setSlideID(); </script>-->
     </body>
 </html>
 <!-- discarded -->
+
