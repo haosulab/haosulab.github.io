@@ -150,17 +150,15 @@ code {
 
 
 a {
-    color: inherit;
-    text-decoration: none;
+    text-decoration: inherit;
+    color: rgba(0, 0, 0, 1);
     padding: 0 0.1em;
-    /*
-    background: rgba(200,200,200,0.1);
-    text-shadow: -2px 2px 4px rgba(100,100,100,0.9);
+    /*background: rgba(200,200,200,0.1);*/
+    text-shadow: -1px 1px 1px rgba(100,100,100,0.9);
     border-radius: 0.2em;
-    border-bottom: 3px solid rgba(100,100,100,0.2);
-    border-left:   3px solid rgba(100,100,100,0.2);
-    transition:         0.5s;
-     */
+    /*border-bottom: 3px solid rgba(100,100,100,0.2);*/
+    /*border-left:   3px solid rgba(100,100,100,0.2);*/
+    /*transition:         0.5s;*/
 }
 a:hover,
 a:focus {
@@ -498,12 +496,6 @@ table.bordertable  tfoot td {
 .hl {
     /* background-image: url(../images/background-title.png);   */
     color: rgb(200, 0, 0);
-    font-weight: bold;
-}
-
-.red {
-    /* background-image: url(../images/background-title.png);   */
-    color: rgb(255, 0, 0);
     font-weight: bold;
 }
 

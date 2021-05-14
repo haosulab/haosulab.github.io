@@ -443,17 +443,17 @@ mark.red {
                     </li>
                     <li>Can you guess the influence of $\gamma$ in this result?</li>
                     <!--
-                        -<li>We can also normalize $\gamma^t \mu_t(s;s_0)$ to be a <i>stationary distribution</i> over states:
-                        -    \[
-                        -    d^{\pi_{\th},\gamma}(s;s_0)=\frac{\sum_{t=0}^{\infty}\gamma^t\mu_t(s;s_0)}{\sum_s\sum_{t=0}^{\infty}\gamma^t\mu_t(s;s_0)}
-                        -    \]
-                        -</li>
-                        -<li>The theorem is equivalently stated as 
-                        -    \[
-                        -    \nabla_{\theta}V^{\pi_{\theta}}(s_0)=\sum_{s}d^{\pi_{\th},\gamma}(s;s_0) \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta},\gamma}(s, a)
-                        -    \]
-                        -</li>
-                    -->
+                       -<li>We can also normalize $\gamma^t \mu_t(s;s_0)$ to be a <i>stationary distribution</i> over states:
+                       -    \[
+                       -    d^{\pi_{\th},\gamma}(s;s_0)=\frac{\sum_{t=0}^{\infty}\gamma^t\mu_t(s;s_0)}{\sum_s\sum_{t=0}^{\infty}\gamma^t\mu_t(s;s_0)}
+                       -    \]
+                       -</li>
+                       -<li>The theorem is equivalently stated as 
+                       -    \[
+                       -    \nabla_{\theta}V^{\pi_{\theta}}(s_0)=\sum_{s}d^{\pi_{\th},\gamma}(s;s_0) \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta},\gamma}(s, a)
+                       -    \]
+                       -</li>
+                       -->
                 </ul>
                 <center><div class="hl">We will assume the discounted setting from now on.</div></center>
             </div>
@@ -471,162 +471,110 @@ mark.red {
                 \nabla_{\theta}V^{\pi_{\theta}, \gamma}(s_0)&= \sum_s\sum_{t = 0}^{\infty}\gamma^t\mu_t(s;s_0)\sum_{a}\nabla_{\theta}\ln\left(\pi_{\theta}(s, a)\right) \cdot \pi_{\theta}(s, a) Q^{\pi_{\theta}, \gamma}(s, a)\\
                 \text{(absorb randomness of env. in $\mu_t$)} &=\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\sum_{a}\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a)\right)\cdot\pi_{\theta}(s_t, a)Q^{\pi_{\theta}, \gamma}(s_t, a)\right]\\
                 \text{(absorb randomness of action in  $\pi_{\th}$)}&=\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t)\right)\cdot Q^{\pi_{\theta}, \gamma}(s_t, a_t)\right]\\
-                &=\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t)\right)\cdot \sum_{i = t}^{\infty} \gamma^{i - t}\cdot r_i\right]\\
+                &=\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t)\right)\cdot \sum_{i = t}^{\infty} \gamma^{i - k}\cdot r_i\right]\\
                 \end{align*}
             </div>
 
             <div class="step slide">
                 <h1 class="nt">Creating an Unbiased Estimate for PG (Cont'd)</h1>
                 We have shown that
-                \[
-                \nabla_{\theta}V^{\pi_{\theta}, \gamma}(s_0)=\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t)\right)\cdot \sum_{i = t}^{\infty} \gamma^{i - t}\cdot r_i\right]=\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t)\right)\cdot G_t\right]
-                \]
-                Q: Does this result look reasonable?
-                <ul class="substep">
+                \begin{align*}
+                \nabla_{\theta}V^{\pi_{\theta}, \gamma}(s_0)=\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t)\right)\cdot \sum_{i = t}^{\infty} \gamma^{i - k}\cdot r_i\right]\\
+                \end{align*}
+                <ul>
                     <li>Using more trajectories, we can get more accurate gradient estimate (smaller variance)</li>
                     <li>Since the unbiased estimate is a summation, we can sample from the individual terms to do batched gradient descent</li>
-                    <center>
-                        <div class="hl">
-                            We have established an MC sampling based method to <br/>estimate the gradient of value w.r.t. policy parameters!<br/>
-                            This estimate is <i>unbiased</i>.
-                        </div>
-                    </center>
+                </ul>
+                <center>
+                    <div class="hl">
+                        We have established an MC sampling based method to <br/>estimate the gradient of value w.r.t. policy parameters!<br/>
+                        This estimate is <i>unbiased</i>.
+                    </div>
+                </center>
+                <ul>
                     <li>In literature, this MC-sampling based policy gradient method is called <b>REINFORCE</b>.</li>
                 </ul>
             </div>
 
-            <!-- ################################################################## -->
             <div class="step slide separator">
                 <h1 class="nt">Practical First-Order Policy Optimization</h1>
             </div>
 
-            <!-- ################################################################## -->
             <div class="step slide">
                 <h1 class="nt">Advanced Value Estimates</h1>
-                We have seen that we can use $\sum_{i = t}^{\infty} \gamma^{i - t} \cdot r_i$ as an unbiased estimate for $Q^{\pi_{\theta}, \gamma}(s_t, a_t)$.
+                We have seen that we can use $\sum_{i = h}^{\infty} \gamma^{i - h} \cdot r_i$ as an unbiased estimate for $Q^{\pi_{\theta}, \gamma}(s_t, a_t)$.
                 <br/>
                 <br/>
-                We can also have a value network $v_{\omega}(s)$ to try to <b>memorize</b> (the estimates of) $V^{\pi_{\theta}, \gamma}(s)$ during the training. This way, whenever we need an estimate of $Q^{\pi_{\theta}, h}(s_t, a_t)$, we can use
+                We can also have a value network $v_{\omega}(s)$ to try to memorize (estimates of) $V^{\pi_{\theta}, \gamma}(s)$ during the training. This way, whenever we need an estimate of $Q^{\pi_{\theta}, h}(s_t, a_t)$, we can use
                 <ul>
-                    <li class="substep">$e_{\infty} = \sum_{i = t}^{\infty} \gamma^{i - t}\cdot r_i$, which is unbiased but has high variance. </li>
-                    <li class="substep">$e_{t, 0} = r_t + \gamma\cdot v_{\omega}(s_{t + 1})$, which is biased but possibly has lower variance. </li>
-                    <li class="substep">$e_{t, h} = \sum_{i = t}^{t+h} \gamma^{i - t}\cdot r_i + \gamma^{h + 1}\cdot v_{\omega}(s_{t+h+1})$, which has a trade-off between the first two, depending on the choice of $h$. </li>
-                    <li class="substep">$\sum_{h = 0}^{\infty} \alpha_h e_{t,h}$, further combines different $e_h$'s with tunable weights $\alpha_h$'s that summing to $1$. </li>
+                    <li>$e_{\infty} = \sum_{i = h}^{\infty} \gamma^{i - h}\cdot r_i$, which is unbiased but has high variance. </li>
+                    <li>$e_t = r_t + \gamma\cdot v_{\omega}(s_{h + 1})$, which is biased but possibly has lower variance. </li>
+                    <li>$e_t = \sum_{i = h}^t \gamma^{i - h}\cdot r_i + \gamma^{k - h + 1}\cdot v_{\omega}(s_{k + 1})$, which has a trade-off between the first two, depending on the choice of $k$. </li>
+                    <li>$\sum_{i = h}^{\infty} \alpha_i e_i$, further combines different $e_i$'s with tunable weights $\alpha_i$'s that summing to $1$. </li>
                 </ul>
             </div>
-            <!-- ################################################################### -->
-            <div class="step slide">
-                <h1 class="nt">Advantage</h1>
-                <ul>
-                    <li>We introduce another statistics trick to reduce the variance of the value estimation.  </li>
-                </ul>
-                <ul class="substep">
-                    <li>Suppose that $X$ and $Y$ are two random variables. </li>
-                    <li>Recall that, if $Z=X-Y$, then
-                        \[
-                        \mathrm{Var}[Z]=\mathrm{Var}[X]+\mathrm{Var}[Y]-2\mathrm{Cov}(X,Y)
-                        \]
-                    </li>
-                    <li>If $X$ and $Y$ are strongly correlated, then $\mathrm{Var}[Z]$ is smaller than $\mathrm{Var}[X]$ and $\mathrm{Var}[Y]$.
-                        <ul>
-                            <li>For example, $X, Y\sim\bb{N}(0, 1)$, then $\mathrm{Var}[Z]=2-2\rho$, where $\rho$ is the Pearson correlation coefficient and $-1\le \rho\le 1$. For highly correlated $X$ and $Y$, $\rho \approx 1$, and $\mathrm{Var}[Z]\approx 0$.</li>
-                        </ul>
-                    </li>
-                </ul>
-                <ul class="substep">
-                    <li>For this reason, we introduce the function $A^{\pi_{\theta}, \gamma}(s, a)=Q^{\pi_{\theta}, \gamma}(s, a) - V^{\pi_{\theta}, \gamma}(s)$, which is called <span class="hl">advantage</span>. </li>
-                    <li>Our next goal is to relate $\nabla V^{\pi_{\theta}, \gamma}(s,a)$ with $A^{\pi_{\theta}, \gamma}(s, a)$, which has smaller variance than estimating through $Q^{\pi_{\theta}, \gamma}(s, a)$.</li>
-                </ul>
-            </div>
-
             <!-- ################################################################## -->
+
             <div class="step slide">
                 <h1 class="nt">Advantage Estimates</h1>
                 \begin{align*}
                 \nabla_{\theta}V^{\pi_{\theta}, \gamma}(s_0)
                 &= \sum_s\sum_{t = 0}^{\infty}\gamma^t\mu_t(s;s_0)
                 \left(\sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta}, \gamma}(s, a) - 0\right)\\
-                \text{(why?)}&= \sum_s\sum_{t = 0}^{\infty}\gamma^t\mu_t(s;s_0)
+                &= \sum_s\sum_{t = 0}^{\infty}\gamma^t\mu_t(s;s_0)
                 \left(\sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta}, \gamma}(s, a) - \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a)\cdot V^{\pi_{\theta}, \gamma}(s)\right)\\
                 &= \sum_s\sum_{t = 0}^{\infty}\gamma^t\mu_t(s;s_0)
                 \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot \left(Q^{\pi_{\theta}, \gamma}(s, a) - V^{\pi_{\theta}, \gamma}(s)\right).\\
-                &= \sum_s\sum_{t = 0}^{\infty}\gamma^t\mu_t(s;s_0)\sum_{a}\nabla_{\theta}\ln\left(\pi_{\theta}(s, a)\right) \cdot \pi_{\theta}(s, a) A^{\pi_{\theta}, \gamma}(s, a)\\
-                &=\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t)\right)\cdot A^{\pi_{\theta}, \gamma}(s_t, a_t)\right]
                 \end{align*}
-                <ul>
-                    <li>Q: Does this form look reasonable? Compare it with the update for REINFORCE.</li>
-                </ul>
+                $Q^{\pi_{\theta}, \gamma}(s, a) - V^{\pi_{\theta}, \gamma}(s)$ is called <mark class="red">advantage</mark>, which is typically denoted as $A^{\pi_{\theta}, \gamma}(s, a)$. In fact, the same derivation works if we replace $V^{\pi_{\theta}, \gamma}(s)$ by any quantity that depends only on $s$ (e.g., $0$, in our original derivation).
             </div>
 
-            <!-- ################################################################### -->
             <div class="step slide">
                 <h1 class="nt">Advantage Estimates (Cont'd)</h1>
-                <ul>
-                    <li>
-                        Recall that we said $Q^{\pi_{\theta}, \gamma}(s_t, a_t)$ can be estimated by $\sum_{h = 0}^{\infty}\alpha_h e_{t,h}$ in general, where
-                        \[
-                        \left\{
-                        \aligned{
-                        &e_{t,h} = \sum_{i = t}^{t+h} \gamma^{i - t}\cdot r_i + \gamma^{h + 1}\cdot v_{\omega}(s_{t+h+1})\\
-                        &\sum_{i = 0}^{\infty} \alpha_i = 1
-                        }
-                        \right.
-                        \]
-                    </li>
-                    <li>The very popular <b>General Advantage Estimate</b> (GAE) estimates the advantage in the same fashion and it chooses $\alpha_i$ to be proportional to $\lambda^i$, where $\lambda\in[0, 1]$.</li>
-                </ul>
+                With the new representation of the policy gradient, we can now derive a new estimate of the policy gradient
+
+                \begin{align*}
+                \nabla_{\theta}V^{\pi_{\theta}, \gamma}(s_0) 
+                &= \sum_s\sum_{t = 0}^{\infty}\gamma^t\mu_t(s;s_0)\sum_{a}\nabla_{\theta}\ln\left(\pi_{\theta}(s, a)\right) \cdot \pi_{\theta}(s, a) A^{\pi_{\theta}, \gamma}(s, a)\\
+                &=\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\sum_{a}\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a\right)\cdot\pi_{\theta}(s_t, a)A^{\pi_{\theta}, \gamma}(s_t, a)\right]\\
+                &=\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t\right)\cdot A^{\pi_{\theta}, \gamma}(s_t, a_t)\right]
+                \end{align*}
+                Without resampling, we cannot unbiasedly estimate the advantage, fortunately we can still use a value network.
             </div>
 
-            <!-- ################################################################### -->
             <div class="step slide">
                 <h1 class="nt">Advantage Estimates (Cont'd)</h1>
-                <ul>
-                    <li>Define $\delta_{t,h}=e_{t,h}-v_{\omega}(s_{t})=\sum_{i = t}^{t+h} \gamma^{i - t}\cdot r_i + \gamma^{h + 1}\cdot v_{\omega}(s_{t+h+1}) - v_{\omega}(s_{t})$ </li>
-                    <li>The General Advantage Estimate (GAE) estimates $A^{\pi_{\theta}, \gamma}(s_t, a_t)$ by
-                        \begin{align*}
-                        \hat{A}_{\text{GAE}(\lambda)}^{\pi_{\theta}, \gamma}(s_t, a_t) &= (1 - \lambda)\sum_{h = 0}^{\infty} \lambda^h\delta_{t,h}\\
-                        (\text{calculation omitted, HW}) &=\sum_{h = 0}^{\infty}(\gamma\lambda)^{h} \delta_{t+h, 0}
-                        \end{align*}
-                    </li>
-                    <li>
-                        Define $0^0 = 1$, $\hat{A}_{\text{GAE}(0)}^{\pi_{\theta}, \gamma}(s_t, a_t) = r_t + \gamma v_{\omega}(s_{t + 1}) - v_{\omega}(s_{t}).$
-                    </li>
-                    <li>
-                        We also have $\hat{A}_{\text{GAE}(1)}^{\pi_{\theta}, \gamma}(s_t, a_t) = \sum_{h = 0}^{\infty}\gamma^{h} r_{t+h} - v_{\omega}(s_t). $
-                    </li>
-                    <li>
-                        We leave the proofs to homework.
-                    </li>
-                    <li>Q: How to interpret the role of $\lambda$?</li>
-                </ul>
+                Recall that we said $Q^{\pi_{\theta}, \gamma}(s_t, a_t)$ can be estiamted by $\sum_{i = h}^{\infty}\alpha_i e_i$ in general, where
+                $$ \sum_{i = h}^{\infty} \alpha_i = 1$$
+                and
+                $$e_t = \sum_{i = h}^t \gamma^{i - h}\cdot r_i + \gamma^{k - h + 1}\cdot v_{\omega}(s_{k + 1}).$$
+                \begin{align*}
+                \end{align*}
+
+                The very popular General Advantage Estimate (GAE) estimates the advantage in the same fashion and it chooses $\alpha_i$ to be proportional to $\lambda^i$, where $\lambda\in[0, 1]$.
             </div>
 
-            <!-- ################################################################### -->
             <div class="step slide">
-                <h1 class="et">Incremental Monte Carlo <br/>Value Function Estimation</h1>
-                <ul>
-                    <li>Recall that our plan was to have a value network $v_{\omega}(s)$ to <b>memorize</b> the estimates of $V^{\pi_{\theta}, \gamma}(s)$ during the training. 
-                    </li>
-                    <li>In practice, certain variants of the incremental Monte-Carlo method will be used to update $v_{\omega}(s)$
-                        <ul>
-                            <li>e.g., in <a href="https://arxiv.org/pdf/1506.02438.pdf">Sec 5 of High-Dimensional Continuous Control Using Generalized Advantage Estimation</a>,
-                                \[
-                                \aligned{
-                                &\text{minimize}_{\omega} && \sum_{n=1}^N\|v_{\omega}(s_n)-\hat{V}_n\|^2\\
-                                &\text{subject to} && \frac{1}{N}\sum_{n=1}^N\frac{\|v_{\omega}(s_n)-v_{\omega_{old}}(s_n)\|^2}{2\sigma^2}\le \epsilon
-                                }
-                                \]
-                                where $\hat{V}_t=\sum_{h=0}^{\infty}\gamma^h r_{t+h}$ is the discounted sum of rewards, and $n$ indexes over all timestamps in a batch of trajectories.
-                            </li>
-                        </ul>
-                    </li>
-                    <li>Note that we do not need a replay buffer to estimate $v_{\omega}(s)$.</li>
-                </ul>
+                <h1 class="nt">Advantage Estimates (Cont'd)</h1>
+                That is, the General Advantage Estimate (GAE) estimate $A^{\pi_{\theta}, \gamma}(s_t, a_t)$ 
+                by
+                \begin{align*}
+                \hat{A}_{\text{GAE}(\lambda)}^{\pi_{\theta}, \gamma}(s_t, a_t) &= (1 - \lambda)\sum_{t = h}^{\infty} \lambda^{k - h}\left(\sum_{i = h}^t \gamma^{i - h}\cdot r_i + \gamma^{k - h + 1}\cdot v_{\omega}(s_{k + 1}) - v_{\omega}(s_{h})\right)\\
+                (\text{calculation omitted}) &=\sum_{t = h}^{\infty}(\gamma\lambda)^{k - h} \left(r_t + \gamma v_{\omega}(s_{k + 1}) - v_{\omega}(s_{k})\right)
+                \end{align*}
+                Define $0^0 = 1$, we have
+                \begin{align*}
+                \hat{A}_{\text{GAE}(0)}^{\pi_{\theta}, \gamma}(s_t, a_t) = r_t + \gamma v_{\omega}(s_{h + 1}) - v_{\omega}(s_{h}).
+                \end{align*}
+                We also have
+                \begin{align*}
+                \hat{A}_{\text{GAE}(1)}^{\pi_{\theta}, \gamma}(s_t, a_t) = \sum_{i = h}^{\infty}\gamma^{i - h} r_i - v_{\omega}(s_t).
+                \end{align*}
+
             </div>
 
-
             <div class="step slide">
-                <h1 class="nt">Some Additional Information</h1>
+                <h1 class="nt">Some Little Detail</h1>
                 Given any advantage estimate $\hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t)$, we can estimate the policy gradient by
                 \begin{align*}
                 \hat{\nabla}_{\theta}V^{\pi_{\theta}, \gamma}(s_0) 
@@ -640,28 +588,19 @@ mark.red {
             </div>
 
             <div class="step slide">
-                <h1 class="nt">Escaping Local Optima</h1>
-                <ul>
-                    <li>Because policy gradient is essentially first-order optimization of a non-convex function, no convergence is guaranteed. </li>
-                    <li>People use regularization (exploration term) to encourage escaping local optima. </li>
-                    <li>For example, instead of taking the gradient of 
-                        \begin{align*}
-                        \theta' \mapsto \mathbb{E}\left[\sum_{t = 0}^{\infty}\ln\left(\pi_{\theta'}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t)\right]
-                        \end{align*}
-                        at $\theta$, people instead take the gradient of
-                        \begin{align*}
-                        \theta'\mapsto\mathbb{E}\left[\sum_{t = 0}^{\infty}\ln\left(\pi_{\theta'}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t) + \eta \cdot\,\text{entropy}(\pi_{\theta'}(s_t, \cdot))\right]
-                        \end{align*}
-                        at $\theta$.</li>
-                </ul>
+                <h1 class="nt">Escaping Local optima</h1>
+                Because policy gradient is essentially first-order optimization of a non-convex function, no convergence is guaranteed. People use regularization (exploration term) to encourage escaping local optima. For example, instead of taking the gradient of 
+                \begin{align*}
+                \theta' \mapsto \mathbb{E}\left[\sum_{t = 0}^{\infty}\ln\left(\pi_{\theta'}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t)\right]
+                \end{align*}
+                at $\theta$, people instead take the gradient of
+                \begin{align*}
+                \theta'\mapsto\mathbb{E}\left[\sum_{t = 0}^{\infty}\ln\left(\pi_{\theta'}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t) + \eta \cdot\,\text{entropy}(\pi_{\theta'}(s_t, \cdot))\right]
+                \end{align*}
+                at $\theta$.
             </div>
 
-            <!-- ################################################################## -->
-            <div class="step slide separator">
-                <h1 class="nt">Case Study: Proximal Policy Optimization (PPO)</h1>
-            </div>
 
-            <!-- ################################################################## -->
             <div class="step slide">
                 <h1 class="nt">More Stable Policy Optimization</h1>
                 Now that we know how to estimate policy gradients, any method/trick that can be applied to general first-order optimization can in principle to be used for policy optimization. 
@@ -670,55 +609,39 @@ mark.red {
                 Naive gradient descent does not work very well in practice: rollouts are expensive, so we typically do multiple gradient descents on the same set of rollouts, these descents will become more and more biased. Some remedies:
                 <ul>
                     <li>TRPO (Trust Region Policy Optimization): encourages the updated policy to be close to the previous policy in terms of $\text{KL}(\pi_{\text{new}}(s, \cdot)||\pi_{\text{old}}(s, \cdot))$, w.r.t. some distribution over $s$.</li>
-                    <li>PPO (Proximal Policy Optimization): encourages the updated policy to be close to the previous policy in terms of $\left|\frac{\pi_{\text{new}}(s, \cdot)}{\pi_{\text{old}}(s, \cdot)} - 1\right|$, w.r.t. some distribution over $s$.</li>
+                    <li>PPO (Proximal Policy Optimization): encourages the updated policy to be close to the previous policy in terms of $\left|\frac{\pi_{\text{new}}(s, \cdot)}{\pi_{\text{old}}(s, \cdot))} - 1\right|$, w.r.t. some distribution over $s$.</li>
                 </ul>
+            </div>
+
+            <div class="step slide separator">
+                <h1 class="nt">Case Study: Proximal Policy Optimization (PPO)</h1>
             </div>
 
             <!-- ################################################################## -->
+
             <div class="step slide">
                 <h1 class="nt">PPO</h1>
-                PPO solves a local optimization problem at each step, and the solution to each problem forms an updated policy $\pi$. It repeats the following procedure:
+                PPO repeats the following procedure:
                 <ul>
-                    <li>Sample multiple (say, 128) trajectories of certain length (say, 128) to get a batch of state-actions pairs (say, 128 * 128 $(s, a)$ pairs)</li>
+                    <li>Sample multiple (say, 128) trajectories of certain length (say, 128) to get a replay buffer of state-actions pairs (say, 128 * 128 $(s, a)$ pairs)</li>
                     <li>Estimate the advantage of each $(s, a)$ pair using GAE (say GAE($0.95$)) and the corresponding trajectory</li>
-                    <li>Do (mini-batch) gradient descent w.r.t to an objective function multiple times (say, mini-batch of size 128 * 32, 16 gradient descents)</li>
+                    <li> Do (mini-batch) gradient descent w.r.t to an objective function multiple times (say, mini-batch of size 128 * 32, 16 gradient descents)</li>
                 </ul>
             </div>
 
-<!--
-   -            [> ################################################################### <]
-   -            <div class="step slide">
-   -                <h1 class="nt">PPO - Objective Function</h1>
-   -                The objective function is closely related with the previously derived advantage-based value gradient.
-   -                <ul>
-   -                    <li>Recall that 
-   -                        $\color{red}{\nabla_{\theta}V^{\pi_{\theta}, \gamma}(s_0)} = \sum_s\sum_{t = 0}^{\infty}\gamma^t\mu_t(s;s_0) \sum_{a}\color{red}{\nabla_{\theta}\pi_{\theta}(s, a)} \cdot \left(Q^{\pi_{\theta}, \gamma}(s, a) - V^{\pi_{\theta}, \gamma}(s)\right).$
-   -                    </li>
-   -                    <li>Rewrite above as</li>
-   -                    <li>Assume that Integrate over $\theta$ from the current $\theta$ to $\theta'$, and we have
-   -                        \[
-   -                        \color{red}{V^{\pi_{\theta'}, \gamma}(s_0)-V^{\pi_{\theta}, \gamma}(s_0)} = \sum_s\sum_{t = 0}^{\infty}\gamma^t\mu_t(s;s_0) \sum_{a}\color{red}{[\pi_{\theta'}(s, a)-\pi_{\theta}(s, a)]} \cdot \left(Q^{\pi_{\theta}, \gamma}(s, a) - V^{\pi_{\theta}, \gamma}(s)\right).
-   -                        \]
-   -
-   -                    </li>
-   -                </ul>
-   -            </div>
-   -->
-
-
             <div class="step slide">
                 <h1 class="nt">PPO - Objective Function</h1>
-                Suppose the current batch is generated using $\pi_{\theta}$, the regular (non-proximal) gradient update uses the following objective function at $\theta$ (note the gradient of the $\ln(\pi_{\theta'}(s, a))$ is expanded):
+                Suppose the current replay buffer is generated using $\pi_{\theta}$, the regular (non-proximal) gradient update uses the following objective function at $\theta$ (note the gradient of the $\ln(\pi_{\theta'}(s, a))$ is expanded):
 
                 \begin{align*}
-                &\theta'\mapsto\mathbb{E}_{(s, a)\sim\text{batch}}\\
+                &\theta'\mapsto\mathbb{E}_{(s, a)\sim\text{replay buffer}}\\
                 &\ \ \ \ \left[\frac{\pi_{\theta'}(s, a)}{\pi_{\theta}(s, a)}\cdot \hat{A}^{\pi_{\theta}, \gamma}(s, a) + \eta \cdot\,\text{entropy}(\pi_{\theta'}(s, \cdot))\right].
                 \end{align*}
 
 
                 PPO use the following objective function for gradient descents at $\theta$:
                 \begin{align*}
-                &\theta'\mapsto\mathbb{E}_{(s, a)\sim\text{batch}}\\
+                &\theta'\mapsto\mathbb{E}_{(s, a)\sim\text{replay buffer}}\\
                 &\ \ \ \ \left[\text{min}\left(\frac{\pi_{\theta'}(s, a)}{\pi_{\theta}(s, a)}\cdot \hat{A}^{\pi_{\theta}, \gamma}(s, a), \text{clip}\left(\frac{\pi_{\theta'}(s, a)}{\pi_{\theta}(s, a)}, 1 - \epsilon, 1 + \epsilon\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s, a)\right) + \eta \cdot\,\text{entropy}(\pi_{\theta'}(s, \cdot))\right].
                 \end{align*}
             </div>
@@ -828,14 +751,14 @@ mark.red {
             window.MathJax = {
                 tex2jax: {
                     inlineMath: [['$','$'], ['\\(','\\)']],
-                        displayMath: [['$$','$$'], ['\\[','\\]']],
-                        processEscapes: true,
-                        processEnvironments: true,
-                        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
-                        TeX: { equationNumbers: { autoNumber: "AMS" },
-                                extensions: ["AMSmath.js", "AMSsymbols.js", "color.js"],
-                        },
-                        jax: ["input/TeX", "output/SVG"]
+                    displayMath: [['$$','$$'], ['\\[','\\]']],
+                    processEscapes: true,
+                    processEnvironments: true,
+                    skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+                    TeX: { equationNumbers: { autoNumber: "AMS" },
+                        extensions: ["AMSmath.js", "AMSsymbols.js", "color.js"],
+                    },
+                    jax: ["input/TeX", "output/SVG"]
                 },
                 AuthorInit: function () {
                     MathJax.Hub.Register.StartupHook("Begin",function () {
