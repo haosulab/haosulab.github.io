@@ -442,18 +442,6 @@ mark.red {
                         $\mu_t(s;s_0)$ is the average visitation frequency of the state $s$ in step $k$.
                     </li>
                     <li>Can you guess the influence of $\gamma$ in this result?</li>
-                    <!--
-                       -<li>We can also normalize $\gamma^t \mu_t(s;s_0)$ to be a <i>stationary distribution</i> over states:
-                       -    \[
-                       -    d^{\pi_{\th},\gamma}(s;s_0)=\frac{\sum_{t=0}^{\infty}\gamma^t\mu_t(s;s_0)}{\sum_s\sum_{t=0}^{\infty}\gamma^t\mu_t(s;s_0)}
-                       -    \]
-                       -</li>
-                       -<li>The theorem is equivalently stated as 
-                       -    \[
-                       -    \nabla_{\theta}V^{\pi_{\theta}}(s_0)=\sum_{s}d^{\pi_{\th},\gamma}(s;s_0) \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta},\gamma}(s, a)
-                       -    \]
-                       -</li>
-                       -->
                 </ul>
                 <center><div class="hl">We will assume the discounted setting from now on.</div></center>
             </div>
@@ -496,155 +484,20 @@ mark.red {
                 </ul>
             </div>
 
-            <div class="step slide separator">
-                <h1 class="nt">Practical First-Order Policy Optimization</h1>
-            </div>
-
-            <div class="step slide">
-                <h1 class="nt">Advanced Value Estimates</h1>
-                We have seen that we can use $\sum_{i = h}^{\infty} \gamma^{i - h} \cdot r_i$ as an unbiased estimate for $Q^{\pi_{\theta}, \gamma}(s_t, a_t)$.
-                <br/>
-                <br/>
-                We can also have a value network $v_{\omega}(s)$ to try to memorize (estimates of) $V^{\pi_{\theta}, \gamma}(s)$ during the training. This way, whenever we need an estimate of $Q^{\pi_{\theta}, h}(s_t, a_t)$, we can use
-                <ul>
-                    <li>$e_{\infty} = \sum_{i = h}^{\infty} \gamma^{i - h}\cdot r_i$, which is unbiased but has high variance. </li>
-                    <li>$e_t = r_t + \gamma\cdot v_{\omega}(s_{h + 1})$, which is biased but possibly has lower variance. </li>
-                    <li>$e_t = \sum_{i = h}^t \gamma^{i - h}\cdot r_i + \gamma^{k - h + 1}\cdot v_{\omega}(s_{k + 1})$, which has a trade-off between the first two, depending on the choice of $k$. </li>
-                    <li>$\sum_{i = h}^{\infty} \alpha_i e_i$, further combines different $e_i$'s with tunable weights $\alpha_i$'s that summing to $1$. </li>
-                </ul>
-            </div>
-            <!-- ################################################################## -->
-
-            <div class="step slide">
-                <h1 class="nt">Advantage Estimates</h1>
-                \begin{align*}
-                \nabla_{\theta}V^{\pi_{\theta}, \gamma}(s_0)
-                &= \sum_s\sum_{t = 0}^{\infty}\gamma^t\mu_t(s;s_0)
-                \left(\sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta}, \gamma}(s, a) - 0\right)\\
-                &= \sum_s\sum_{t = 0}^{\infty}\gamma^t\mu_t(s;s_0)
-                \left(\sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta}, \gamma}(s, a) - \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a)\cdot V^{\pi_{\theta}, \gamma}(s)\right)\\
-                &= \sum_s\sum_{t = 0}^{\infty}\gamma^t\mu_t(s;s_0)
-                \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot \left(Q^{\pi_{\theta}, \gamma}(s, a) - V^{\pi_{\theta}, \gamma}(s)\right).\\
-                \end{align*}
-                $Q^{\pi_{\theta}, \gamma}(s, a) - V^{\pi_{\theta}, \gamma}(s)$ is called <mark class="red">advantage</mark>, which is typically denoted as $A^{\pi_{\theta}, \gamma}(s, a)$. In fact, the same derivation works if we replace $V^{\pi_{\theta}, \gamma}(s)$ by any quantity that depends only on $s$ (e.g., $0$, in our original derivation).
-            </div>
-
-            <div class="step slide">
-                <h1 class="nt">Advantage Estimates (Cont'd)</h1>
-                With the new representation of the policy gradient, we can now derive a new estimate of the policy gradient
-
-                \begin{align*}
-                \nabla_{\theta}V^{\pi_{\theta}, \gamma}(s_0) 
-                &= \sum_s\sum_{t = 0}^{\infty}\gamma^t\mu_t(s;s_0)\sum_{a}\nabla_{\theta}\ln\left(\pi_{\theta}(s, a)\right) \cdot \pi_{\theta}(s, a) A^{\pi_{\theta}, \gamma}(s, a)\\
-                &=\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\sum_{a}\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a\right)\cdot\pi_{\theta}(s_t, a)A^{\pi_{\theta}, \gamma}(s_t, a)\right]\\
-                &=\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t\right)\cdot A^{\pi_{\theta}, \gamma}(s_t, a_t)\right]
-                \end{align*}
-                Without resampling, we cannot unbiasedly estimate the advantage, fortunately we can still use a value network.
-            </div>
-
-            <div class="step slide">
-                <h1 class="nt">Advantage Estimates (Cont'd)</h1>
-                Recall that we said $Q^{\pi_{\theta}, \gamma}(s_t, a_t)$ can be estiamted by $\sum_{i = h}^{\infty}\alpha_i e_i$ in general, where
-                $$ \sum_{i = h}^{\infty} \alpha_i = 1$$
-                and
-                $$e_t = \sum_{i = h}^t \gamma^{i - h}\cdot r_i + \gamma^{k - h + 1}\cdot v_{\omega}(s_{k + 1}).$$
-                \begin{align*}
-                \end{align*}
-
-                The very popular General Advantage Estimate (GAE) estimates the advantage in the same fashion and it chooses $\alpha_i$ to be proportional to $\lambda^i$, where $\lambda\in[0, 1]$.
-            </div>
-
-            <div class="step slide">
-                <h1 class="nt">Advantage Estimates (Cont'd)</h1>
-                That is, the General Advantage Estimate (GAE) estimate $A^{\pi_{\theta}, \gamma}(s_t, a_t)$ 
-                by
-                \begin{align*}
-                \hat{A}_{\text{GAE}(\lambda)}^{\pi_{\theta}, \gamma}(s_t, a_t) &= (1 - \lambda)\sum_{t = h}^{\infty} \lambda^{k - h}\left(\sum_{i = h}^t \gamma^{i - h}\cdot r_i + \gamma^{k - h + 1}\cdot v_{\omega}(s_{k + 1}) - v_{\omega}(s_{h})\right)\\
-                (\text{calculation omitted}) &=\sum_{t = h}^{\infty}(\gamma\lambda)^{k - h} \left(r_t + \gamma v_{\omega}(s_{k + 1}) - v_{\omega}(s_{k})\right)
-                \end{align*}
-                Define $0^0 = 1$, we have
-                \begin{align*}
-                \hat{A}_{\text{GAE}(0)}^{\pi_{\theta}, \gamma}(s_t, a_t) = r_t + \gamma v_{\omega}(s_{h + 1}) - v_{\omega}(s_{h}).
-                \end{align*}
-                We also have
-                \begin{align*}
-                \hat{A}_{\text{GAE}(1)}^{\pi_{\theta}, \gamma}(s_t, a_t) = \sum_{i = h}^{\infty}\gamma^{i - h} r_i - v_{\omega}(s_t).
-                \end{align*}
-
-            </div>
-
-            <div class="step slide">
-                <h1 class="nt">Some Little Detail</h1>
-                Given any advantage estimate $\hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t)$, we can estimate the policy gradient by
-                \begin{align*}
-                \hat{\nabla}_{\theta}V^{\pi_{\theta}, \gamma}(s_0) 
-                =\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t)\right].
-                \end{align*}
-                However, in most implementations, people simply use
-                \begin{align*}
-                \hat{\nabla}_{\theta}V^{\pi_{\theta}, \gamma}(s_0) 
-                =\mathbb{E}\left[\sum_{t = 0}^{\infty}\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t)\right].
-                \end{align*}
-            </div>
-
-            <div class="step slide">
-                <h1 class="nt">Escaping Local optima</h1>
-                Because policy gradient is essentially first-order optimization of a non-convex function, no convergence is guaranteed. People use regularization (exploration term) to encourage escaping local optima. For example, instead of taking the gradient of 
-                \begin{align*}
-                \theta' \mapsto \mathbb{E}\left[\sum_{t = 0}^{\infty}\ln\left(\pi_{\theta'}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t)\right]
-                \end{align*}
-                at $\theta$, people instead take the gradient of
-                \begin{align*}
-                \theta'\mapsto\mathbb{E}\left[\sum_{t = 0}^{\infty}\ln\left(\pi_{\theta'}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t) + \eta \cdot\,\text{entropy}(\pi_{\theta'}(s_t, \cdot))\right]
-                \end{align*}
-                at $\theta$.
-            </div>
-
-
-            <div class="step slide">
-                <h1 class="nt">More Stable Policy Optimization</h1>
-                Now that we know how to estimate policy gradients, any method/trick that can be applied to general first-order optimization can in principle to be used for policy optimization. 
-                <br /> 
-                <br /> 
-                Naive gradient descent does not work very well in practice: rollouts are expensive, so we typically do multiple gradient descents on the same set of rollouts, these descents will become more and more biased. Some remedies:
-                <ul>
-                    <li>TRPO (Trust Region Policy Optimization): encourages the updated policy to be close to the previous policy in terms of $\text{KL}(\pi_{\text{new}}(s, \cdot)||\pi_{\text{old}}(s, \cdot))$, w.r.t. some distribution over $s$.</li>
-                    <li>PPO (Proximal Policy Optimization): encourages the updated policy to be close to the previous policy in terms of $\left|\frac{\pi_{\text{new}}(s, \cdot)}{\pi_{\text{old}}(s, \cdot))} - 1\right|$, w.r.t. some distribution over $s$.</li>
-                </ul>
-            </div>
-
-            <div class="step slide separator">
-                <h1 class="nt">Case Study: Proximal Policy Optimization (PPO)</h1>
-            </div>
-
-            <!-- ################################################################## -->
-
-            <div class="step slide">
-                <h1 class="nt">PPO</h1>
-                PPO repeats the following procedure:
-                <ul>
-                    <li>Sample multiple (say, 128) trajectories of certain length (say, 128) to get a replay buffer of state-actions pairs (say, 128 * 128 $(s, a)$ pairs)</li>
-                    <li>Estimate the advantage of each $(s, a)$ pair using GAE (say GAE($0.95$)) and the corresponding trajectory</li>
-                    <li> Do (mini-batch) gradient descent w.r.t to an objective function multiple times (say, mini-batch of size 128 * 32, 16 gradient descents)</li>
-                </ul>
-            </div>
-
-            <div class="step slide">
-                <h1 class="nt">PPO - Objective Function</h1>
-                Suppose the current replay buffer is generated using $\pi_{\theta}$, the regular (non-proximal) gradient update uses the following objective function at $\theta$ (note the gradient of the $\ln(\pi_{\theta'}(s, a))$ is expanded):
-
-                \begin{align*}
-                &\theta'\mapsto\mathbb{E}_{(s, a)\sim\text{replay buffer}}\\
-                &\ \ \ \ \left[\frac{\pi_{\theta'}(s, a)}{\pi_{\theta}(s, a)}\cdot \hat{A}^{\pi_{\theta}, \gamma}(s, a) + \eta \cdot\,\text{entropy}(\pi_{\theta'}(s, \cdot))\right].
-                \end{align*}
-
-
-                PPO use the following objective function for gradient descents at $\theta$:
-                \begin{align*}
-                &\theta'\mapsto\mathbb{E}_{(s, a)\sim\text{replay buffer}}\\
-                &\ \ \ \ \left[\text{min}\left(\frac{\pi_{\theta'}(s, a)}{\pi_{\theta}(s, a)}\cdot \hat{A}^{\pi_{\theta}, \gamma}(s, a), \text{clip}\left(\frac{\pi_{\theta'}(s, a)}{\pi_{\theta}(s, a)}, 1 - \epsilon, 1 + \epsilon\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s, a)\right) + \eta \cdot\,\text{entropy}(\pi_{\theta'}(s, \cdot))\right].
-                \end{align*}
-            </div>
+            <!--
+               -<div class="step slide">
+               -    <h1 class="nt">Escaping Local optima</h1>
+               -    Because policy gradient is essentially first-order optimization of a non-convex function, no convergence is guaranteed. People use regularization (exploration term) to encourage escaping local optima. For example, instead of taking the gradient of 
+               -    \begin{align*}
+               -    \theta' \mapsto \mathbb{E}\left[\sum_{t = 0}^{\infty}\ln\left(\pi_{\theta'}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t)\right]
+               -    \end{align*}
+               -    at $\theta$, people instead take the gradient of
+               -    \begin{align*}
+               -    \theta'\mapsto\mathbb{E}\left[\sum_{t = 0}^{\infty}\ln\left(\pi_{\theta'}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t) + \eta \cdot\,\text{entropy}(\pi_{\theta'}(s_t, \cdot))\right]
+               -    \end{align*}
+               -    at $\theta$.
+               -</div>
+               -->
 
             <!-- ################################################################### -->
             <div class="step slide">

@@ -499,6 +499,12 @@ table.bordertable  tfoot td {
     font-weight: bold;
 }
 
+.red {
+    /* background-image: url(../images/background-title.png);   */
+    color: rgb(255, 0, 0);
+    font-weight: bold;
+}
+
 /* acknowledgement to external sources */
 .credit {
     /* background-image: url(../images/background-title.png);   */
