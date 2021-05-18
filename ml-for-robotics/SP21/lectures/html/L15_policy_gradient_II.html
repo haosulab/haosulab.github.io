@@ -39,9 +39,9 @@ mark.red {
              data-perspective="1000"
              data-transition-duration="0">
             <div class="step slide title" data-x="-2200" data-y="-3000" id="title">
-                <h1 class="nt">Advanced Policy Optimization</h1>
+                <h1 class="nt">Advanced On-Policy RL</h1>
                 <h2>Hao Su
-                    <p style="font-size:30px">(slides prepared by Shuang Liu)</p>
+                    <p style="font-size:30px">(slides prepared with the help from Shuang Liu)</p>
                 </h2>
                 <h3>Spring, 2021</h3>
             </div>
@@ -197,7 +197,7 @@ mark.red {
             </div>
 
             <div class="step slide separator">
-                <h1 class="nt">Efficent and Stable Policy Optimization</h1>
+                <h1 class="nt">Efficient and Stable Policy Optimization</h1>
             </div>
 
             <div class="step slide">
@@ -274,6 +274,18 @@ mark.red {
                 </div>
                 We compute the gradient (and Hessian) of $f$ <b>for once</b>, but we can use it to update $x$ <b>for multiple steps</b> safely!
             </div>
+
+            <!-- ################################################################## -->
+            <div class="step slide">
+                <h1 class="nt">Basic Framework of Trust-region Policy Optimization (e.g, TRPO/PPO)</h1>
+                TRPO/PPO repeat the following procedure:
+                <ul>
+                    <li>Sample multiple (say, 128) trajectories of certain length (say, 128) to get a minibatch of state-actions pairs (say, 128 * 128 $(s, a)$ pairs)</li>
+                    <li>Estimate the advantage of each $(s, a)$ pair using GAE (say GAE($0.95$)) and the corresponding trajectory</li>
+                    <li>Solve the (mini-batch) local subproblem multiple times (say, mini-batch of size 128 * 32, 16 gradient descents)</li>
+                </ul>
+            </div>
+
             <!-- ################################################################### -->
             <div class="step slide">
                 <h1 class="nt">Trust-region Method for Policy Optimization</h1>
@@ -324,56 +336,92 @@ mark.red {
                 The local constrained subproblem in TRPO:
                 \[
                 \aligned{
-                & \underset{\pi_{\theta}}{\text{maximize}} && \mathbb{E}_{\pi_{\theta_k}}\sum_{t=0}^{\infty} \frac{\pi_{\theta}(s_t,a_t)}{\pi_{\theta_k}(s_t,a_t)}A^{\pi_{\theta_k}, \gamma}(s_t,a_t)\\
+                & \underset{\theta}{\text{maximize}} && \mathbb{E}_{\pi_{\theta_k}}\sum_{t=0}^{\infty} \frac{\pi_{\theta}(s_t,a_t)}{\pi_{\theta_k}(s_t,a_t)}A^{\pi_{\theta_k}, \gamma}(s_t,a_t)\\
                 & \text{subject to} && \mathbb{E}_{\pi_{\theta_k}}[\mathrm{KL}(\pi_{\theta_k}(s,\cdot)\|\pi_{\theta}(s,\cdot))]\le \delta
                 }
                 \]
                 The constraint restricts that $\pi_{\theta}$ not deviates much from $\pi_{\theta_k}$.
-            </div>
-
-            <!-- ################################################################## -->
-            <div class="step slide">
-                <h1 class="nt">TRPO Algorithm</h1>
-                TRPO repeats the following procedure:
                 <ul>
-                    <li>Sample multiple (say, 128) trajectories of certain length (say, 128) to get a replay buffer of state-actions pairs (say, 128 * 128 $(s, a)$ pairs)</li>
-                    <li>Estimate the advantage of each $(s, a)$ pair using GAE (say GAE($0.95$)) and the corresponding trajectory</li>
-                    <li>Do (mini-batch) gradient descent w.r.t to an objective function multiple times (say, mini-batch of size 128 * 32, 16 gradient descents)</li>
+                    <li><i>Q: What is the intuitive explanation of this objective function?</i></li>
                 </ul>
             </div>
 
             <!-- ################################################################### -->
             <div class="step slide">
-                <h1 class="et">Proximal Policy Optimization (PPO)</h1>
+                <h1 class="nt">Constrained Opt. $\rightarrow$ Unconstrained Opt.</h1>
                 <ul>
                     <li>In TRPO, the subproblem to solve is a <b>constrained</b> optimization problem. Dealing with constraints involves tricks. </li>
                     <li>PPO uses a unconstrained optimization problem to approximate the constrained problem. </li>
-                    <li>Consider the following optimization subproblem:
-                        \[
-                        \aligned{
-                        & \underset{\pi_{\theta}}{\text{maximize}} && \mathbb{E}_{\pi_{\theta_k}}\sum_{t=0}^{\infty} \left[\min\left(r(\theta) A^{\pi_{\theta_k}, \gamma}(s_t,a_t), \text{clip}(r(\theta), 1-\epsilon, 1+\epsilon)A^{\pi_{\theta_k}, \gamma}(s_t,a_t)\right)\right]\\
-                        }
-                        \]
-                        where $r_{t,k}(\theta)=\frac{\pi_{\theta}(s_t,a_t)}{\pi_{\theta_k}(s_t,a_t)}$.
-                    </li>
+                    <!--<li><i>Q: What is the common routine to convert a constrained optimization problem to an unconstrained problem?</i></li>-->
+                    <li>Let $r_{t,k}(\theta; s,a)=\frac{\pi_{\theta}(s_t,a_t)}{\pi_{\theta_k}(s_t,a_t)}$, we massage the original objective $\bb{E} [rA]$ to a new objective with the following behavior:</li>
                     <img src="./L15/PPO.png" alt="" width="1000px"/>
+                    Note: For simplicity, dependencies on $(s,a)$ are omitted.
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Proximal Policy Optimization (PPO)</h1>
+                <img src="./L15/PPO.png" alt="" width="1000px"/>
+                <ul>
+                    <li>The following objective function has the desired graph:
+                        \[
+                        f(r,A)=\begin{cases}
+                        \mathrm{clip}(r, -\infty, 1+\epsilon) A, & A>0\\
+                        \mathrm{clip}(r, 1-\epsilon, \infty) A, & A\le 0
+                        \end{cases}
+                        \]
+                    </li>
                 </ul>
             </div>
 
-            <!--
-               -<div class="step slide">
-               -    <h1 class="nt">Escaping Local optima</h1>
-               -    Because policy gradient is essentially first-order optimization of a non-convex function, no convergence is guaranteed. People use regularization (exploration term) to encourage escaping local optima. For example, instead of taking the gradient of 
-               -    \begin{align*}
-               -    \theta' \mapsto \mathbb{E}\left[\sum_{t = 0}^{\infty}\ln\left(\pi_{\theta'}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t)\right]
-               -    \end{align*}
-               -    at $\theta$, people instead take the gradient of
-               -    \begin{align*}
-               -    \theta'\mapsto\mathbb{E}\left[\sum_{t = 0}^{\infty}\ln\left(\pi_{\theta'}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t) + \eta \cdot\,\text{entropy}(\pi_{\theta'}(s_t, \cdot))\right]
-               -    \end{align*}
-               -    at $\theta$.
-               -</div>
-               -->
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Proximal Policy Optimization (PPO)</h1>
+                <ul>
+                    <li>The Proximal Policy Optimization method solves the unconstrained subproblem to improve the policy. 
+                        \[
+                        \aligned{
+                        & \underset{\theta}{\text{maximize}} && \mathbb{E}_{\pi_{\theta_k}}\sum_{t=0}^{\infty} f(r(\theta; s_t, a_t), A(s_t, a_t))\\
+                        }
+                        \]
+                    </li>
+                    <li>
+                        In the original paper, the objective is written in an equaivalent form:
+                        \[
+                        \aligned{
+                        & \underset{\theta}{\text{maximize}} && \mathbb{E}_{\pi_{\theta_k}}\sum_{t=0}^{\infty} \left[\min\left(r_{t, k}(\theta) A^{\pi_{\theta_k}, \gamma}(s_t,a_t), \text{clip}(r_{t, k}(\theta), 1-\epsilon, 1+\epsilon)A^{\pi_{\theta_k}, \gamma}(s_t,a_t)\right)\right]\\
+                        }
+                        \]
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Exploration</h1>
+                <ul>
+                    <li>The family of policy gradient algorithms also need to implement <b>exploration</b>. </li>
+                    <li>Since the policy function is a distribution over actions, TRPO and PPO randomly sample actions according to the policy function. This random behavior is already an effective exploration strategy.
+                        <ul>
+                            <li>e.g., for discrete action space, we use softmax to output the action probability;</li>
+                            <li>for continuous action space, we predict the mean and variance of a Gaussian, which allows us to compute the action probability and sample actions.</li>
+                        </ul>
+                    </li>
+                    <li>Improved exploration by entropy regularizer:
+                        \[
+                        \aligned{
+                        & \underset{\theta}{\text{maximize}} && \mathbb{E}_{\pi_{\theta_k}}\sum_{t=0}^{\infty} f(r(\theta; s_t, a_t), A(s_t,a_t))+\eta\cdot\, \text{entropy}(\pi_{\theta'}(s_t, \cdot))\\
+                        }
+                        \]
+                    </li>
+                    <li>Entropy:
+                        <ul>
+                            <li>Discrete distribution $P$: $\text{entropy}(P)=-\sum_x p(x)\log p(x)$ </li>
+                            <li>Continuous distribution $P$ with density $f$: $\text{entropy}(P)=-\int_x f(x)\log f(x)+\infty$ </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
 
             <!-- ################################################################### -->
             <div class="step slide">

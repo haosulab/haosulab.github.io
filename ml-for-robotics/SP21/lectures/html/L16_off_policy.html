@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>L16</title>
+        <meta name="description" content="" />
+        <meta name="author" content="Hao Su" />
+        <link rel="stylesheet" href="../extras/highlight/styles/github.css">
+        <!--
+           -<link rel="stylesheet" href="../extras/mermaid/mermaid.forest.css">
+           -->
+        <link rel="stylesheet" href="../extras/mermaid/mermaid.dark.css">
+        <link href="../css/impress-common.css" rel="stylesheet" />   
+        <link href="css/classic-slides.css" rel="stylesheet" />
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/1.7.1/viz.js"> </script>
+        <link rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/vs.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+    </head>
+    <body class="impress-not-supported">
+        <div class="fallback-message">
+            <p>Your browser <b>doesn't support the features required</b> by impress.js, so you are presented with a simplified version of this presentation.</p>
+            <p>For the best experience please use the latest <b>Chrome</b>, <b>Safari</b> or <b>Firefox</b> browser.</p>
+        </div>
+        <div id="latex-macros"></div>
+        <script src="./latex_macros.js"></script>
+        <div id="impress"
+             data-width="1920"
+             data-height="1080"
+             data-max-scale="3"
+             data-min-scale="0"
+             data-perspective="1000"
+             data-transition-duration="0"
+             >
+            <div class="step slide title" data-x="-2200" data-y="-3000" id="title">
+                <h1 class="nt">L16: Advanced Off-Policy RL</h1>
+                <h2>Hao Su
+                    <p style="font-size:30px">(slides prepared with the help from Zhan Ling)</p>
+                </h2>
+                <h3>Spring, 2021</h3>
+                <div class="ack">Contents are based on website </div>
+            </div>
+
+            <div id="toc" class="step slide" data-rel-x="2200" data-rel-y="0">
+                <h1 class="et">Agenda</h1>
+                <ul class="large" id="agenda">
+                </ul>
+                click to jump to the section.
+            </div>
+
+            <!-- ################################################################### -->
+            <!-- # New section                                                     # -->
+            <!-- ################################################################### -->
+            <div class="step slide separator">
+                <h1 class="nt">Key Ideas of Off-policy RL</h1>
+            </div>            
+
+            <div class="step slide">
+                <h1 class="nt">Off-Policy RL</h1>
+                Key ideas: 
+                <ul>
+                    <li> Use a replay buffer to store samples that might be collected from long before. </li>
+                    <li> Build a value network approximator $Q_{\th}(s,a)$ and learn $\theta$ by minimizing the TD loss with samples from the replay buffer. </li>
+                    <li> Had $Q_{\theta}$ been learned, policy $\pi(s)$ can be considered as solving an optimization problem over the value network:
+                        \[ \pi(s) = \text{argmax}_{a\in\mc{A}} Q_{\th}(s, a)\]
+                    </li>
+                    <li> For discrete action space, the optimum $a$ can be computed by enumerating all possible actions (recall the DQN algorithm). </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Recall: Q-Learning for Tabular RL</h1>
+                <div style="margin-top: 100px"></div>
+                <ol>
+                    <li>Given transitions $\{(s,a,s',r)\}$ from some trajectories, how to improve the current Q-function?
+                        <ul>
+                            <li>By Temporal Difference learning, the update target for $Q(S,A)$ is
+                                <ul>
+                                    <li>$R+\gamma\max_a Q(S', a)$</li>
+                                </ul>
+                            </li>
+                            <li>Take a small step towards the target
+                                <ul>
+                                    <li>$Q(S,A)\leftarrow Q(S,A)+\alpha[R+\gamma\max_a Q(S', a)-Q(S,A)]$</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li>Given $Q$, how to improve policy?
+                        <ul>
+                            <li>Take the greedy policy based on the current $Q$
+                                <ul>
+                                    <li>$\pi(s)=\text{argmax}_a Q(s,a)$</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li>Given $\pi$, how to generate trajectories?
+                        <ul>
+                            <li>$\epsilon$-greedy policy in the environment. </li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Continous Q-Learning</h1>
+                <ul>
+                    <li> The major challenge for continous Q-learning is in how we compute $\max_a Q_{\theta}(s,a)$.</li>
+                    <li> For discrete action space, the optimum $a$ can be computed by enumerating all possible actions (recall the DQN algorithm). </li>
+                    <li> However, for continuous action space, computing $\max_a Q_{\theta}(s,a)$ cannot be achieved by enumeration.</li>
+                    <li> <i>Q: How to do Q-learning if the action space is continuous?</i></li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Continous Q-Learning</h1>
+                <ul>
+                    <li> The most straight-forward idea: Solving an optimization problem to compute $a$:
+                        \[
+                        \begin{aligned}
+                        &\underset{a}{\text{maximize}}&&Q_{\theta}(s, a)\\
+                        \end{aligned}
+                        \]
+                    </li>
+                    <li>Limitations:
+                        <ul>
+                            <li>Very slow!</li>
+                            <li>May get stuck in local minima.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Continous Deterministic Policy Network</h1>
+                <ul>
+                    <li> If optimizing $a$ every time is too slow, let us use a neural network to memorize the decisions in the past!</li>
+                    <li> We consider a simple policy family &dash; deterministic policies. Deterministic policies can be approximated as a network $\pi_{\phi}:\mathcal{S}\mapsto \mathbb{R}$. </li>
+                    <li> Suppose that we have a learned value network $Q_{\theta}(s,a)$. Then, the optimal policy can be obtained by "fine-tuning" our policy network: 
+                        \[
+                        \begin{aligned}
+                        &\underset{\phi}{\text{maximize}}&&Q_{\theta}(s, \pi_{\phi}(s))\\
+                        \end{aligned}
+                        \]
+                    </li>
+                    <li><i>Q: What are the potential benefit of using a policy network other than being faster?</i></li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">TD-based Q Function Learning</h1>
+                We can still use TD-loss to learn $Q_{\theta}$. Given a transition sample $(s,a,s',r)$: 
+                <ul>
+                    <li>In tabular Q-learning, the update target for $Q(s,a)$ is $r+\gamma\max_a Q(s', a)$;</li>
+                    <li>In continuous deterministic Q-learning, the update target becomes $r+\gamma Q(s', \pi_{\phi}(s'))$.</li>
+                    <li>In literature, the policy network is also referred as "actors" and the value network referred as "critics"</li>
+                </ul>
+                <img src="./L16/ddpg_networks.png" width="80%"/>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Have We Finished? Revisit the Three Questions</h1>
+                <div style="margin-top: 100px"></div>
+                <ol>
+                    <li>Given transitions $\{(s,a,s',r)\}$ from some trajectories, how to improve the current Q-function?
+                        <ul>
+                            <li>We have derived the update target for $Q(S,A)=r+\gamma Q(s', \pi_{\phi}(s'))$.</li>
+                        </ul>
+                    </li>
+                    <li>Given $Q$, how to improve policy?
+                        <ul>
+                            <li>We introduced a policy network $\pi_{\phi}$ and update it by solving
+                                \[
+                                \begin{aligned}
+                                &\underset{\phi}{\text{maximize}}&&Q_{\theta}(s, \pi_{\phi}(s))\\
+                                \end{aligned}
+                                \]
+                            </li>
+                        </ul>
+                    </li>
+                    <li>Given $\pi$, how to generate trajectories?
+                        <ul>
+                            <li>We also need exploration in contious action space!</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Exploration in Continuous Action Space</h1>
+                <ul>
+                    <li> For discrete action space, we can use $\epsilon$-greedy. </li>
+                    <li> For continuous action space, we can add small perturbations to the actions output by the policy network to do exploration. </li>
+                    <li> Example: 
+                        <ul>
+                            <li> Gaussian noise: $\mathcal{N}(0, \sigma^2)$;</li>
+                            <li> Ornstein-Uhlenbeck random process (temporally correlated random noises).</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt">Deep Deterministic Policy Gradient (DDPG)</h1>
+                <ul>
+                    <li>Initialize replay buffer $D$, Q network $Q_{\th}$ and $\color{red}{\pi_\phi}$.</li>
+                    <li>For every episode:
+                        <ul>
+                            <li>Sample the initial state $s_0\sim P(s_0)$</li>
+                            <li>Repeat until the episode is over
+                                <ul>
+                                    <li>Let $s$ be the current state</li>
+                                    <li class='red'>select $a= \pi_\phi(s) + \text{ random noise }$</li>
+                                    <li>Execute $a$ in the environment, and receive the reward $r$ and the next state $s'$</li>
+                                    <li>Add transitions $(s,a,s')$ in $D$</li>
+                                    <li>Sample a random batch from $D$ and build the batch TD loss</li>
+                                    <li>Perform one or a few gradient descent steps on the TD loss</li>
+                                    <li class='red'>Perform one or a few gradient descent steps on the policy loss</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <div class="credit"><a href="https://arxiv.org/pdf/1509.02971.pdf"> Continuous control with deep reinforcement learning</a> </div>
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt">Trouble and Tricks in Practice</h1>
+                <ul>
+                    <li> DQN and DDPG are concise, but they cannot get state-of-the-art performance in practice. </li>
+                    <li> Troubles in practice:
+                        <ul> 
+                            <li> Value overestimation </li>
+                            <li> Rare beneficial samples in replay buffer </li>
+                            <li> Slow reward propagation </li>
+                        </ul>
+                    </li>
+                    <li> Tricks in practice:
+                        <ul>
+                            <li> Dueling Network </li>
+                            <li> Distributional action-value network </li>
+                            <li> State-conditional exploration noise </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="step slide separator" id="offpolicy">
+                <h1 class="nt">Tricks &dash; Value Overestimation</h1>
+            </div>   
+
+            <div class="step slide">
+                <h1 class="nt"> Value Overestimation</h1>
+                <ul>
+                    <li> Value network approximates the value. Policy networks are optimized over value networks. 
+                        If $Q$ of some sub-optimal action $a'$ is overestimated and larger than the optimal one, 
+                        policy network tends to choose suboptimal actions and hurts the performance. </li>
+                    <li> Theoretical intuition in Q-Learning 
+                        <ul>
+                            <li> Target of TD update is $Q^{target}_{\th}(s) = R(s, a, s') + \gamma \max_{a'} Q_{\th}(s', a')$  </li>
+                            <li> Assume $Q_{\theta}(s, a) = Q_{gt}(s, a) + \epsilon$ with $\bb{E}[\epsilon]=0$, where $Q_{gt}$ is the ground-truth $Q$ function </li>
+                            <li> $E_{\epsilon}[\max_{a'} Q_{\th}(s', a')] = E_{\epsilon}[\max_{a'}Q_{gt}(s, a) + \epsilon] \geq \max_{a'} E_{\epsilon}[Q_{gt}(s', a') + \epsilon] = \max_{a'} Q_{gt}(s', a')$ </li>
+                            <li> In practice $E_{\epsilon}[\max_{a'} Q_{\th}(s', a')] > \max_{a'} Q_{gt}(s', a')$ which make target of TD update also overestimated. </li>
+                        </ul>
+                    </li>
+                </ul>
+                <div class="credit"><a href="https://www.ri.cmu.edu/pub_files/pub1/thrun_sebastian_1993_1/thrun_sebastian_1993_1.pdf"> Issues in using function approximation for reinforcement learning</a> </div>
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt"> Double Q-Learning</h1>
+                <ul>
+                    <li> The $\max$ operator in Q-learning uses the same values both to select and to evaluate an action. This makes it more likely to select overestimated values, 
+                        resulting in overoptimistic value estimates.</li>
+                    <li> Solution: decouple the selection from the evaluation with double value functions $Q_{\th_i}(s, a), i=0, 1$. </li>
+                    <ul>
+                        <li> Random choose one of the $Q$ function to collect samples from the environment.  </li>
+                        <li> TD error of $Q_{\th_i}$ is $TD_{\th_i}(s,a)=\|Q_{\th_i}(s,a)-[R(s,a,s')+\gamma Q_{\color{red}{\th_{1-i}}}(s',\text{argmax}_{a'} Q_{\th_i}(s', a'))]\|^2$. </li>
+                    </ul>
+                    <li> In theory and practice, Double Q-Learning has advantages over Q-Learning in some cases.
+                </ul>
+                <div class="credit"><a href="https://proceedings.neurips.cc/paper/2010/file/091d584fced301b442654dd8c23b3fc9-Paper.pdf"> Double Q-learning </a> </div>
+                <div class="credit"><a href="https://arxiv.org/pdf/1509.06461.pdf"> Deep Reinforcement Learning with Double Q-learning </a> </div>        
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt"> Clipped Double Q-Learning </h1>
+                <ul>
+                    <li> In practice, Double Q-Learning in continuous action space can provide better performance, because it does not entirely
+                        eliminate the overestimation. </li>
+                    <li> Solution: Clipped Double Q-Learning </li>
+                    <ul>
+                        <li> TD error of $Q_{\th_i}$ is $TD_{\th_i}(s,a)=\|Q_{\th_i}(s,a)-[R(s,a,s')+\gamma \color{red}{\min_j Q_{\th_j}}(s', \pi_{\phi}(s'))]\|^2$. </li>
+                    </ul>
+                    <li> With Clipped Double Q-learning, the value target is smaller than that with one value function.</li>
+                    <li> While this update rule may induce an underestimation bias, this is far preferable to overestimation
+                        bias, as unlike overestimated actions, the value of underestimated actions will not be explicitly propagated
+                        through the policy update </li>
+                    <li> In practice, two value functions are enough. Using more cannot provide extra benifits. </li>
+                </ul>
+                <div class="credit"><a href="https://arxiv.org/pdf/1802.09477.pdf"> Addressing function approximation error in actor-critic methods</a> </div>
+            </div>
+
+            <div class="step slide separator" id="offpolicy">
+                <h1 class="nt">Tricks &dash; Prioritized experience replay</h1>
+            </div>   
+
+            <div class="step slide">
+                <h1 class="nt"> Rare beneficial samples in replay buffer </h1>
+                <ul>
+                    <li> In environment that suffers from hard exploration, reward singals are rare in replay buffer. It is not efficient to uniformly choice training samples from th buffer. </li>
+                    <li> Example: Montezuma's revenge, Blind Cliffwalk. </li>
+                    <div class="row">
+                        <div class="column" style="flex: 10%">
+                            <img src="./L16/MR.png" width="75%"></img>
+                        </div>
+                        <div class="column" style="flex: 10%">
+                            <img src="./L16/Blind_Cliffwalk.png" width="100%"></img>
+                        </div>
+                    </div>
+                </ul>
+                <div class="credit"><a href="https://arxiv.org/pdf/1511.05952.pdf"> Prioritized experience replay</a> </div>
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt"> Blind Cliffwalk </h1>
+                <ul>
+                    <li> Two actions at each state: $\color{black}{\text{right}}$ and $\color{red}{\text{wrong}}$. </li>
+                    <li> Episode is terminated whenever the agent takes the $\color{red}{\text{wrong}}$ action. </li>
+                    <li> Agent will get reward $1$ after taking $n$ $\color{black}{\text{right}}$ actions. </li>
+                    <div style=margin-top:10px>
+                        <img src="./L16/Blind_Cliffwalk.png" width="75%"/>
+                    </div>
+                </ul>
+                <div class="credit"><a href="https://arxiv.org/pdf/1511.05952.pdf"> Prioritized experience replay</a> </div>
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt"> Analysis with Q-Learning</h1>
+                <ul>
+                    <li> In expectation, they are $O(2^n)$ transitions with reward $0$ in replay buffer before the agent get the first reward $1$. </li>
+                    <li> With uniform sampling, the agent learn from successful transitions with probability $O(2^{-n})$ in the begining stage and this will dramatically slow down the reward propagation. </li>
+                    <li> Compare performance between uniform sampling and oracle sampling. Oracle greedily selects the transition that maximally reduces the global loss in its
+                        current state. </li>
+
+                    <div style=margin-top:10px>
+                        <img src="./L16/Blind_Cliffwalk_QL.png" width="35%"/>
+                    </div>
+                </ul>
+                <div class="credit"><a href="https://arxiv.org/pdf/1511.05952.pdf"> Prioritized experience replay</a> </div>
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt"> Prioritized experience replay </h1>
+                <ul>
+                    <li> Define a priority $p_i$ of a transition pair $i=(s, a, s')$ with TD error $\delta= Q_{\th}(s) - (R + \gamma Q_{\th}(s', \pi_{\phi}(s')))$.
+                        <ul>
+                            <li> <b> proportional prioritization</b>: $p_i = |\delta| + \epsilon$, where $\epsilon$ is a small positive constant.  </li>
+                            <li> <b> rank-based prioritization</b> $p_i = \frac{1}{\text{rank}(|\delta_i|)}$, where $\text{rank}(|\delta_i|)$ is the rank of absolute value of TD error in the replay buffer. </li>
+                        </ul>
+                    </li>
+                    <li> Probability of sampling transition $i$ as $P_i = \frac{p_i^\alpha}{\sum_{k} p_k^\alpha}$
+                        where $p_i$ > 0 is the priority of transition $i$.  </li>
+                    <li> Prioritized replay introduces bias because it changes this distribution. As a result, importance sampling is necessary to help the convergence.
+                        <ul>
+                            <li> $w'_i = (N P_i)^{-\beta}, w_i = \frac{w'_i}{\max_j w_j'}$. Noramlized importance weights due to the numerical stablity </li>
+                            <li> TD loss with importance sampling is $\sum_i w_i ||\delta_i||^2$.  </li>
+                            <li> In practice, $\beta$ is linearly aannealed from its initial value $beta_0$ to $1$. </li>
+                        </ul>
+                    </li>
+                    <li> Comment: probability of being sampled is monotonic in a transition’s priority and guaranteeing a non-zero probability even for
+                        the lowest-priority transition.  </li>
+                </ul>
+                <div class="credit"><a href="https://arxiv.org/pdf/1511.05952.pdf"> Prioritized experience replay</a> </div>
+            </div>
+
+            <div class="step slide separator" id="offpolicy">
+                <h1 class="nt"> Tricks &dash; Slow reward propagation </h1>
+            </div>  
+
+            <div class="step slide">
+                <h1 class="nt"> Slow reward propagation </h1>
+                <ul>
+                    <li> Q-learning accumulates a single reward and then uses the greedy action at the next step to bootstrap.
+                        The propagation speed is very slow when horizon is long and reward signal is sparse.
+                        <li> Solution: $TD(n)$ can be used to update vaule network.
+                            <ul>
+                                <li>
+                                    $TD_{\th_i}^n(s_t,a_t)=\|Q_{\th}(s_t,a_t)-[\sum_{i=0}^{n-1} \gamma^i R(s_{t + i},a_{t+ i},s'_{t + i})+ \gamma^n Q_{\th}(s_{t+n}', \pi_{\phi}(s'_{t+n}))]\|^2$.
+                                </li>
+                                <li>
+                                    $n=3$ are used in Rainbow for Atari games.
+                                </li>
+                            </ul>
+                        </li>
+
+                </ul>
+                <div class="credit"><a href="https://arxiv.org/pdf/1710.02298.pdf"> Rainbow: Combining Improvements in Deep Reinforcement Learning </a> </div>    
+            </div>
+
+            <div class="step slide separator" id="offpolicy">
+                <h1 class="nt"> Tricks &dash; Dueling Network</h1>
+            </div>  
+
+            <div class="step slide">
+                <h1 class="nt"> Dueling Network </h1>
+                <ul>
+                    <li> For discrete action space, researchers find that decoupling $Q(s, a)$ into $V(s)$ and $A(s, a)$ can help. </li>
+                    <li> Intuitively, $V$ only depends on $s$, which may capture features from states only and generalize to similar state.
+                        $A$ should focus on how action will impact the performance. </li>
+                    <li> A simple idea is represent $Q_{\th}(s, a)$ with $V_{\th_S}(s) + A_{\th_A}(s, a)$.
+                        However, adding any constant $C$ to $V_{\th_V}(s)$ and subtracting $C$ from $A_{\th_A}(s, a)$ also works.
+                        This decomposition isunidentifiable, and $V_{\th_V}(s)$ may not recover the value function. </li>
+                    <li> One possible solution: $Q_{\th}(s, a)$ with $V_{\th_V}(s) + (A_{\th_A}(s, a) - \max_{a' \in \mathcal{A}} A_{\th_A}(s, a'))$.
+                        Now, for $a^* = \text{argmax}_{a' \in \mathcal{A}} Q_{\th}(s, a') =\text{argmax}_{a' \in \mathcal{A}} A_{\th_A}(s, a')$.
+                        So $Q_{\th}(s, a^*) = V_{\th_V}(s)$, which means $V_{\th_V}(s)$ really represents the value function.
+                    </li>
+                    </li> In practice, $\text{average}$ is used to replace the $\max$ operator in $V_{\th_V}(s) + (A_{\th_A}(s, a) - \max_{a' \in \mathcal{A}} A_{\th_A}(s, a'))$.
+                    $\max$ operator can change the $A_{\th_A}(s, a) - \max_{a' \in \mathcal{A}} A_{\th_A}(s, a')$ non-smmothly, which can cause the instability.
+                    </li>
+                </ul>
+                <div class="credit"><a href="https://arxiv.org/pdf/1511.06581.pdf"> Dueling network architectures for deep reinforcement learning </a> </div>    
+            </div>
+
+            <div class="step slide separator" id="offpolicy">
+                <h1 class="nt"> Tricks &dash; Distributional RL </h1>
+            </div>  
+
+            <div class="step slide">
+                <h1 class="nt"> Stochasticity in the environments </h1>
+                <ul>
+                    <li> In stochastic environment, for example, stepping with an action can provide different results. Then scalar $Q$ value can only provide the mean and lost the information about the reward distribution.
+                    </li>
+                    <li> Even in deterministic environments like ALE(Atari games), stochasticity does occur in a number of guises:
+                        <ul>
+                            <li> from state, for example image, aliasing </li>
+                            <li> learning from a nonstationary policy </li>
+                            <li> from approximation errors. </li>
+                        </ul>
+                    </li>
+                </ul>
+                <div class="credit"><a href="https://arxiv.org/pdf/1707.06887.pdf"> A Distributional Perspective on Reinforcement Learning </a> </div>    
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt"> Value Network with Discrete Distribution </h1>
+                <ul>
+                    <li> In stead of one value, value network predicts a discrete distribution on a set of atoms $\{z_i = V_{MIN} + i \Delta_z | 0 \leq i < N \}, \Delta z := \frac{V_{MAX} - V_{MIN}}{N - 1}$. The probability of atom $z_i$ is $p_i$.  </li>
+                    <li> $Q_\th(s, a) = \sum_i p_{\th, i}(s, a) z_i$. </li>
+                    <li> Update rules of $Q$, $x_t$ is state at time-step $t$.
+                        <div style=margin-top:10px>
+                            <img src="./L16/DRL.png" width="42%"/>
+                        </div>
+                    </li>
+                </ul>
+                <div class="credit"><a href="https://arxiv.org/pdf/1707.06887.pdf"> A Distributional Perspective on Reinforcement Learning </a> </div>    
+            </div>
+
+            <div class="step slide separator" id="pen">
+                <h1 class="nt"> Tricks &dash; State-conditional exploration noise </h1>
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt"> State-conditional exploration noise </h1>
+                <ul>
+                    <li> Using the same exploration policy for all the states is not efficient in practice. </li>
+                </ul>
+                <div class="credit"><a href="https://arxiv.org/pdf/1710.02298.pdf"> Rainbow: Combining Improvements in Deep Reinforcement Learning </a> </div>    
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt"> Noisy Nets (For Discrete Action Space) </h1>
+                <ul>
+                    <li> For discrete action space, we can replace the last linear layer of the value network $Q_\th$ with a <b> noisy linear layer </b> to form a noisy $Q$ network and generate exploration actions directly from the noisy $Q$.</li>
+                    <li> Let original linear layer be $y = wx + b$, <b> noisy linear layer </b> will be $y = wx + b + (\sigma^w \circ \epsilon^w x + \sigma^b \circ \epsilon^b)$, where $\circ$ represents element-wise multiplication, $\sigma^w, \sigma^b$ are learnable paramters, $\epsilon$ are noise random variables. </li>
+                    <li> Greedly selecting on the noisy $Q$ value has already provided exploration. Other parts are simlar to DQN. The only difference is that noisy $Q$ network is used to replace the classical $Q$ network. </li>
+                    <li> Updating $Q$ network with TD loss,  </li>
+                </ul>
+                <div class="credit"><a href="https://arxiv.org/pdf/1710.02298.pdf"> Rainbow: Combining Improvements in Deep Reinforcement Learning </a> </div>    
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt"> Parameterized Squashed Gaussian policy (For Continuous Action Space)  </h1>
+                <ul>
+                    <li> For continuous action space, the policy network can output a parameterized Gaussian distribution. </li>
+                    <li> $\pi_\phi(s) = \tanh(\mu_\phi(s) + \sigma_\phi(s) \circ \epsilon)$, where $\epsilon = \mathcal(0, I)$. </li>
+                    <li> $\mu_\phi(s)$ is the mean value of the agent's policy at state $s$, which can be used in evaluation. </li>
+                    <li> $\sigma_\phi(s)$ is the standard deviation of the exploration noise. </li>
+                    <li> In practice, policy network predicts $\log \sigma$ and clip it in to range $[\log \sigma_{min}, \log \sigma_{max}]$.
+                        In SAC, $\log \sigma_{min} = -20, \log \sigma_{max}=2$.
+                    </li>
+                    <li> To train $\sigma_\phi(s)$, we need entropy regularization which will be discussed in SAC in the next lecture. </li>
+                </ul>
+                <div class="credit"><a href="https://arxiv.org/pdf/1801.01290.pdf"> Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor </a> </div>    
+            </div>
+
+
+            <div class="step slide separator" id="rainbow">
+                <h1 class="nt"> Off-Policy RL Frameworks in Practice </h1>
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt"> Practical Off-Policy Algorithms </h1>
+                <ul>
+                    <li> In practice, a good off-policy algorithm needs to ensemble tricks ans solve exploration problem. </li>
+                    <ul>
+                        Example algorithms:
+                        <li> Rainbow </li>
+                        <li> Soft-Actor-Critic </li>
+                    </ul>
+                </ul>
+                <div class="credit"><a href="https://arxiv.org/pdf/1710.02298.pdf"> Rainbow: Combining Improvements in Deep Reinforcement Learning </a> </div>    
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt"> Rainbow </h1>
+                <ul>
+                    <li> For discrete action space, Rainbow is a famous algorithm which ensembles all the tricks to get better performance. </li>
+                    <li> Tricks used in Rainbow:
+                        <ul>
+                            <li> Prioritized replay </li>
+                            <li> Multi-step learning / TD(3)loss </li>
+                            <li> Distributional RL </li>
+                            <li> Noisy Net </li>
+                            <li> Double Q-learning  </li>
+                            <li> Dueling Q-learning  </li>
+                        </ul>
+                    </li>
+
+                </ul>
+                <div class="credit"><a href="https://arxiv.org/pdf/1710.02298.pdf"> Rainbow: Combining Improvements in Deep Reinforcement Learning </a> </div>    
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt"> Ablation study of tricks in Rainbow </h1>
+                <ul>
+                    <li> Prioritized replay, multi-step learning, distributional RL are most important tricks in Rainbow. </li>
+                    <div style=margin-top:10px>
+                        <img src="./L16/Rainbow.png" width="42%"/>
+                    </div>
+                </ul>
+                <div class="credit"><a href="https://arxiv.org/pdf/1710.02298.pdf"> Rainbow: Combining Improvements in Deep Reinforcement Learning </a> </div>    
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt"> Soft-Actor-Critic(SAC) </h1>
+                <ul>
+                    <li> For continuous action space, Soft-Actor-Critic is a famous algorithm which combines some tricks with an entropy-based exploration method. </li>
+                    <li> Tricks used in SAC:
+                        <ul>
+                            <li> Clipped Double Q-Learning </li>
+                            <li> Parameterized Squashed Gaussian policy </li>
+                    </li>
+                        </ul>
+                        <div class="credit"><a href="https://arxiv.org/pdf/1801.01290.pdf"> Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor </a> </div>    
+            </div>
+        </div>
+
+        <!--
+            Add navigation-ui controls: back, forward and a select list.
+            Add a progress indicator bar (current step / all steps)
+            Add the help popup plugin
+        -->
+        <div id="impress-toolbar"></div>
+
+        <div class="impress-progressbar"><div></div></div>
+        <div class="impress-progress"></div>
+
+        <div id="impress-help"></div>
+
+        <script type="text/javascript" src="../extras/highlight/highlight.pack.js"></script>
+        <script src="../extras/mermaid/mermaid.min.js"></script>
+        <script type="text/javascript" src="../extras/markdown/markdown.js"></script>
+        <!--
+            To make all described above really work, you need to include impress.js in the page.
+            You also need to call a `impress().init()` function to initialize impress.js presentation.
+            And you should do it in the end of your document. 
+        -->
+        <script>
+            function setSlideID() {
+                x = document.getElementsByClassName("slide");
+                const titleSet = new Set();
+                var titleDict = {};
+                for (var i = 2; i < x.length; i++) {
+                    h1 = x[i].getElementsByTagName("h1")[0];
+                    if (h1) {
+                        // alert(title);
+                        title = '--'+h1.innerHTML.replace(/\W/g, '');
+                        if (titleSet.has(title)) {
+                            titleDict[title] += 1;
+                            title = title + '_' + titleDict[title].toString();
+                        }
+                        else {
+                            titleSet.add(title);
+                            titleDict[title] = 1;
+                        }
+                        x[i].id = title;
+                    }
+                }
+            }
+            setSlideID(); 
+        </script>
+        <script>
+            function getTitles() {
+                var secs = document.getElementsByClassName("separator");
+                var titleList = [];
+                var titleIdList = [];
+                const titleIdSet = new Set();
+                for (var i = 0; i < secs.length; i++) {
+                    h1 = secs[i].getElementsByTagName("h1")[0];
+                    titleId = 'Sec:'+h1.innerHTML.replace(/\W/g, '');
+                    if (titleIdSet.has(titleId)) {
+                        continue;
+                    }
+                    titleIdSet.add(titleId);
+                    titleList.push(h1.innerHTML);
+                    titleIdList.push(titleId);
+                    secs[i].id = titleId;
+                }
+                console.log(titleList);
+                return [titleList, titleIdList];
+            }
+
+            function addToC(titleList, titleIdList){
+                var agenda = document.getElementById("agenda");
+                agenda.innerHTML = '';
+                for (var i = 0; i < titleList.length; i++) {
+                    agenda.innerHTML += '<li><a href="#'+titleIdList[i]+'">'+titleList[i]+'</a></li>';
+                }
+            }
+
+            res = getTitles();
+            titleList = res[0]; titleIdList  = res[1];
+            addToC(titleList, titleIdList);
+        </script>
+        <script type="text/javascript" src="../js/impress.js">
+        </script>
+        <script type="text/javascript">
+            (function(){
+                var vizPrefix = "language-viz-";
+                Array.prototype.forEach.call(document.querySelectorAll("[class^=" + vizPrefix + "]"), function(x){
+                    var engine;
+                    x.getAttribute("class").split(" ").forEach(function(cls){
+                        if (cls.startsWith(vizPrefix)) {
+                            engine = cls.substr(vizPrefix.length);
+                        }
+                    });
+                    var image = new DOMParser().parseFromString(Viz(x.innerText, {format:"svg", engine:engine}), "image/svg+xml");
+                    x.parentNode.insertBefore(image.documentElement, x);
+                    x.style.display = 'none'
+                    x.parentNode.style.backgroundColor = "white"
+                });
+            })();
+            window.MathJax = {
+                tex2jax: {
+                    inlineMath: [['$','$'], ['\\(','\\)']],
+                    displayMath: [['$$','$$'], ['\\[','\\]']],
+                    processEscapes: true,
+                    processEnvironments: true,
+                    skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+                    TeX: { equationNumbers: { autoNumber: "AMS" },
+                        extensions: ["AMSmath.js", "AMSsymbols.js", "color.js"],
+                    },
+                    jax: ["input/TeX", "output/SVG"]
+                },
+                AuthorInit: function () {
+                    MathJax.Hub.Register.StartupHook("Begin",function () {
+                        MathJax.Hub.Queue(function() {
+                            var all = MathJax.Hub.getAllJax(), i;
+                            for(i = 0; i < all.length; i += 1) {
+                                all[i].SourceElement().parentNode.className += ' has-jax';
+                            }
+                        })
+                    });
+                }
+            };
+        </script>
+        <script type="text/javascript" src="../extras/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+        <script>impress().init();</script>
+    </body>
+</html>
+<!-- discarded -->
