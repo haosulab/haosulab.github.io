@@ -107,9 +107,9 @@
 
             <!-- ################################################################### -->
             <div class="step slide">
-                <h1 class="nt">Continous Q-Learning</h1>
+                <h1 class="nt">Continuous Q-Learning</h1>
                 <ul>
-                    <li> The major challenge for continous Q-learning is in how we compute $\max_a Q_{\theta}(s,a)$.</li>
+                    <li> The major challenge for continuous Q-learning is in how we compute $\max_a Q_{\theta}(s,a)$.</li>
                     <li> For discrete action space, the optimum $a$ can be computed by enumerating all possible actions (recall the DQN algorithm). </li>
                     <li> However, for continuous action space, computing $\max_a Q_{\theta}(s,a)$ cannot be achieved by enumeration.</li>
                     <li> <i>Q: How to do Q-learning if the action space is continuous?</i></li>
@@ -118,7 +118,7 @@
 
             <!-- ################################################################### -->
             <div class="step slide">
-                <h1 class="nt">Continous Q-Learning</h1>
+                <h1 class="nt">Continuous Q-Learning</h1>
                 <ul>
                     <li> The most straight-forward idea: Solving an optimization problem to compute $a$:
                         \[
@@ -138,10 +138,11 @@
 
             <!-- ################################################################### -->
             <div class="step slide">
-                <h1 class="nt">Continous Deterministic Policy Network</h1>
+                <h1 class="nt">Continuous Deterministic Policy Network</h1>
                 <ul>
                     <li> If optimizing $a$ every time is too slow, let us use a neural network to memorize the decisions in the past!</li>
-                    <li> We consider a simple policy family &dash; deterministic policies. Deterministic policies can be approximated as a network $\pi_{\phi}:\mathcal{S}\mapsto \mathbb{R}$. </li>
+                    <li> We consider a simple policy family &dash; deterministic policies (<i>Q: Why this is reasonable here, for off-policy RL?</i>). </li>
+                    <li> Deterministic policies can be approximated as a network $\pi_{\phi}:\mathcal{S}\mapsto \mathbb{R}$. </li>
                     <li> Suppose that we have a learned value network $Q_{\theta}(s,a)$. Then, the optimal policy can be obtained by "fine-tuning" our policy network: 
                         \[
                         \begin{aligned}
@@ -256,21 +257,21 @@
             </div>
 
             <div class="step slide separator" id="offpolicy">
-                <h1 class="nt">Tricks &dash; Value Overestimation</h1>
+                <h1 class="nt">Tricks to Overcome Value Estimation</h1>
             </div>   
 
             <div class="step slide">
-                <h1 class="nt"> Value Overestimation</h1>
+                <h1 class="nt"> Issue: Value Overestimation</h1>
                 <ul>
                     <li> Value network approximates the value. Policy networks are optimized over value networks. 
                         If $Q$ of some sub-optimal action $a'$ is overestimated and larger than the optimal one, 
                         policy network tends to choose suboptimal actions and hurts the performance. </li>
-                    <li> Theoretical intuition in Q-Learning 
+                    <li> Theoretical intuition:
                         <ul>
-                            <li> Target of TD update is $Q^{target}_{\th}(s) = R(s, a, s') + \gamma \max_{a'} Q_{\th}(s', a')$  </li>
+                            <li> Target of TD update is $Q^{target}_{\th}(s) = r(s, a, s') + \gamma \max_{a'} Q_{\th}(s', a')$  </li>
                             <li> Assume $Q_{\theta}(s, a) = Q_{gt}(s, a) + \epsilon$ with $\bb{E}[\epsilon]=0$, where $Q_{gt}$ is the ground-truth $Q$ function </li>
-                            <li> $E_{\epsilon}[\max_{a'} Q_{\th}(s', a')] = E_{\epsilon}[\max_{a'}Q_{gt}(s, a) + \epsilon] \geq \max_{a'} E_{\epsilon}[Q_{gt}(s', a') + \epsilon] = \max_{a'} Q_{gt}(s', a')$ </li>
-                            <li> In practice $E_{\epsilon}[\max_{a'} Q_{\th}(s', a')] > \max_{a'} Q_{gt}(s', a')$ which make target of TD update also overestimated. </li>
+                            <li> $\mathbb{E}_{\epsilon}[\max_{a'} Q_{\th}(s', a')] = \mathbb{E}_{\epsilon}[\max_{a'}Q_{gt}(s, a) + \epsilon] \geq \max_{a'} \mathbb{E}_{\epsilon}[Q_{gt}(s', a') + \epsilon] = \max_{a'} Q_{gt}(s', a')$ </li>
+                            <li> In practice, $\mathbb{E}_{\epsilon}[\max_{a'} Q_{\th}(s', a')] > \max_{a'} Q_{gt}(s', a')$, which make target of TD update also overestimated. </li>
                         </ul>
                     </li>
                 </ul>
@@ -278,16 +279,31 @@
             </div>
 
             <div class="step slide">
-                <h1 class="nt"> Double Q-Learning</h1>
+                <h1 class="et"> Double Q-Learning</h1>
                 <ul>
                     <li> The $\max$ operator in Q-learning uses the same values both to select and to evaluate an action. This makes it more likely to select overestimated values, 
                         resulting in overoptimistic value estimates.</li>
-                    <li> Solution: decouple the selection from the evaluation with double value functions $Q_{\th_i}(s, a), i=0, 1$. </li>
-                    <ul>
-                        <li> Random choose one of the $Q$ function to collect samples from the environment.  </li>
-                        <li> TD error of $Q_{\th_i}$ is $TD_{\th_i}(s,a)=\|Q_{\th_i}(s,a)-[R(s,a,s')+\gamma Q_{\color{red}{\th_{1-i}}}(s',\text{argmax}_{a'} Q_{\th_i}(s', a'))]\|^2$. </li>
-                    </ul>
-                    <li> In theory and practice, Double Q-Learning has advantages over Q-Learning in some cases.
+                    <li> Solution: Decouple the selection from the evaluation with two value functions $Q_{\th_i}(s, a), i=0, 1$. </li>
+                    <li>Discrete action space:
+                        <ul>
+                            <li> Randomly choose one of the $Q$ functions to collect samples from the environment.  </li>
+                            <li> The TD loss of $Q_{\th_i}$  is 
+                                \[
+                                TD_{\th_i}(s,a)=\|Q_{\th_i}(s,a)-[r(s,a,s')+\gamma Q_{\color{red}{\th'_{1-i}}}(s',\text{argmax}_{a'} Q_{\th_i}(s', a'))]\|^2.
+                                \] </li>
+                        </ul>
+                    </li>
+                    <li>Continuous action space (DDPG-based): keep $(Q_{\theta_0}, \pi_{\theta_0})$ and $(Q_{\theta_1}, \pi_{\theta_1})$ 
+                        <ul>
+                            <li> Randomly choose one of the $\pi$ functions to collect samples from the environment.  </li>
+                            <li> The target of $Q_{\th_i}$ is randomly chosen from
+                                \[
+                                r(s,a,s')+\gamma Q_{\color{red}{\th'_{1-k}}}(s',\pi_{\th_k}(s')).
+                                \] 
+                            </li>
+                        </ul>
+                    </li>
+                    <li> In theory and practice, double Q-Learning has advantages over Q-Learning in some cases.</li>
                 </ul>
                 <div class="credit"><a href="https://proceedings.neurips.cc/paper/2010/file/091d584fced301b442654dd8c23b3fc9-Paper.pdf"> Double Q-learning </a> </div>
                 <div class="credit"><a href="https://arxiv.org/pdf/1509.06461.pdf"> Deep Reinforcement Learning with Double Q-learning </a> </div>        
@@ -296,29 +312,29 @@
             <div class="step slide">
                 <h1 class="nt"> Clipped Double Q-Learning </h1>
                 <ul>
-                    <li> In practice, Double Q-Learning in continuous action space can provide better performance, because it does not entirely
-                        eliminate the overestimation. </li>
-                    <li> Solution: Clipped Double Q-Learning </li>
-                    <ul>
-                        <li> TD error of $Q_{\th_i}$ is $TD_{\th_i}(s,a)=\|Q_{\th_i}(s,a)-[R(s,a,s')+\gamma \color{red}{\min_j Q_{\th_j}}(s', \pi_{\phi}(s'))]\|^2$. </li>
-                    </ul>
-                    <li> With Clipped Double Q-learning, the value target is smaller than that with one value function.</li>
-                    <li> While this update rule may induce an underestimation bias, this is far preferable to overestimation
+                    <li> Double Q-Learning may still overestimate values. Clipped double Q-Learning (for continuous action case) claims to further suppress value overestimation by
+                        \[
+                        TD_{\th_i}(s,a)=\|Q_{\th_i}(s,a)-[r(s,a,s')+\gamma \color{red}{\min_j Q_{\th_j}}(s', \pi_{\phi}(s'))]\|^2
+                        \]
+                    </li>
+                    <li> With clipped double Q-learning, the value target is smaller than that with a single value function.</li>
+                    <li> This update rule may induce an <i>underestimation bias</i>. The authors claim that this is far preferable to overestimation
                         bias, as unlike overestimated actions, the value of underestimated actions will not be explicitly propagated
                         through the policy update </li>
-                    <li> In practice, two value functions are enough. Using more cannot provide extra benifits. </li>
+                    <li> In practice, two value functions are enough. Using more cannot provide extra benefits. </li>
+                    <li>Note that there is only one policy network. It is a multi-head structure. This architecture has been used by multiple successful continuous Q-learning frameworks.</li>
                 </ul>
                 <div class="credit"><a href="https://arxiv.org/pdf/1802.09477.pdf"> Addressing function approximation error in actor-critic methods</a> </div>
             </div>
 
             <div class="step slide separator" id="offpolicy">
-                <h1 class="nt">Tricks &dash; Prioritized experience replay</h1>
+                <h1 class="nt">Tricks to Address Rare Beneficial Samples</h1>
             </div>   
 
             <div class="step slide">
-                <h1 class="nt"> Rare beneficial samples in replay buffer </h1>
+                <h1 class="nt"> Issue: Rare Beneficial Samples <br/>in the Replay Buffer </h1>
                 <ul>
-                    <li> In environment that suffers from hard exploration, reward singals are rare in replay buffer. It is not efficient to uniformly choice training samples from th buffer. </li>
+                    <li> In environment that suffers from hard exploration, reward signals are rare in replay buffer. It is not efficient to uniformly choice training samples from the buffer. </li>
                     <li> Example: Montezuma's revenge, Blind Cliffwalk. </li>
                     <div class="row">
                         <div class="column" style="flex: 10%">
@@ -348,8 +364,8 @@
             <div class="step slide">
                 <h1 class="nt"> Analysis with Q-Learning</h1>
                 <ul>
-                    <li> In expectation, they are $O(2^n)$ transitions with reward $0$ in replay buffer before the agent get the first reward $1$. </li>
-                    <li> With uniform sampling, the agent learn from successful transitions with probability $O(2^{-n})$ in the begining stage and this will dramatically slow down the reward propagation. </li>
+                    <li> In expectation, they are $\mathcal{O}(2^n)$ transitions with reward $0$ in replay buffer before the agent get the first reward $1$. </li>
+                    <li> With uniform sampling, the agent learn from successful transitions with probability $\mathcal{O}(2^{-n})$ in the beginning stage and this will dramatically slow down the reward propagation. </li>
                     <li> Compare performance between uniform sampling and oracle sampling. Oracle greedily selects the transition that maximally reduces the global loss in its
                         current state. </li>
 
@@ -361,45 +377,51 @@
             </div>
 
             <div class="step slide">
-                <h1 class="nt"> Prioritized experience replay </h1>
+                <h1 class="nt"> Prioritized Experience Replay </h1>
                 <ul>
                     <li> Define a priority $p_i$ of a transition pair $i=(s, a, s')$ with TD error $\delta= Q_{\th}(s) - (R + \gamma Q_{\th}(s', \pi_{\phi}(s')))$.
                         <ul>
-                            <li> <b> proportional prioritization</b>: $p_i = |\delta| + \epsilon$, where $\epsilon$ is a small positive constant.  </li>
-                            <li> <b> rank-based prioritization</b> $p_i = \frac{1}{\text{rank}(|\delta_i|)}$, where $\text{rank}(|\delta_i|)$ is the rank of absolute value of TD error in the replay buffer. </li>
+                            <li> <b> Proportional prioritization</b>: $p_i = |\delta| + \epsilon$, where $\epsilon$ is a small positive constant.  </li>
+                            <li> <b> Rank-based prioritization</b> $p_i = \frac{1}{\text{rank}(|\delta_i|)}$, where $\text{rank}(|\delta_i|)$ is the rank of absolute value of TD error in the replay buffer. </li>
                         </ul>
                     </li>
                     <li> Probability of sampling transition $i$ as $P_i = \frac{p_i^\alpha}{\sum_{k} p_k^\alpha}$
-                        where $p_i$ > 0 is the priority of transition $i$.  </li>
-                    <li> Prioritized replay introduces bias because it changes this distribution. As a result, importance sampling is necessary to help the convergence.
-                        <ul>
-                            <li> $w'_i = (N P_i)^{-\beta}, w_i = \frac{w'_i}{\max_j w_j'}$. Noramlized importance weights due to the numerical stablity </li>
-                            <li> TD loss with importance sampling is $\sum_i w_i ||\delta_i||^2$.  </li>
-                            <li> In practice, $\beta$ is linearly aannealed from its initial value $beta_0$ to $1$. </li>
-                        </ul>
-                    </li>
-                    <li> Comment: probability of being sampled is monotonic in a transition’s priority and guaranteeing a non-zero probability even for
-                        the lowest-priority transition.  </li>
+                        where $p_i > 0$ is the priority of transition $i$.  </li>
+                    <li> Comment: Probability of being sampled is monotonic in a transition’s priority and guaranteeing a non-zero probability even for the lowest-priority transition.  </li>
                 </ul>
                 <div class="credit"><a href="https://arxiv.org/pdf/1511.05952.pdf"> Prioritized experience replay</a> </div>
             </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt"> Prioritized Experience Replay </h1>
+                <ul>
+                    <li> Reinforcement learning process is highly non-stationary, thus the variance of update is typically very high. Only focusing on bad transitions exacerbates the issue. To stabilize training, importance sampling is added to smooth out the distribution to estimate the policy update:
+                        <ul>
+                            <li> $w'_i = (N P_i)^{-\beta}, w_i = \frac{w'_i}{\max_j w_j'}$. </li>
+                            <li> TD loss with importance sampling is $\sum_i w_i ||\delta_i||^2$.  </li>
+                            <li> In practice, $\beta$ is linearly annealed from its initial value, e.g., $\beta_0=0.5$, to $1$. </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
 
             <div class="step slide separator" id="offpolicy">
-                <h1 class="nt"> Tricks &dash; Slow reward propagation </h1>
+                <h1 class="nt"> Tricks to Accelerate Reward Propagation </h1>
             </div>  
 
             <div class="step slide">
-                <h1 class="nt"> Slow reward propagation </h1>
+                <h1 class="nt"> Slow Reward Propagation </h1>
                 <ul>
                     <li> Q-learning accumulates a single reward and then uses the greedy action at the next step to bootstrap.
                         The propagation speed is very slow when horizon is long and reward signal is sparse.
-                        <li> Solution: $TD(n)$ can be used to update vaule network.
+                        <li> Solution: $TD(n)$ can be used to update value network.
                             <ul>
                                 <li>
                                     $TD_{\th_i}^n(s_t,a_t)=\|Q_{\th}(s_t,a_t)-[\sum_{i=0}^{n-1} \gamma^i R(s_{t + i},a_{t+ i},s'_{t + i})+ \gamma^n Q_{\th}(s_{t+n}', \pi_{\phi}(s'_{t+n}))]\|^2$.
                                 </li>
                                 <li>
-                                    $n=3$ are used in Rainbow for Atari games.
+                                    $n=3$ is used in Rainbow for Atari games.
                                 </li>
                             </ul>
                         </li>
@@ -409,42 +431,42 @@
             </div>
 
             <div class="step slide separator" id="offpolicy">
-                <h1 class="nt"> Tricks &dash; Dueling Network</h1>
+                <h1 class="nt"> Tricks in Value Network Architecture Design</h1>
             </div>  
 
             <div class="step slide">
                 <h1 class="nt"> Dueling Network </h1>
                 <ul>
-                    <li> For discrete action space, researchers find that decoupling $Q(s, a)$ into $V(s)$ and $A(s, a)$ can help. </li>
-                    <li> Intuitively, $V$ only depends on $s$, which may capture features from states only and generalize to similar state.
-                        $A$ should focus on how action will impact the performance. </li>
+                    <li> For discrete action space, researchers find that decoupling $Q(s, a)$ into $V(s)+A(s, a)$ can help. </li>
+                    <li> Intuitively, $V$ only depends on $s$, which captures features depending only on states and may generalize to similar states.
+                        $A$ should focus on how action may affect the performance. </li>
                     <li> A simple idea is represent $Q_{\th}(s, a)$ with $V_{\th_S}(s) + A_{\th_A}(s, a)$.
                         However, adding any constant $C$ to $V_{\th_V}(s)$ and subtracting $C$ from $A_{\th_A}(s, a)$ also works.
-                        This decomposition isunidentifiable, and $V_{\th_V}(s)$ may not recover the value function. </li>
+                        This decomposition is unidentifiable, and $V_{\th_V}(s)$ may not recover the value function. </li>
                     <li> One possible solution: $Q_{\th}(s, a)$ with $V_{\th_V}(s) + (A_{\th_A}(s, a) - \max_{a' \in \mathcal{A}} A_{\th_A}(s, a'))$.
                         Now, for $a^* = \text{argmax}_{a' \in \mathcal{A}} Q_{\th}(s, a') =\text{argmax}_{a' \in \mathcal{A}} A_{\th_A}(s, a')$.
                         So $Q_{\th}(s, a^*) = V_{\th_V}(s)$, which means $V_{\th_V}(s)$ really represents the value function.
                     </li>
-                    </li> In practice, $\text{average}$ is used to replace the $\max$ operator in $V_{\th_V}(s) + (A_{\th_A}(s, a) - \max_{a' \in \mathcal{A}} A_{\th_A}(s, a'))$.
-                    $\max$ operator can change the $A_{\th_A}(s, a) - \max_{a' \in \mathcal{A}} A_{\th_A}(s, a')$ non-smmothly, which can cause the instability.
+                    <li> In practice, $\text{average}$ is used to replace the $\max$ operator in $V_{\th_V}(s) + (A_{\th_A}(s, a) - \max_{a' \in \mathcal{A}} A_{\th_A}(s, a'))$.
+                        $\max$ operator can change the $A_{\th_A}(s, a) - \max_{a' \in \mathcal{A}} A_{\th_A}(s, a')$ non-smoothly, which can cause the instability.
                     </li>
                 </ul>
                 <div class="credit"><a href="https://arxiv.org/pdf/1511.06581.pdf"> Dueling network architectures for deep reinforcement learning </a> </div>    
             </div>
 
             <div class="step slide separator" id="offpolicy">
-                <h1 class="nt"> Tricks &dash; Distributional RL </h1>
+                <h1 class="nt"> Tricks by Considering Uncertainty of Value Estimation </h1>
             </div>  
 
             <div class="step slide">
-                <h1 class="nt"> Stochasticity in the environments </h1>
+                <h1 class="nt"> Stochasticity in the Environments </h1>
                 <ul>
                     <li> In stochastic environment, for example, stepping with an action can provide different results. Then scalar $Q$ value can only provide the mean and lost the information about the reward distribution.
                     </li>
                     <li> Even in deterministic environments like ALE(Atari games), stochasticity does occur in a number of guises:
                         <ul>
                             <li> from state, for example image, aliasing </li>
-                            <li> learning from a nonstationary policy </li>
+                            <li> learning from a non-stationary policy </li>
                             <li> from approximation errors. </li>
                         </ul>
                     </li>
@@ -467,11 +489,11 @@
             </div>
 
             <div class="step slide separator" id="pen">
-                <h1 class="nt"> Tricks &dash; State-conditional exploration noise </h1>
+                <h1 class="nt"> Tricks in Leveraging State-conditioned Exploration Noise</h1>
             </div>
 
             <div class="step slide">
-                <h1 class="nt"> State-conditional exploration noise </h1>
+                <h1 class="nt"> State-conditioned Exploration Noise </h1>
                 <ul>
                     <li> Using the same exploration policy for all the states is not efficient in practice. </li>
                 </ul>
@@ -482,9 +504,9 @@
                 <h1 class="nt"> Noisy Nets (For Discrete Action Space) </h1>
                 <ul>
                     <li> For discrete action space, we can replace the last linear layer of the value network $Q_\th$ with a <b> noisy linear layer </b> to form a noisy $Q$ network and generate exploration actions directly from the noisy $Q$.</li>
-                    <li> Let original linear layer be $y = wx + b$, <b> noisy linear layer </b> will be $y = wx + b + (\sigma^w \circ \epsilon^w x + \sigma^b \circ \epsilon^b)$, where $\circ$ represents element-wise multiplication, $\sigma^w, \sigma^b$ are learnable paramters, $\epsilon$ are noise random variables. </li>
-                    <li> Greedly selecting on the noisy $Q$ value has already provided exploration. Other parts are simlar to DQN. The only difference is that noisy $Q$ network is used to replace the classical $Q$ network. </li>
-                    <li> Updating $Q$ network with TD loss,  </li>
+                    <li> Let original linear layer be $y = wx + b$, <b> noisy linear layer </b> will be $y = wx + b + (\sigma^w \circ \epsilon^w x + \sigma^b \circ \epsilon^b)$, where $\circ$ represents element-wise multiplication, $\sigma^w, \sigma^b$ are learnable parameters, $\epsilon$ are noise random variables. </li>
+                    <li> Greedily selecting on the noisy $Q$ value has already provided exploration. Other parts are similar to DQN. The only difference is that noisy $Q$ network is used to replace the classical $Q$ network. </li>
+                    <li> Updating $Q$ network with TD loss.  </li>
                 </ul>
                 <div class="credit"><a href="https://arxiv.org/pdf/1710.02298.pdf"> Rainbow: Combining Improvements in Deep Reinforcement Learning </a> </div>    
             </div>
@@ -513,11 +535,12 @@
                 <h1 class="nt"> Practical Off-Policy Algorithms </h1>
                 <ul>
                     <li> In practice, a good off-policy algorithm needs to ensemble tricks ans solve exploration problem. </li>
-                    <ul>
-                        Example algorithms:
-                        <li> Rainbow </li>
-                        <li> Soft-Actor-Critic </li>
-                    </ul>
+                    <li>Example algorithms:
+                        <ul>
+                            <li> Rainbow </li>
+                            <li> Soft-Actor-Critic </li>
+                        </ul>
+                    </li>
                 </ul>
                 <div class="credit"><a href="https://arxiv.org/pdf/1710.02298.pdf"> Rainbow: Combining Improvements in Deep Reinforcement Learning </a> </div>    
             </div>

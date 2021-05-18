@@ -435,7 +435,7 @@ mark.red {
             <div class="step slide">
                 <h1 class="nt">Policy Gradient Theorem (Discounted) </h1>
                 <ul>
-                    <li>Policy Gradient Theorem (Undiscounted):
+                    <li>Policy Gradient Theorem (Discounted):
                         \[
                         \nabla_{\th}V^{\pi_{\theta, \gamma}}(s_0) = \sum_s\sum_{t = 0}^{\infty}\gamma^t\mu_t(s;s_0) \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta}, \gamma}(s, a).
                         \]
@@ -467,7 +467,7 @@ mark.red {
                 <h1 class="nt">Creating an Unbiased Estimate for PG (Cont'd)</h1>
                 We have shown that
                 \begin{align*}
-                \nabla_{\theta}V^{\pi_{\theta}, \gamma}(s_0)=\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t)\right)\cdot \sum_{i = t}^{\infty} \gamma^{i - k}\cdot r_i\right]\\
+                \nabla_{\theta}V^{\pi_{\theta}, \gamma}(s_0)=\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t)\right)\cdot \sum_{i = t}^{\infty} \gamma^{i - t}\cdot r_i\right]\\
                 \end{align*}
                 <ul>
                     <li>Using more trajectories, we can get more accurate gradient estimate (smaller variance)</li>
@@ -484,20 +484,21 @@ mark.red {
                 </ul>
             </div>
 
+
             <!--
-               -<div class="step slide">
-               -    <h1 class="nt">Escaping Local optima</h1>
-               -    Because policy gradient is essentially first-order optimization of a non-convex function, no convergence is guaranteed. People use regularization (exploration term) to encourage escaping local optima. For example, instead of taking the gradient of 
-               -    \begin{align*}
-               -    \theta' \mapsto \mathbb{E}\left[\sum_{t = 0}^{\infty}\ln\left(\pi_{\theta'}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t)\right]
-               -    \end{align*}
-               -    at $\theta$, people instead take the gradient of
-               -    \begin{align*}
-               -    \theta'\mapsto\mathbb{E}\left[\sum_{t = 0}^{\infty}\ln\left(\pi_{\theta'}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t) + \eta \cdot\,\text{entropy}(\pi_{\theta'}(s_t, \cdot))\right]
-               -    \end{align*}
-               -    at $\theta$.
-               -</div>
-               -->
+                -<div class="step slide">
+                -    <h1 class="nt">Escaping Local optima</h1>
+                -    Because policy gradient is essentially first-order optimization of a non-convex function, no convergence is guaranteed. People use regularization (exploration term) to encourage escaping local optima. For example, instead of taking the gradient of 
+                -    \begin{align*}
+                -    \theta' \mapsto \mathbb{E}\left[\sum_{t = 0}^{\infty}\ln\left(\pi_{\theta'}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t)\right]
+                -    \end{align*}
+                -    at $\theta$, people instead take the gradient of
+                -    \begin{align*}
+                -    \theta'\mapsto\mathbb{E}\left[\sum_{t = 0}^{\infty}\ln\left(\pi_{\theta'}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t) + \eta \cdot\,\text{entropy}(\pi_{\theta'}(s_t, \cdot))\right]
+                -    \end{align*}
+                -    at $\theta$.
+                -</div>
+            -->
 
             <!-- ################################################################### -->
             <div class="step slide">
