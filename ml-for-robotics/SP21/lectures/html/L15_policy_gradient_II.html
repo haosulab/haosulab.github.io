@@ -119,25 +119,28 @@ mark.red {
             <div class="step slide separator">
                 <h1 class="nt">Practical First-Order Policy Optimization</h1>
             </div>
- <!-- ################################################################## -->
+            <!-- ################################################################## -->
             <div class="step slide">
                 <h1 class="nt">Advanced Value Estimates</h1>
-                We have seen that we can use $\sum_{i = t}^{\infty} \gamma^{i - t} \cdot r_i$ as an unbiased estimate for $Q^{\pi_{\theta}, \gamma}(s_t, a_t)$.
-                <br/>
-                <br/>
-                We can also have a value network $v_{\omega}(s)$ to try to <b>memorize</b> (the estimates of) $V^{\pi_{\theta}, \gamma}(s)$ during the training. This way, whenever we need an estimate of $Q^{\pi_{\theta}, h}(s_t, a_t)$, we can use
                 <ul>
-                    <li class="substep">$e_{\infty} = \sum_{i = t}^{\infty} \gamma^{i - t}\cdot r_i$, which is unbiased but has high variance. </li>
-                    <li class="substep">$e_{t, 0} = r_t + \gamma\cdot v_{\omega}(s_{t + 1})$, which is biased but possibly has lower variance. </li>
-                    <li class="substep">$e_{t, h} = \sum_{i = t}^{t+h} \gamma^{i - t}\cdot r_i + \gamma^{h + 1}\cdot v_{\omega}(s_{t+h+1})$, which has a trade-off between the first two, depending on the choice of $h$. </li>
-                    <li class="substep">$\sum_{h = 0}^{\infty} \alpha_h e_{t,h}$, further combines different $e_h$'s with tunable weights $\alpha_h$'s that summing to $1$. </li>
+                    <li>We have seen that we can use $\sum_{i = t}^{\infty} \gamma^{i - t} \cdot r_i$ as an unbiased estimate for $Q^{\pi_{\theta}, \gamma}(s_t, a_t)$.  </li>
+                    <li>While this estimate is unbiased, it has high variance, as all past rollouts are not used.</li>
+                    <li>
+                        We can also have a value network $v_{\omega}(s)$ to try to <b>memorize</b> (the estimates of) $V^{\pi_{\theta}, \gamma}(s)$ during the training. This way, whenever we need an estimate of $Q^{\pi_{\theta}, h}(s_t, a_t)$, we can use
+                        <ul>
+                            <li class="substep">$e_{t, \infty} = \sum_{i = t}^{\infty} \gamma^{i - t}\cdot r_i$, which is unbiased but has high variance. </li>
+                            <li class="substep">$e_{t, 0} = r_t + \gamma\cdot v_{\omega}(s_{t + 1})$, which is biased but possibly has lower variance. </li>
+                            <li class="substep">$e_{t, h} = \sum_{i = t}^{t+h} \gamma^{i - t}\cdot r_i + \gamma^{h + 1}\cdot v_{\omega}(s_{t+h+1})$, which has a trade-off between the first two, depending on the choice of $h$. </li>
+                            <li class="substep">$\sum_{h = 0}^{\infty} \alpha_h e_{t,h}$, further combines different $e_h$'s with tunable weights $\alpha_h$'s that summing to $1$. </li>
+                        </ul>
+                    </li>
                 </ul>
             </div>
             <!-- ################################################################### -->
             <div class="step slide">
                 <h1 class="nt">Advantage</h1>
                 <ul>
-                    <li>We introduce another statistics trick to reduce the variance of the value estimation.  </li>
+                    <li>We also introduce another statistics trick to reduce the variance of the value estimation without introducing bias.  </li>
                 </ul>
                 <ul class="substep">
                     <li>Suppose that $X$ and $Y$ are two random variables. </li>
@@ -327,7 +330,7 @@ mark.red {
                                 </ul>
                             </li>
                         </ul>
-                        $\tilde{f}_{x_k}(x)$ is a local approximation of $f$ near $x_k$ (e.g., linear or quadratic), and $D(\cdot, x_k)\le \epsilon$ restricts the next step $x$ to be in a local region of $x_k$.
+                        $\tilde{f}_{x_k}(x)$ is a local approximation of $f$ near $x_k$ (e.g., linear or quadratic Taylor's expansion), and $D(\cdot, x_k)\le \epsilon$ restricts the next step $x$ to be in a local region of $x_k$.
                     </div>
                     <div class="column">
                         <img src="./L15/Trust-Region_Method_Overview.png" alt="" width="1000px"/>
@@ -360,10 +363,10 @@ mark.red {
                         =\mathbb{E}_{\pi_{\theta}}\left[\sum_{t = 0}^{\infty}\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t)\right].
                         \]
                     </li>
-                    <li>Our idea to derive a trust-region based method algorithm. Directly computing the first-order expansion of $V^{\pi_{\theta}, \gamma}$ is hard, instead, 
+                    <li>Our idea to derive a trust-region based method algorithm.                        
                         <blockquote>
                             <center>
-                                we find a series of surrogate objective functions $\ell_{\theta_k}(\theta)$ <br/>whose gradient is the same as the gradient from PGT <span class="hl">at each step</span>.
+                                We use a series of surrogate objective functions $\ell_{\theta_k}(\theta)$ <br/>whose gradient is the same as the gradient from PGT <span class="hl">at each step</span>.
                             </center>
                         </blockquote>
                     </li>
@@ -372,20 +375,23 @@ mark.red {
 
             <!-- ################################################################### -->
             <div class="step slide">
-                <h1 class="nt">Trust-region Method for Policy Optimization</h1>
+                <h1 class="et">Trust-region Method for Policy Optimization</h1>
                 Objective:
                 <ul>
-                    <li>Consider two surrogate loss functions
+                    <li>Consider some possible surrogate loss functions
                         \[
                         \ell^1_{\color{red}{\theta_k}}(\theta)=\bb{E}_{\color{red}{\pi_{\theta_k}}}\sum_{t=0}^{\infty} \frac{\pi_{\theta}(s_t,a_t)}{\color{red}{\pi_{\theta_k}}(s_t,a_t)}A^{\color{red}{\pi_{\theta_k}}, \gamma}(s_t,a_t) \tag{ratio loss}
                         \]
                         \[
                         \ell^2_{\color{red}{\theta_k}}(\theta)=\bb{E}_{\color{red}{\pi_{\theta_k}}} \sum_{t=0}^{\infty} \ln \pi_{\theta}(s_t,a_t)A^{\color{red}{\pi_{\theta_k}}, \gamma}(s_t,a_t) \tag{log ratio loss}
                         \]
+                        \[
+                        \ell^3_{\color{red}{\theta_k}}(\theta)=\bb{E}_{\color{red}{\pi_{\theta_k}}} \sum_{t=0}^{\infty} [\nabla_{\theta}\ln \pi_{\theta}(s_t,a_t)]\vert_{\color{red}{\color{red}{\theta_k}}}A^{\color{red}{\pi_{\theta_k}}, \gamma}(s_t,a_t)(\theta-\color{red}{\theta_k}) \tag{First-order Taylor}
+                        \]
                     </li>
                     <li>It is easy to verify that
                         \[
-                        \nabla_{\theta}\ell^1_{\color{red}{\theta_k}}(\theta)\vert_{\theta=\theta_k}=\nabla_{\theta}\ell^2_{\color{red}{\theta_k}}(\theta)\vert_{\theta=\theta_k}\equiv
+                        \nabla_{\theta}\ell^1_{\color{red}{\theta_k}}(\theta)\vert_{\theta=\theta_k}=\nabla_{\theta}\ell^2_{\color{red}{\theta_k}}(\theta)\vert_{\theta=\theta_k}=\nabla_{\theta}\ell^3_{\color{red}{\theta_k}}(\theta)\vert_{\theta=\theta_k}\equiv
                         \nabla_{\theta}V^{\pi_{\theta}, \gamma}(s_0)\vert_{\theta=\theta_k} 
                         \]
                     </li>
