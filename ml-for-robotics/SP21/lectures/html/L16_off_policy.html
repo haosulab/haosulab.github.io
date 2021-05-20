@@ -447,8 +447,7 @@
                         Now, for $a^* = \text{argmax}_{a' \in \mathcal{A}} Q_{\th}(s, a') =\text{argmax}_{a' \in \mathcal{A}} A_{\th_A}(s, a')$.
                         So $Q_{\th}(s, a^*) = V_{\th_V}(s)$, which means $V_{\th_V}(s)$ really represents the value function.
                     </li>
-                    <li> In practice, $\text{average}$ is used to replace the $\max$ operator in $V_{\th_V}(s) + (A_{\th_A}(s, a) - \max_{a' \in \mathcal{A}} A_{\th_A}(s, a'))$.
-                        $\max$ operator can change the $A_{\th_A}(s, a) - \max_{a' \in \mathcal{A}} A_{\th_A}(s, a')$ non-smoothly, which can cause the instability.
+                    <li> In practice, $\text{average}$ is used to replace the $\max$ operator in $V_{\th_V}(s) + (A_{\th_A}(s, a) - \max_{a' \in \mathcal{A}} A_{\th_A}(s, a'))$, which increases instability.
                     </li>
                 </ul>
                 <div class="credit"><a href="https://arxiv.org/pdf/1511.06581.pdf"> Dueling network architectures for deep reinforcement learning </a> </div>    
@@ -463,7 +462,7 @@
                 <ul>
                     <li> In stochastic environment, for example, stepping with an action can provide different results. Then scalar $Q$ value can only provide the mean and lost the information about the reward distribution.
                     </li>
-                    <li> Even in deterministic environments like ALE(Atari games), stochasticity does occur in a number of guises:
+                    <li> Even in deterministic environments like Atari games, stochasticity does occur in a number of guises:
                         <ul>
                             <li> from state, for example image, aliasing </li>
                             <li> learning from a non-stationary policy </li>
@@ -477,7 +476,7 @@
             <div class="step slide">
                 <h1 class="nt"> Value Network with Discrete Distribution </h1>
                 <ul>
-                    <li> In stead of one value, value network predicts a discrete distribution on a set of atoms $\{z_i = V_{MIN} + i \Delta_z | 0 \leq i < N \}, \Delta z := \frac{V_{MAX} - V_{MIN}}{N - 1}$. The probability of atom $z_i$ is $p_i$.  </li>
+                    <li> Instead of one value, value network predicts a discrete distribution on a set of atoms $\{z_i = V_{MIN} + i \Delta_z | 0 \leq i < N \}, \Delta z := \frac{V_{MAX} - V_{MIN}}{N - 1}$. The probability of atom $z_i$ is $p_i$.  </li>
                     <li> $Q_\th(s, a) = \sum_i p_{\th, i}(s, a) z_i$. </li>
                     <li> Update rules of $Q$, $x_t$ is state at time-step $t$.
                         <div style=margin-top:10px>
@@ -490,6 +489,7 @@
 
             <div class="step slide separator" id="pen">
                 <h1 class="nt"> Tricks in Leveraging State-conditioned Exploration Noise</h1>
+                <div class="rby">Read by Yourself</div>
             </div>
 
             <div class="step slide">
@@ -524,6 +524,7 @@
                     <li> To train $\sigma_\phi(s)$, we need entropy regularization which will be discussed in SAC in the next lecture. </li>
                 </ul>
                 <div class="credit"><a href="https://arxiv.org/pdf/1801.01290.pdf"> Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor </a> </div>    
+                <div class="rby">Read by Yourself</div>
             </div>
 
 
@@ -552,7 +553,7 @@
                     <li> Tricks used in Rainbow:
                         <ul>
                             <li> Prioritized replay </li>
-                            <li> Multi-step learning / TD(3)loss </li>
+                            <li> Multi-step learning / TD(3) loss </li>
                             <li> Distributional RL </li>
                             <li> Noisy Net </li>
                             <li> Double Q-learning  </li>
@@ -567,7 +568,7 @@
             <div class="step slide">
                 <h1 class="nt"> Ablation study of tricks in Rainbow </h1>
                 <ul>
-                    <li> Prioritized replay, multi-step learning, distributional RL are most important tricks in Rainbow. </li>
+                    <li> Prioritized replay, multi-step learning, distributional RL are the most important tricks in Rainbow. </li>
                     <div style=margin-top:10px>
                         <img src="./L16/Rainbow.png" width="42%"/>
                     </div>
@@ -576,7 +577,7 @@
             </div>
 
             <div class="step slide">
-                <h1 class="nt"> Soft-Actor-Critic(SAC) </h1>
+                <h1 class="nt"> Soft-Actor-Critic (SAC) </h1>
                 <ul>
                     <li> For continuous action space, Soft-Actor-Critic is a famous algorithm which combines some tricks with an entropy-based exploration method. </li>
                     <li> Tricks used in SAC:
