@@ -49,6 +49,7 @@ picture or pattern, but we leave it as light gray.
 body {
     font-family: 'PT Sans', sans-serif;
     min-height: 740px;
+    text-align: justify;
 
     /* background: rgb(215, 215, 215);
     color: rgb(70, 70, 70);*/
@@ -154,7 +155,7 @@ a {
     color: rgba(0, 0, 0, 1);
     padding: 0 0.1em;
     /*background: rgba(200,200,200,0.1);*/
-    text-shadow: -1px 1px 1px rgba(100,100,100,0.9);
+    text-shadow: -1px 1px 1px rgba(100,100,100,0.2);
     border-radius: 0.2em;
     /*border-bottom: 3px solid rgba(100,100,100,0.2);*/
     /*border-left:   3px solid rgba(100,100,100,0.2);*/
