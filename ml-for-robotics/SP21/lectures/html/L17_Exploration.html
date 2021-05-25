@@ -335,16 +335,16 @@
                 <li>
                     This principle is operationalized into upper confidence for each action value:
                     <ul>
-                        <li>For each action $a$, estimate an upper confidence $\hat{U}_{t}(a)$.</li>
-                        <li>Such that $Q(a) \leq \hat{Q}_{t}(a)+\hat{U}_{t}(a)$ with high probability.</li>
+                        <li>For each action $a$, estimate an upper confidence $U_t(a)$.</li>
+                        <li>Such that $Q(a) \leq \hat{Q}_{t}(a)+U_{t}(a)$ with high probability.</li>
                     </ul>
                 </li>
-                <li>$\hat{Q}_{t}(a)+\hat{U}_{t}(a)$ is called the Upper Confidence Bound (UCB) of action $a$.</li>
+                <li>$\hat{Q}_{t}(a)+U_{t}(a)$ is called the Upper Confidence Bound (UCB) of action $a$.</li>
                 <li>
                     Select action maximizing the Upper Confidence Bound.
                 </li>
                 \[
-                a_{t}=\underset{a \in \mathcal{A}}{\operatorname{argmax}} \hat{Q}_{t}(a) + \hat{U}_{t}(a)
+                a_{t}=\underset{a \in \mathcal{A}}{\operatorname{argmax}} \hat{Q}_{t}(a) + U_{t}(a)
                 \]
                 <!-- <li>The upper confidence depends on the number of times an action $a$ has been selected
                     <ul>
