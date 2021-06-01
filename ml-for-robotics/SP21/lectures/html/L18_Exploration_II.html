@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>L17</title>
+    <title>L18</title>
     <meta name="description" content="" />
     <meta name="author" content="Hao Su" />
     <link rel="stylesheet" href="../extras/highlight/styles/github.css">
@@ -36,8 +36,8 @@
         data-transition-duration="0">
         <div class="step slide title" data-x="-2200" data-y="-3000" id="title">
             <h1 class="nt">Exploration</h1>
-            <h2>Hao Su
-                <p style="font-size:30px">(slides prepared in tandem with Quan Vuong, Tongzhou Mu and Zhiao Huang)</p>
+            <h2>Quan Vuong
+                <p style="font-size:30px">(slides prepared in tandem with Prof. Hao Su, Tongzhou Mu and Zhiao Huang)</p>
             </h2>
             <h3>Spring, 2021</h3>
             <div class="ack">Some contents are based on <a
@@ -52,7 +52,11 @@
             <ul class="large" id="agenda"></ul>
             click to jump to the section.
         </div>
-        <!-- ###################################################### -->
+        <!-- ######################### New Section ############################# -->
+        <div class="step slide separator">
+            <h1 class="nt">Intrinsic Rewards (continued)</h1>
+        </div>
+
         <div class="step slide">
             <h1 class="nt">Novelty-driven Exploration</h1>
             <ul>
@@ -268,6 +272,7 @@
                 \theta)]-D_{\mathrm{KL}}[q(\theta ; \phi) \| p(\theta)]
                 \]
                 <ul>
+                    <li>Interpretation?</li>
                     <li>Do not worry about the alphabet soup.</li>
                     <li>It is the variational lower bound you have seen before.</li>
                 </ul>
@@ -456,9 +461,9 @@
             <h1 class="nt">Performance</h1>
             <center>
                 <iframe width="900" height="550" src="https://www.youtube.com/embed/J3FHOyhUn3A"
-                                                 title="YouTube video player" frameborder="0"
-                                                                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                                              allowfullscreen></iframe>
+                    title="YouTube video player" frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen></iframe>
             </center>
             <ul>
                 <li>
@@ -621,6 +626,11 @@
                 <li>$\mathcal{D}$ is the replay buffer.</li>
                 <li>Sample-based estimates of the gradients of the three objective functions can be obtained (not
                     shown).
+                    <ul>
+                        <li>
+                            Perform a few gradient steps for each objective function before collecting new data
+                        </li>
+                    </ul>
                 </li>
             </ul>
         </div>
@@ -641,9 +651,9 @@
             <h1 class="nt">SAC on Real Robot</h1>
             <center>
                 <iframe width="900" height="600" src="https://www.youtube.com/embed/FmMPHL3TcrE"
-                                                 title="YouTube video player" frameborder="0"
-                                                                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                                              allowfullscreen></iframe>
+                    title="YouTube video player" frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen></iframe>
             </center>
             Video shows SAC trains the Minitaur robot to walk in 2 hours of training.
         </div>
@@ -836,283 +846,11 @@
             </div>
         </div>
 
-        <!-- ###################################################### -->
-        <div class="step slide">
-            <h1 class="nt">Search to Explore Sub-MDP</h1>
-            <ul>
-                <li>All previous methods seek to find a good policy for every state in the state space of the MDP
-                    (global optimization).</li>
-                <li>Solving the entire MDP is very hard for problems with large state space.
-                    <ul>
-                        <li>The observable universe contains roughly $10^{80}$ atoms</li>
-                        <li>Go has about $10^{170}$ valid board configurations for professional board size $(19 \times
-                            19)$</li>
-                    </ul>
-                </li>
-                <li>Can we focus computation on part of the state space that is more important?
-                    <!-- Rhetorical question to motivate forward search -->
-                    <ul>
-                        <li>
-                            More important can be seen as immediately relevant
-                            <ul>
-                                <li>For example: doing well in CSE291D this quarter is more important than what you will
-                                    eat for lunch next year</li>
-                            </ul>
-                        </li>
-                        <li>
-                            With this perspective, the current state and the states that immediately follow are most
-                            important
-                        </li>
-                    </ul>
-                </li>
-            </ul>
-        </div>
-
-        <!-- ###################################################### -->
-        <div class="step slide">
-            <h1 class="nt">Search to Explore Sub-MDP</h1>
-            <ul>
-                <li>There are two main ideas, which we will explain next:
-                    <ul>
-                        <li>Forward Search</li>
-                        <li>Sampling</li>
-                    </ul>
-                </li>
-                <li>This is a very different perspective compared to previous RL methods you have seen:
-                    <ul>
-                        <li>In previous methods, to pick an action at test time, we just need to perform a forward pass
-                            through the policy</li>
-                        <li>In this family of algorithms, we perform a lot more computation at test time</li>
-                    </ul>
-                </li>
-            </ul>
-        </div>
-
-        <!-- ###################################################### -->
-        <div class="step slide">
-            <h1 class="nt">Forward Search</h1>
-            <ul>
-                <li>Assume we are given the MDP state space, action space, transition and reward function.</li>
-                <li>To compute action $a_t$ given current state $s_t$, forward search focuses computation with these
-                    steps:
-                    <ul>
-                        <li>Build a search tree with the current state $s_t$ at the root</li>
-                        <li>Use the model of the MDP to perform lookahead
-                            <ul>
-                                <li>lookahead means running simulation using the model to compute state-action value
-                                    estimates</li>
-                                <li>computing the value estimates can be done with model-free RL algorithm (such as
-                                    Q-learning)</li>
-                            </ul>
-                        </li>
-                        <li>Select the best action based on value estimates computed by exhaustive lookahead</li>
-                    </ul>
-                </li>
-                <li>No need to solve the whole MDP, only the sub-MDP starting from the current state.</li>
-                <div style=margin-top:10px>
-                    <img src="./L17/exhaustive_lookahead.png" width="35%" />
-                </div>
-            </ul>
-        </div>
-
-        <!-- ###################################################### -->
-        <div class="step slide">
-            <h1 class="nt">Sampling-based Forward Search</h1>
-            <ul>
-                <li>Naive forward search performs exhaustive lookahead.</li>
-                <li>Sampling-based forward search focuses computations by sampling to perform the simulation:
-                    <ul>
-                        <li>Sampling actions from the current policy and transitions from the MDP model</li>
-                        <li>Apply model-free RL to estimate state-action values from the simulated episodes</li>
-                    </ul>
-                </li>
-                $\Longrightarrow$Only perform lookahead on actions and transitions that occur with high probability.
-                <ul>
-                    <li>Case study: Monte-Carlo Tree Search</li>
-                </ul>
-
-                <div style=margin-top:10px>
-                    <img src="./L17/sampling_based_lookahead.png" width="45%" />
-                </div>
-            </ul>
-        </div>
-
-        <!-- ###################################################### -->
-        <div class="step slide">
-            <h1 class="nt">Simple Monte-Carlo Search</h1>
-            <ul>
-                <li>Given the state space, action space, transition and reward function of MDP $\mathcal{M}$.</li>
-                <li>Pick a <b>fixed</b> default policy $\pi$.</li>
-                <li>Given the current state $s_t$, perform rollouts using the model of MDP and $\pi$:
-                    <ul>
-                        <li>For each valid action $a$, simulate $K$ episodes of experience</li>
-                        \[
-                        \left\{s_{t}, a, R_{t+1}^{k}, S_{t+1}^{k}, A_{t+1}^{k}, \ldots, S_{T}^{k}\right\}_{k=1}^{K} \sim
-                        \mathcal{M}, \pi
-                        \]
-                        <li>Estimate the value of each action by Monte-Carlo estimation</li>
-                        \[
-                        \hat{Q}\left(s_{t}, a\right)=\frac{1}{K} \sum_{k=1}^{K} G_{k}
-                        \]
-                        <ul>
-
-                            <li>where $G_k$ is the return of the $k$-th episode.</li>
-                        </ul>
-                    </ul>
-                </li>
-                <li>To pick the real action taken in the MDP, pick action with the highest estimated value:</li>
-                \[
-                a_{t}=\underset{a \in \mathcal{A}}{\operatorname{argmax}} \hat{Q}\left(s_{t}, a\right)
-                \]
-            </ul>
-        </div>
-
-        <!-- ###################################################### -->
-        <div class="step slide">
-            <h1 class="nt">Limitations of Simple Monte-Carlo Search</h1>
-            <ul>
-                <li>Note that across different episodes, the default policy $\pi$ is fixed and does not improve.</li>
-                <ul>
-                    <li>The quality of the action does not improve across different episodes</li>
-                </ul>
-                <li>We only estimate action values for the current state $s_t$.</li>
-                <li>We now introduce tree as a data structure to store value estimates and improve the policy.</li>
-            </ul>
-        </div>
-
-        <!-- ###################################################### -->
-        <div class="step slide">
-            <h1 class="nt">Monte-Carlo Tree Search</h1>
-            <ul>
-                <li>Given the state space, action space, transition and reward function of MDP $\mathcal{M}$.</li>
-                <li>Pick a <b>fixed</b> default policy $\pi$.</li>
-                <li>Given the current state $s_t$, perform rollouts for $K$ simulated episodes:
-                    <ul>
-                        <li>Initialize empty search tree</li>
-                        <li>Each episode starts from the current state $s_t$</li>
-                        <li>For each episode, to pick action for a state $s$:
-                            <ul>
-                                <li>If $s$ is not in the search tree, use the default policy to pick action</li>
-                                <li>If $s$ is in the search tree, pick action that maximize current value
-                                    estimate $\hat{Q}(s, a)$</li>
-                            </ul>
-                        </li>
-                        <li>After each episode:
-                            <ul>
-                                <li>Estimate the value for all state-action pairs visitted in the episode using
-                                    Monte-Carlo estimation</li>
-                                <li>Add all new state-action pairs and their value estimates to the search tree</li>
-                                <li>Update the value estimates of existing state-action pairs in the search tree</li>
-                            </ul>
-
-                    </ul>
-                        </li>
-                        <li>To pick the real action taken in the MDP from state $s_t$, pick action with highest estimated value.
-                        </li>
-                        <!-- \[
-                            a_{t}=\underset{a \in \mathcal{A}}{\operatorname{argmax}} \hat{Q}\left(s_{t}, a\right)
-                            \] -->
-            </ul>
-        </div>
-
-        <!-- ################################################################### -->
-        <div class="step slide">
-            <h1 class="nt">Monte-Carlo Tree Search</h1>
-            <ul>
-                <li>In MCTS, there are thus 2 policies, so-called tree policy and the default policy:</li>
-                <table style="width:100%">
-                    <tr>
-                        <th></th>
-                        <th>When to use?</th>
-                        <th>Action selection method?</th>
-                        <th>Improve across epsisodes?</th>
-                    </tr>
-                    <tr>
-                        <td>Tree Policy</td>
-                        <td>When a state $s$ is in the search tree</td>
-                        <td>Select action with highest estimated state-action value</td>
-                        <td>Yes, since the state-action value estimates are updated and improved across episodes</td>
-                    </tr>
-                    <tr>
-                        <td>Default Policy</td>
-                        <td>When a state $s$ is not in the search tree</td>
-                        <td>Manually defined prior to any simulation, e.g. uniformly random</td>
-                        <td>No</td>
-                    </tr>
-                </table>
-                <li>To improve exploration by the tree policy, we can use $\epsilon$-greedy or bandit algorithms.</li>
-                <li>Note that the search tree is discarded after picking action $a_t$ and not re-used when computing
-                    action for $s_{t+1}$.</li>
-                <li>The value estimates are also stored in a table lookup (not feasible for large state space).
-                </li>
-                <li>Using a neural network to store the value estimates will solve these two issues (AlphaGo).</li>
-            </ul>
-        </div>
-
-        <!-- ################################################################### -->
-        <div class="step slide">
-            <h1 class="nt">Performance</h1>
-            <img src="./L17/alphago.png" width="100%" />
-            <div class="ack">Source: https://en.wikipedia.org/wiki/AlphaGo_versus_Lee_Sedol.</div>
-        </div>
-
-        <!-- ######################### New Section ############################# -->
-        <div class="step slide separator">
-            <h1 class="nt">Debugging Tips</h1>
-        </div>
-        <div class="step slide">
-            <h1 class="nt">Monte-Carlo Estimates to Sanity-check Trained Components</h1>
-            <ul>
-                <li>All components in a RL algorithm are estimated.</li>
-                <li>For environments implemented in simulation, we can obtain Monte-Carlo estimates and compare them
-                    against the
-                    trained components to sanity-check
-                    <ul>
-                        <li>use Monte-Carlo because of its unbiasedness property</li>
-                        <li>the Monte-Carlo estimates will converge to the true value given enough samples
-                        </li>
-                    </ul>
-                </li>
-                <li>To save time, parallelize the sampling to obtain Monte-Carlo estimates while the policy is training
-                    <ul>
-                        <li>a popular Python library for RL parallelism is Ray</li>
-                    </ul>
-                </li>
-            </ul>
-        </div>
-
-        <!-- ######################### New Section ############################# -->
-        <div class="step slide">
-            <h1 class="nt">Setting Seeds</h1>
-            <ul>
-                <li>The performance of RL algorithms have high variance, especially for long horizon problem with sparse
-                    reward.</li>
-                <li>Set the random seeds for every possible library (numpy, python math, pytorch cpu and gpu, etc).</li>
-                <li>Ensure your experiment produces the same exact number, even if stopped, re-loaded and re-run.</li>
-                <li>To evalute the performance of RL algorithms, average performance across multiple seeds:
-                    <ul>
-                        <li>
-                            Do not set your seed like: for i in range(5): set_seed(i)
-                        </li>
-                        <li>
-                            Having linear correlations between seeds can correlate the output [1]
-                    </ul>
-
-                        </li>
-            </ul>
-
-                </li>
-                </ul>
-                <div class="ack">[1]
-                    https://github.com/openai/gym/blob/a5a6ae6bc0a5cfc0ff1ce9be723d59593c165022/gym/utils/seeding.py#L20
-                </div>
-        </div>
-
         <!-- ################################################################### -->
         <div class="step slide">
             <div style="margin-top:300px"></div>
             <center>
-                <div class="Large"><b>End</b></div>
+                <div class="Large"><b>The End</b></div>
             </center>
         </div>
 
