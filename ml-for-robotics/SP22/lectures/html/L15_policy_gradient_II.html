@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>L15</title>
+        <meta name="description" content="" />
+        <meta name="author" content="Hao Su" />
+        <link rel="stylesheet" href="../extras/highlight/styles/github.css">
+        <link rel="stylesheet" href="../extras/mermaid/mermaid.forest.css">
+        <link href="../css/impress-common.css" rel="stylesheet" />
+        <link href="css/classic-slides.css" rel="stylesheet" />
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/1.7.1/viz.js"></script>
+        <link rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/vs.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+        <style>
+
+
+mark.red {
+    color:#ff0000;
+    background: none;
+}
+
+        </style>
+    </head>
+    <body class="impress-not-supported">
+        <div class="fallback-message">
+            <p>Your browser <b>doesn't support the features required</b> by impress.js, so you are presented with a simplified version of this presentation.</p>
+            <p>For the best experience please use the latest <b>Chrome</b>, <b>Safari</b> or <b>Firefox</b> browser.</p>
+        </div>
+        <div id="latex-macros"></div>
+        <script src="./latex_macros.js"></script>
+        <div id="impress"
+             data-width="1920"
+             data-height="1080"
+             data-max-scale="3"
+             data-min-scale="0"
+             data-perspective="1000"
+             data-transition-duration="0">
+            <div class="step slide title" data-x="-2200" data-y="-3000" id="title">
+                <h1 class="nt">Advanced On-Policy RL</h1>
+                <h2>Hao Su
+                    <p style="font-size:30px">(slides prepared with the help from Shuang Liu)</p>
+                </h2>
+                <h3>Spring, 2021</h3>
+            </div>
+
+            <div id="toc" class="step slide" data-rel-x="2200" data-rel-y="0">
+                <h1 class="nt">Agenda</h1>
+                <ul class="large" id="agenda"></ul>
+                click to jump to the section.
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Review: Policy Gradient Theorem (Discounted) </h1>
+                <ul>
+                    <li>Policy Gradient Theorem (Discounted):
+                        \[
+                        \nabla_{\th}V^{\pi_{\theta, \gamma}}(s_0) = \sum_s\sum_{t = 0}^{\infty}\gamma^t\mu_t(s;s_0) \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta}, \gamma}(s, a).
+                        \]
+                        $\mu_t(s;s_0)$ is the average visitation frequency of the state $s$ in step $k$.
+                    </li>
+                    <li>Can you guess the influence of $\gamma$ in this result?</li>
+                    <!--
+                       -<li>We can also normalize $\gamma^t \mu_t(s;s_0)$ to be a <i>stationary distribution</i> over states:
+                       -    \[
+                       -    d^{\pi_{\th},\gamma}(s;s_0)=\frac{\sum_{t=0}^{\infty}\gamma^t\mu_t(s;s_0)}{\sum_s\sum_{t=0}^{\infty}\gamma^t\mu_t(s;s_0)}
+                       -    \]
+                       -</li>
+                       -<li>The theorem is equivalently stated as 
+                       -    \[
+                       -    \nabla_{\theta}V^{\pi_{\theta}}(s_0)=\sum_{s}d^{\pi_{\th},\gamma}(s;s_0) \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta},\gamma}(s, a)
+                       -    \]
+                       -</li>
+                       -->
+                </ul>
+                <center><div class="hl">We will assume the discounted setting from now on.</div></center>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Review: Creating an Unbiased Estimate for PG</h1>
+                We have shown that
+                \begin{align*}
+                \nabla_{\theta}V^{\pi_{\theta}, \gamma}(s_0)=\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t)\right)\cdot \sum_{i = t}^{\infty} \gamma^{i - t}\cdot r_i\right]\\
+                \end{align*}
+                <ul>
+                    <li>Using more trajectories, we can get more accurate gradient estimate (smaller variance)</li>
+                    <li>Since the unbiased estimate is a summation, we can sample from the individual terms to do batched gradient descent</li>
+                </ul>
+                <center>
+                    <div class="hl">
+                        We have established an MC sampling based method to <br/>estimate the gradient of value w.r.t. policy parameters!<br/>
+                        This estimate is <i>unbiased</i>.
+                    </div>
+                </center>
+                <ul>
+                    <li>In literature, this MC-sampling based policy gradient method is called <b>REINFORCE</b>.</li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">REINFORCE Algorithm</h1>
+                The steps involved in the implementation of REINFORCE would be as follows:
+
+                <ol>
+                    <li>Randomly initialize a policy network that takes the state as input and returns the probability of actions</li>
+                    <li>Use the policy to play $n$ episodes of the game. Record $(s,a,s',r)$ for each step.</li>
+                    <li>Calculate the discounted reward for each step backwards</li>
+                    <li>Calculate expected reward $G_t=\sum_{i=t}^{\infty}\gamma^{i-t}r_i$</li>
+                    <li>Adjust weights of policy according to the gradient by policy gradient theorem</li>
+                    <li>Repeat from 2</li>
+                </ol>
+                <div class="credit"><a href="https://www.analyticsvidhya.com/blog/2020/11/reinforce-algorithm-taking-baby-steps-in-reinforcement-learning/">https://www.analyticsvidhya.com/blog/2020/11/reinforce-algorithm-taking-baby-steps-in-reinforcement-learning/</a></div>
+            </div>
+
+            <div class="step slide separator">
+                <h1 class="nt">Practical First-Order Policy Optimization</h1>
+            </div>
+            <!-- ################################################################## -->
+            <div class="step slide">
+                <h1 class="nt">Advanced Value Estimates</h1>
+                <ul>
+                    <li>We have seen that we can use $\sum_{i = t}^{\infty} \gamma^{i - t} \cdot r_i$ as an unbiased estimate for $Q^{\pi_{\theta}, \gamma}(s_t, a_t)$.  </li>
+                    <li>While this estimate is unbiased, it has high variance, as all past rollouts are not used.</li>
+                    <li>
+                        We can also have a value network $v_{\omega}(s)$ to try to <b>memorize</b> (the estimates of) $V^{\pi_{\theta}, \gamma}(s)$ during the training. This way, whenever we need an estimate of $Q^{\pi_{\theta}, h}(s_t, a_t)$, we can use
+                        <ul>
+                            <li class="substep">$e_{t, \infty} = \sum_{i = t}^{\infty} \gamma^{i - t}\cdot r_i$, which is unbiased but has high variance. </li>
+                            <li class="substep">$e_{t, 0} = r_t + \gamma\cdot v_{\omega}(s_{t + 1})$, which is biased but possibly has lower variance. </li>
+                            <li class="substep">$e_{t, h} = \sum_{i = t}^{t+h} \gamma^{i - t}\cdot r_i + \gamma^{h + 1}\cdot v_{\omega}(s_{t+h+1})$, which has a trade-off between the first two, depending on the choice of $h$. </li>
+                            <li class="substep">$\sum_{h = 0}^{\infty} \alpha_h e_{t,h}$, further combines different $e_h$'s with tunable weights $\alpha_h$'s that summing to $1$. </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Advantage</h1>
+                <ul>
+                    <li>We also introduce another statistics trick to reduce the variance of the value estimation without introducing bias.  </li>
+                </ul>
+                <ul class="substep">
+                    <li>Suppose that $X$ and $Y$ are two random variables. </li>
+                    <li>Recall that, if $Z=X-Y$, then
+                        \[
+                        \mathrm{Var}[Z]=\mathrm{Var}[X]+\mathrm{Var}[Y]-2\mathrm{Cov}(X,Y)
+                        \]
+                    </li>
+                    <li>If $X$ and $Y$ are strongly correlated, then $\mathrm{Var}[Z]$ is smaller than $\mathrm{Var}[X]$ and $\mathrm{Var}[Y]$.
+                        <ul>
+                            <li>For example, $X, Y\sim\bb{N}(0, 1)$, then $\mathrm{Var}[Z]=2-2\rho$, where $\rho$ is the Pearson correlation coefficient and $-1\le \rho\le 1$. For highly correlated $X$ and $Y$, $\rho \approx 1$, and $\mathrm{Var}[Z]\approx 0$.</li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul class="substep">
+                    <li>For this reason, we introduce the function $A^{\pi_{\theta}, \gamma}(s, a)=Q^{\pi_{\theta}, \gamma}(s, a) - V^{\pi_{\theta}, \gamma}(s)$, which is called <span class="hl">advantage</span>. </li>
+                    <li>Our next goal is to relate $\nabla V^{\pi_{\theta}, \gamma}(s,a)$ with $A^{\pi_{\theta}, \gamma}(s, a)$, which has smaller variance than estimating through $Q^{\pi_{\theta}, \gamma}(s, a)$.</li>
+                </ul>
+            </div>
+
+            <!-- ################################################################## -->
+            <div class="step slide">
+                <h1 class="nt">Advantage Estimates</h1>
+                \begin{align*}
+                \nabla_{\theta}V^{\pi_{\theta}, \gamma}(s_0)
+                &= \sum_s\sum_{t = 0}^{\infty}\gamma^t\mu_t(s;s_0)
+                \left(\sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta}, \gamma}(s, a) - 0\right)\\
+                \text{(why?)}&= \sum_s\sum_{t = 0}^{\infty}\gamma^t\mu_t(s;s_0)
+                \left(\sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta}, \gamma}(s, a) - \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a)\cdot V^{\pi_{\theta}, \gamma}(s)\right)\\
+                &= \sum_s\sum_{t = 0}^{\infty}\gamma^t\mu_t(s;s_0)
+                \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot \left(Q^{\pi_{\theta}, \gamma}(s, a) - V^{\pi_{\theta}, \gamma}(s)\right).\\
+                &= \sum_s\sum_{t = 0}^{\infty}\gamma^t\mu_t(s;s_0)\sum_{a}\nabla_{\theta}\ln\left(\pi_{\theta}(s, a)\right) \cdot \pi_{\theta}(s, a) A^{\pi_{\theta}, \gamma}(s, a)\\
+                &=\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t)\right)\cdot A^{\pi_{\theta}, \gamma}(s_t, a_t)\right]
+                \end{align*}
+                <ul>
+                    <li>Q: Does this form look reasonable? Compare it with the update for REINFORCE.</li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Advantage Estimates (Cont'd)</h1>
+                <ul>
+                    <li>
+                        Recall that we said $Q^{\pi_{\theta}, \gamma}(s_t, a_t)$ can be estimated by $\sum_{h = 0}^{\infty}\alpha_h e_{t,h}$ in general, where
+                        \[
+                        \left\{
+                        \aligned{
+                        &e_{t,h} = \sum_{i = t}^{t+h} \gamma^{i - t}\cdot r_i + \gamma^{h + 1}\cdot v_{\omega}(s_{t+h+1})\\
+                        &\sum_{i = 0}^{\infty} \alpha_i = 1
+                        }
+                        \right.
+                        \]
+                    </li>
+                    <li>The very popular <b>General Advantage Estimate</b> (GAE) estimates the advantage in the same fashion and it chooses $\alpha_i$ to be proportional to $\lambda^i$, where $\lambda\in[0, 1]$.</li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Advantage Estimates (Cont'd)</h1>
+                <ul>
+                    <li>Define $\delta_{t,h}=e_{t,h}-v_{\omega}(s_{t})=\sum_{i = t}^{t+h} \gamma^{i - t}\cdot r_i + \gamma^{h + 1}\cdot v_{\omega}(s_{t+h+1}) - v_{\omega}(s_{t})$ </li>
+                    <li>The General Advantage Estimate (GAE) estimates $A^{\pi_{\theta}, \gamma}(s_t, a_t)$ by
+                        \begin{align*}
+                        \hat{A}_{\text{GAE}(\lambda)}^{\pi_{\theta}, \gamma}(s_t, a_t) &= (1 - \lambda)\sum_{h = 0}^{\infty} \lambda^h\delta_{t,h}\\
+                        (\text{calculation omitted, HW}) &=\sum_{h = 0}^{\infty}(\gamma\lambda)^{h} \delta_{t+h, 0}
+                        \end{align*}
+                    </li>
+                    <li>
+                        Define $0^0 = 1$, $\hat{A}_{\text{GAE}(0)}^{\pi_{\theta}, \gamma}(s_t, a_t) = r_t + \gamma v_{\omega}(s_{t + 1}) - v_{\omega}(s_{t}).$
+                    </li>
+                    <li>
+                        We also have $\hat{A}_{\text{GAE}(1)}^{\pi_{\theta}, \gamma}(s_t, a_t) = \sum_{h = 0}^{\infty}\gamma^{h} r_{t+h} - v_{\omega}(s_t). $
+                    </li>
+                    <li>
+                        We leave the proofs to homework.
+                    </li>
+                    <li>Q: How to interpret the role of $\lambda$?</li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="et">Incremental Monte Carlo <br/>Value Function Estimation</h1>
+                <ul>
+                    <li>Recall that our plan was to have a value network $v_{\omega}(s)$ to <b>memorize</b> the estimates of $V^{\pi_{\theta}, \gamma}(s)$ during the training. 
+                    </li>
+                    <li>In practice, certain variants of the incremental Monte-Carlo method will be used to update $v_{\omega}(s)$
+                        <ul>
+                            <li>e.g., in <a href="https://arxiv.org/pdf/1506.02438.pdf">Sec 5 of High-Dimensional Continuous Control Using Generalized Advantage Estimation</a>,
+                                \[
+                                \aligned{
+                                &\text{minimize}_{\omega} && \sum_{n=1}^N\|v_{\omega}(s_n)-\hat{V}_n\|^2\\
+                                &\text{subject to} && \frac{1}{N}\sum_{n=1}^N\frac{\|v_{\omega}(s_n)-v_{\omega_{old}}(s_n)\|^2}{2\sigma^2}\le \epsilon
+                                }
+                                \]
+                                where $\hat{V}_t=\sum_{h=0}^{\infty}\gamma^h r_{t+h}$ is the discounted sum of rewards, and $n$ indexes over all timestamps in a batch of trajectories.
+                            </li>
+                        </ul>
+                    </li>
+                    <li>Note that we do not need a replay buffer to estimate $v_{\omega}(s)$.</li>
+                </ul>
+            </div>
+
+
+            <div class="step slide">
+                <h1 class="nt">Some Additional Information</h1>
+                Given any advantage estimate $\hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t)$, we can estimate the policy gradient by
+                \begin{align*}
+                \hat{\nabla}_{\theta}V^{\pi_{\theta}, \gamma}(s_0) 
+                =\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t)\right].
+                \end{align*}
+                However, in most implementations, people simply use
+                \begin{align*}
+                \hat{\nabla}_{\theta}V^{\pi_{\theta}, \gamma}(s_0) 
+                =\mathbb{E}\left[\sum_{t = 0}^{\infty}\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t)\right].
+                \end{align*}
+            </div>
+
+            <div class="step slide separator">
+                <h1 class="nt">Efficient and Stable Policy Optimization</h1>
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt">On-Policy RL vs. Off-Policy RL</h1>
+                \[
+                \hat{\nabla}_{\theta}V^{\pi_{\theta}, \gamma}(s_0) 
+                =\mathbb{E}_{\color{red}{\pi_{\theta}}}\left[\sum_{t = 0}^{\infty}\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t)\right].
+                \tag{PGT}
+                \]
+                <center>vs.</center>
+                \[
+                \nabla_{\th}L(\th)=\bb{E}_{\color{red}{(s,a,s')\sim \rm{Replay Buffer}}}[\nabla_{\th}\|Q_{\th}(s,a)-[R(s,a,s')+\gamma\max_{a'}Q_{\th}(s',a')]\|^2]\tag{TD}
+                \]
+                <ul>
+                    <li>On-policy RL:
+                        <ul>
+                            <li>To use PGT, we need <i>a trajectory under the current policy</i> to compute the gradient. RL of this kind is called <b>on-policy</b>.</li>
+                            <li>We must sample actions by the current policy and interact with the environment until the end of an episode. If we revise the policy, we must resample actions and <i>interact with the environment</i>.</li>
+                        </ul>
+                    </li>
+                    <li>Off-policy RL: To use Bellman optimality equation, we sample with distribution <i>NOT</i> as the current policy.
+
+                    </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Make Better Use of Samples for On-Policy RL</h1>
+                <ul>
+                    <li>Rollouts are precious. It is natural to ask, <i>how can we make the best use of the recent rollouts</i>? </li>
+                    <li>Some straight-forward solutions: 
+                        <ul>
+                            <li>using big step size;</li>
+                            <li>multiple gradient descents on the same set of rollouts;</li>
+                        </ul> 
+                    </li>
+                    <li>However, PGT only gives a <i>local approximation</i> of gradient. Above approaches cause instability in policy updates. </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="et">Trust-region Method</h1>
+                <span class="large">
+                    \[
+                    \begin{aligned}
+                    &\underset{x}{\text{minimize}}&&f(x)\\
+                    \end{aligned}
+                    \]
+                </span>
+
+                <div class="row">
+                    <div class="column">
+                        <ul>
+                            <li>Iterate:
+                                <ul>
+                                    <li>Solve a constrained sub-problem
+                                        \[
+                                        \begin{aligned}
+                                        & \underset{x}{\text{minimize}} &&\tilde{f}_{x_k}(x)\\
+                                        &\text{subject to}&&D(x,x_k)\le \epsilon
+                                        \end{aligned}
+                                        \]
+                                    </li>
+                                    <li>$x_{k+1}=x; k\leftarrow k+1$</li>
+                                </ul>
+                            </li>
+                        </ul>
+                        $\tilde{f}_{x_k}(x)$ is a local approximation of $f$ near $x_k$ (e.g., linear or quadratic Taylor's expansion), and $D(\cdot, x_k)\le \epsilon$ restricts the next step $x$ to be in a local region of $x_k$.
+                    </div>
+                    <div class="column">
+                        <img src="./L15/Trust-Region_Method_Overview.png" alt="" width="1000px"/>
+                        <div class="credit">https://optimization.mccormick.northwestern.edu/index.php/Trust-region_methods</div>
+                    </div>
+                </div>
+                We compute the gradient (and Hessian) of $f$ <b>for once</b>, but we can use it to update $x$ <b>for multiple steps</b> safely!
+            </div>
+
+            <!-- ################################################################## -->
+            <div class="step slide">
+                <h1 class="nt">Basic Framework of Trust-region Policy Optimization (e.g, TRPO/PPO)</h1>
+                TRPO/PPO repeat the following procedure:
+                <ul>
+                    <li>Sample multiple (say, 128) trajectories of certain length (say, 128) to get a minibatch of state-actions pairs (say, 128 * 128 $(s, a)$ pairs)</li>
+                    <li>Estimate the advantage of each $(s, a)$ pair using GAE (say GAE($0.95$)) and the corresponding trajectory</li>
+                    <li>Solve the (mini-batch) local subproblem multiple times (say, mini-batch of size 128 * 32, 16 gradient descents)</li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Trust-region Method for Policy Optimization</h1>
+                <ul>
+                    <!--<li>TRPO (Trust-region Policy Optimization): encourages the updated policy to be close to the previous policy in terms of $\text{KL}(\pi_{\text{new}}(s, \cdot)||\pi_{\text{old}}(s, \cdot))$, w.r.t. some distribution over $s$.</li>-->
+                    <li>Our policy gradient theorem gives us $\nabla_{\theta}V^{\pi_{\theta}, \gamma}(s_0)$; however, to apply trust-region method, we need an optimization form.</li>
+                    <li>Recall the form of PGT:
+                        \[
+                        \hat{\nabla}_{\theta}V^{\pi_{\theta}, \gamma}(s_0) 
+                        =\mathbb{E}_{\pi_{\theta}}\left[\sum_{t = 0}^{\infty}\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t)\right].
+                        \]
+                    </li>
+                    <li>Our idea to derive a trust-region based method algorithm.                        
+                        <blockquote>
+                            <center>
+                                We use a series of surrogate objective functions $\ell_{\theta_k}(\theta)$ <br/>whose gradient is the same as the gradient from PGT <span class="hl">at each step</span>.
+                            </center>
+                        </blockquote>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Trust-region Method for Policy Optimization</h1>
+                <ul>
+                    <li>Consider some possible surrogate loss functions
+                        \[
+                        \begin{aligned}
+                        \ell^1_{\color{red}{\theta_k}}(\theta)&=\bb{E}_{\color{red}{\pi_{\theta_k}}}\sum_{t=0}^{\infty} \frac{\pi_{\theta}(s_t,a_t)}{\color{red}{\pi_{\theta_k}}(s_t,a_t)}A^{\color{red}{\pi_{\theta_k}}, \gamma}(s_t,a_t) &\text{(ratio loss)}\\
+                        \ell^2_{\color{red}{\theta_k}}(\theta)&=\bb{E}_{\color{red}{\pi_{\theta_k}}} \sum_{t=0}^{\infty} \ln \pi_{\theta}(s_t,a_t)A^{\color{red}{\pi_{\theta_k}}, \gamma}(s_t,a_t)=\bb{E}_{\color{red}{\pi_{\theta_k}}} \sum_{t=0}^{\infty} \ln \frac{\pi_{\theta}(s_t,a_t)}{\color{red}{\pi_{\theta_k}}(s_t,a_t)}A^{\color{red}{\pi_{\theta_k}}, \gamma}(s_t,a_t)+C &\text{(log ratio loss)}\\
+                        \ell^3_{\color{red}{\theta_k}}(\theta)&=\bb{E}_{\color{red}{\pi_{\theta_k}}} \sum_{t=0}^{\infty} [\nabla_{\theta}\ln \pi_{\theta}(s_t,a_t)]\vert_{\color{red}{\color{red}{\theta_k}}}A^{\color{red}{\pi_{\theta_k}}, \gamma}(s_t,a_t)(\theta-\color{red}{\theta_k}) &\text{(first-order Taylor)}
+                        \end{aligned}
+                        \]
+                    </li>
+                    <li>It is easy to verify that
+                        \[
+                        \nabla_{\theta}\ell^1_{\color{red}{\theta_k}}(\theta)\vert_{\theta=\theta_k}=\nabla_{\theta}\ell^2_{\color{red}{\theta_k}}(\theta)\vert_{\theta=\theta_k}=\nabla_{\theta}\ell^3_{\color{red}{\theta_k}}(\theta)\vert_{\theta=\theta_k}\equiv
+                        \nabla_{\theta}V^{\pi_{\theta}, \gamma}(s_0)\vert_{\theta=\theta_k} 
+                        \]
+                    </li>
+                    <li>TRPO (Trust-region Policy Optimization) method picks the ratio loss as the objective.</li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Trust-region Method for Policy Optimization</h1>
+                The local constrained subproblem in TRPO:
+                \[
+                \aligned{
+                & \underset{\theta}{\text{maximize}} && \mathbb{E}_{\pi_{\theta_k}}\sum_{t=0}^{\infty} \frac{\pi_{\theta}(s_t,a_t)}{\pi_{\theta_k}(s_t,a_t)}A^{\pi_{\theta_k}, \gamma}(s_t,a_t)\\
+                & \text{subject to} && \mathbb{E}_{\pi_{\theta_k}}[\mathrm{KL}(\pi_{\theta_k}(s,\cdot)\|\pi_{\theta}(s,\cdot))]\le \delta
+                }
+                \]
+                The constraint restricts that $\pi_{\theta}$ not deviates much from $\pi_{\theta_k}$.
+                <ul>
+                    <li><i>Q: What is the intuitive explanation of this objective function?</i></li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Constrained Opt. $\rightarrow$ Unconstrained Opt.</h1>
+                <ul>
+                    <li>In TRPO, the subproblem to solve is a <b>constrained</b> optimization problem. Dealing with constraints involves tricks. </li>
+                    <li>PPO uses a unconstrained optimization problem to approximate the constrained problem. </li>
+                    <!--<li><i>Q: What is the common routine to convert a constrained optimization problem to an unconstrained problem?</i></li>-->
+                    <li>Let $r_{t,k}(\theta; s,a)=\frac{\pi_{\theta}(s_t,a_t)}{\pi_{\theta_k}(s_t,a_t)}$, we massage the original objective $\bb{E} [rA]$ to a new objective with the following behavior:</li>
+                    <img src="./L15/PPO.png" alt="" width="1000px"/>
+                    Note: For simplicity, dependencies on $(s,a)$ are omitted.
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Proximal Policy Optimization (PPO)</h1>
+                <img src="./L15/PPO.png" alt="" width="1000px"/>
+                <ul>
+                    <li>The following objective function has the desired graph:
+                        \[
+                        f(r,A)=\begin{cases}
+                        \mathrm{clip}(r, -\infty, 1+\epsilon) A, & A>0\\
+                        \mathrm{clip}(r, 1-\epsilon, \infty) A, & A\le 0
+                        \end{cases}
+                        \]
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Proximal Policy Optimization (PPO)</h1>
+                <ul>
+                    <li>The Proximal Policy Optimization method solves the unconstrained subproblem to improve the policy. 
+                        \[
+                        \aligned{
+                        & \underset{\theta}{\text{maximize}} && \mathbb{E}_{\pi_{\theta_k}}\sum_{t=0}^{\infty} f(r(\theta; s_t, a_t), A(s_t, a_t))\\
+                        }
+                        \]
+                    </li>
+                    <li>
+                        In the original paper, the objective is written in an equaivalent form:
+                        \[
+                        \aligned{
+                        & \underset{\theta}{\text{maximize}} && \mathbb{E}_{\pi_{\theta_k}}\sum_{t=0}^{\infty} \left[\min\left(r_{t, k}(\theta) A^{\pi_{\theta_k}, \gamma}(s_t,a_t), \text{clip}(r_{t, k}(\theta), 1-\epsilon, 1+\epsilon)A^{\pi_{\theta_k}, \gamma}(s_t,a_t)\right)\right]\\
+                        }
+                        \]
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Exploration</h1>
+                <ul>
+                    <li>The family of policy gradient algorithms also need to implement <b>exploration</b>. </li>
+                    <li>Since the policy function is a distribution over actions, TRPO and PPO randomly sample actions according to the policy function. This random behavior is already an effective exploration strategy.
+                        <ul>
+                            <li>e.g., for discrete action space, we use softmax to output the action probability;</li>
+                            <li>for continuous action space, we predict the mean and variance of a Gaussian, which allows us to compute the action probability and sample actions.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Exploration</h1>
+                <ul>
+                    <li>Improved exploration by entropy regularizer:
+                        \[
+                        \aligned{
+                        & \underset{\theta}{\text{maximize}} && \mathbb{E}_{\pi_{\theta_k}}\sum_{t=0}^{\infty} f(r(\theta; s_t, a_t), A(s_t,a_t))+\eta\cdot\, \text{entropy}(\pi_{\theta'}(s_t, \cdot))\\
+                        }
+                        \]
+                    </li>
+                    <li>Entropy:
+                        <ul>
+                            <li>Discrete distribution $P$: $\text{entropy}(P)=-\sum_x p(x)\log p(x)$ </li>
+                            <li>Continuous distribution $P$ with density $f$: $\text{entropy}(P)=-\int_x f(x)\log f(x)+\infty$ </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <div style="margin-top:300px"></div>
+                <center>
+                    <div class="Large"><b>End</b></div>
+                </center>
+            </div>
+        </div>
+        <!--
+            Add navigation-ui controls: back, forward and a select list.
+            Add a progress indicator bar (current step / all steps)
+            Add the help popup plugin
+        -->
+        <div id="impress-toolbar"></div>
+
+        <div class="impress-progressbar"><div></div></div>
+        <div class="impress-progress"></div>
+
+        <div id="impress-help"></div>
+
+        <script type="text/javascript" src="../extras/highlight/highlight.pack.js"></script>
+        <script src="../extras/mermaid/mermaid.min.js"></script>
+        <script type="text/javascript" src="../extras/markdown/markdown.js"></script>
+        <!--
+            To make all described above really work, you need to include impress.js in the page.
+            You also need to call a `impress().init()` function to initialize impress.js presentation.
+            And you should do it in the end of your document. 
+        -->
+        <script>
+            function setSlideID() {
+                x = document.getElementsByClassName("slide");
+                const titleSet = new Set();
+                var titleDict = {};
+                for (var i = 2; i < x.length; i++) {
+                    h1 = x[i].getElementsByTagName("h1")[0];
+                    if (h1) {
+                        // alert(title);
+                        title = '--'+h1.innerHTML.replace(/\W/g, '');
+                        if (titleSet.has(title)) {
+                            titleDict[title] += 1;
+                            title = title + '_' + titleDict[title].toString();
+                        }
+                        else {
+                            titleSet.add(title);
+                            titleDict[title] = 1;
+                        }
+                        x[i].id = title;
+                    }
+                }
+            }
+            setSlideID(); 
+        </script>
+        <script>
+            function getTitles() {
+                var secs = document.getElementsByClassName("separator");
+                var titleList = [];
+                var titleIdList = [];
+                const titleIdSet = new Set();
+                for (var i = 0; i < secs.length; i++) {
+                    h1 = secs[i].getElementsByTagName("h1")[0];
+                    titleId = 'Sec:'+h1.innerHTML.replace(/\W/g, '');
+                    if (titleIdSet.has(titleId)) {
+                        continue;
+                    }
+                    titleIdSet.add(titleId);
+                    titleList.push(h1.innerHTML);
+                    titleIdList.push(titleId);
+                    secs[i].id = titleId;
+                }
+                console.log(titleList);
+                return [titleList, titleIdList];
+            }
+
+            function addToC(titleList, titleIdList){
+                var agenda = document.getElementById("agenda");
+                agenda.innerHTML = '';
+                for (var i = 0; i < titleList.length; i++) {
+                    agenda.innerHTML += '<li><a href="#'+titleIdList[i]+'">'+titleList[i]+'</a></li>';
+                }
+            }
+
+            res = getTitles();
+            titleList = res[0]; titleIdList  = res[1];
+            addToC(titleList, titleIdList);
+        </script>
+        <script type="text/javascript" src="../js/impress.js"></script>
+        <script type="text/javascript">
+            (function(){
+                var vizPrefix = "language-viz-";
+                Array.prototype.forEach.call(document.querySelectorAll("[class^=" + vizPrefix + "]"), function(x){
+                    var engine;
+                    x.getAttribute("class").split(" ").forEach(function(cls){
+                        if (cls.startsWith(vizPrefix)) {
+                            engine = cls.substr(vizPrefix.length);
+                        }
+                    });
+                    var image = new DOMParser().parseFromString(Viz(x.innerText, {format:"svg", engine:engine}), "image/svg+xml");
+                    x.parentNode.insertBefore(image.documentElement, x);
+                    x.style.display = 'none'
+                    x.parentNode.style.backgroundColor = "white"
+                });
+            })();
+            window.MathJax = {
+                tex2jax: {
+                    inlineMath: [['$','$'], ['\\(','\\)']],
+                    displayMath: [['$$','$$'], ['\\[','\\]']],
+                    processEscapes: true,
+                    processEnvironments: true,
+                    skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+                    TeX: { equationNumbers: { autoNumber: "AMS" },
+                        extensions: ["AMSmath.js", "AMSsymbols.js", "color.js"],
+                    },
+                    jax: ["input/TeX", "output/SVG"]
+                },
+                AuthorInit: function () {
+                    MathJax.Hub.Register.StartupHook("Begin",function () {
+                        MathJax.Hub.Queue(function() {
+                            var all = MathJax.Hub.getAllJax(), i;
+                            for(i = 0; i < all.length; i += 1) {
+                                all[i].SourceElement().parentNode.className += ' has-jax';
+                            }
+                        })
+                    });
+                }
+            };
+        </script>
+        <script type="text/javascript" src="../extras/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+        <script>impress().init();</script>
+    </body>
+</html>
+<!-- discarded -->
