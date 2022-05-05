@@ -292,7 +292,7 @@
                              \bm{\dot{\theta}\\\ddot{\theta}}=
                              \bm{0 & I\\0 &
                              M^{-1}_{\theta}}\bm{\theta\\\dot{\theta}}+\bm{0\\M^{-1}_{\theta}C_{\theta, \dot{\theta}}}\tau+\bm{0\\-M^{-1}_{\theta}g_{\theta}},
-                             \] which is of $\dot{\x}=A_{\x} \x + B_{\x}\u+C_{\x}$ form. Let $\x'_{\x}=\x+A^{-1}_{\x}C_{\x}$, then
+                             \] which is of $\dot{\x}=A_{\x} \x + B_{\x}\u+C_{\x}$ form. Let $\x'=\x+A^{-1}_{\x}C_{\x}$, then
                              $\dot{\x'}=A_{\x}\x'+B_{\x}\u$.
                          </li>
                      </ul>
@@ -536,14 +536,16 @@
                          <li>The solution takes the form 
                              \[
                              \x(t)=e^{(A-B\K)t}\x(0),
-                             \].
+                             \]
                          </li>
+                         <!--
                          <li>Plug $\x(t)$ in the definition of the cost function, and we see that the cost takes the form
                              \[
                              J=\x^T(0)\S\x(0),
                              \]
                              which is a quadratic form, consistent with our assumption that $J$ is quadratic.
                          </li>
+                         -->
                      </ul>
                  </div>
 
@@ -632,7 +634,7 @@
                              &=\min_{\u}[\x^T\Q\x+\u^T\R\u+(A\x+B\u)^T\P_0(A\x+B\u)]&(1)
                              }
                              \]
-                             Setting the gradient w.r.t. to $\u$ to zero and solve $\u_1$:
+                             Setting the gradient w.r.t. $\u$ to zero and solve $\u_1$:
                              \[
                              \aligned{
                              \u_1=-(\R+B^T\Q B)^{-1}B^T\P_0 A\x=-\K_1\x &&(2)
@@ -670,11 +672,11 @@
                              &\P_i=\Q+\K_i^T\R\K_i+(A-B \K_i)^T\P_{i-1}(A-B\K_i)
                              }
                              \]
-                             The optimal policy for a $i$-step horizon is given by:
+                             The optimal policy for an $i$-step horizon is given by:
                              \[
                              \pi(\x)=-\K_i\x
                              \]
-                             The cost-to-go function for a $i$-step horizon is given by:
+                             The cost-to-go function for an $i$-step horizon is given by:
                              $J_i(\x)=\x^T\P_i\x$
                          </li>
                      </ol>
