@@ -35,7 +35,6 @@
                 <h2>Hao Su
                     <p style="font-size:30px">(slides prepared by Tongzhou Mu)</p>
                 </h2>
-                <h3>Spring, 2021</h3>
                 <div class="ack">Contents are based on <a href="https://mitpress.mit.edu/books/reinforcement-learning-second-edition">Reinforcement Learning: An Introduction</a> from Prof. Richard S. Sutton and Prof. Andrew G. Barto, and <a href="https://www.davidsilver.uk/teaching/">COMPM050/COMPGI13</a> taught at UCL by Prof. David Silver.</div>
             </div>
 
@@ -565,7 +564,6 @@
                             <li>Agent may have an internal model of the environment</li>
                             <li>Dynamics: how actions change the state</li>
                             <li>Rewards: how much reward from each state</li>
-                            <li>The model may be <b>imperfect</b></li>
                             <li>In the right figure:
                                 <ul>
                                     <li>Grid layout represents transition model $\mc{P}_{s,s'}^a$</li>
@@ -620,14 +618,14 @@
                     <li class="substep"><b>State-value function</b>
                         <ul>
                             <li>The state-value function $V_\pi(s)$ of an MDP is the expected return starting from state $s$, following the policy $\pi$</li>
-                            <li>$V_\pi(s)=\bb{E}_\pi[G_t|S_t=s]$</li>
+                            <li>$V_\pi(s)=\bb{E}_\pi[G_t|S_t=s]$ (assuming infinite horizon here)</li>
                         </ul>
                     </li>
                     <li class="substep"><b>Action-value function</b>                             
                         <ul>
                             <li>The action-value function $Q_\pi(s,a)$ is the expected return
                                 starting from state $s$, taking action $a$, following policy $\pi$</li>
-                            <li>$Q_\pi(s,a)=\bb{E}_\pi[G_t|S_t=s, A_t=a]$</li>
+                            <li>$Q_\pi(s,a)=\bb{E}_\pi[G_t|S_t=s, A_t=a]$ (assuming infinite horizon here)</li>
                         </ul>
                     </li>
                     <li class="substep">Notation explanation:                             
