@@ -238,7 +238,6 @@
             <div class="step slide">
                 <h1 class="nt">Trouble and Tricks in Practice</h1>
                 <ul>
-                    <li> DQN and DDPG are concise, but they cannot get state-of-the-art performance in practice. </li>
                     <li> Troubles in practice:
                         <ul> 
                             <li> Value overestimation </li>
@@ -447,7 +446,7 @@
                         Now, for $a^* = \text{argmax}_{a' \in \mathcal{A}} Q_{\th}(s, a') =\text{argmax}_{a' \in \mathcal{A}} A_{\th_A}(s, a')$.
                         So $Q_{\th}(s, a^*) = V_{\th_V}(s)$, which means $V_{\th_V}(s)$ really represents the value function.
                     </li>
-                    <li> In practice, $\text{average}$ is used to replace the $\max$ operator in $V_{\th_V}(s) + (A_{\th_A}(s, a) - \max_{a' \in \mathcal{A}} A_{\th_A}(s, a'))$, which increases instability.
+                    <li> In practice, $\text{average}$ is used to replace the $\max$ operator in $V_{\th_V}(s) + (A_{\th_A}(s, a) - \max_{a' \in \mathcal{A}} A_{\th_A}(s, a'))$, which increases stability.
                     </li>
                 </ul>
                 <div class="credit"><a href="https://arxiv.org/pdf/1511.06581.pdf"> Dueling network architectures for deep reinforcement learning </a> </div>    
@@ -535,7 +534,7 @@
             <div class="step slide">
                 <h1 class="nt"> Practical Off-Policy Algorithms </h1>
                 <ul>
-                    <li> In practice, a good off-policy algorithm needs to ensemble tricks ans solve exploration problem. </li>
+                    <li> In practice, a good off-policy algorithm needs to ensemble tricks and solve the exploration problem. </li>
                     <li>Example algorithms:
                         <ul>
                             <li> Rainbow </li>
