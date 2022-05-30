@@ -405,33 +405,24 @@ mark.red {
                         \[
                         \nabla_{\theta}V^{\pi_{\theta}}(s_0)=\sum_{s}\sum_t^{\infty}\mu_t(s;s_0) \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta}}(s, a)
                         \]
-                        where $\mu_t(s;s_0)$ is the average visitation frequency of the state $s$ in step $k$, and $\sum_s \sum_t\mu_t(s;s_0)=1$. 
+                        where $\mu_t(s;s_0)$ is the average visitation frequency of the state $s$ in step $k$, and $\sum_s \mu_t(s;s_0)=1$. 
                     </li>
-                    <li class="substep">
-                        Let $d^{\pi_{\th}}(s;s_0)=\sum_t \mu_t(s;s_0)$, and $d^{\pi_{\th}}(s;s_0)$ is the <i>stationary distribution</i> of state visitation under $\pi$. The theorem is also sometimes stated as 
-                        \[
-                        \nabla_{\theta}V^{\pi_{\theta}}(s_0)=\sum_{s}d^{\pi_{\th}}(s;s_0) \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta}}(s, a)
-                        \]
-                    </li>
-                </ul>
-            </div>
-            <!-- ################################################################### -->
-            <div class="step slide">
-                <h1 class="nt">Policy Gradient Theorem (Undiscounted) </h1>
-                \[
-                \nabla_{\theta}V^{\pi_{\theta}}(s_0)=\sum_{s}d^{\pi_{\th}}(s;s_0) \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta}}(s, a)
-                \]
-                <ul>
-                    <li>Q: What is the intuitive interpretation from this equation?
+                    <li class="substep">Q: What is the intuitive interpretation from this equation?
                         <ul class="substep">
                             <li>Weighted sum of (log) policy gradients for all steps. </li>
                             <li>Higher weights for states with higher frequency. </li>
                             <li>Earlier steps has higher $Q$, thus higher weights.</li>
                         </ul>
                     </li>
+                    <!--
+                    <li class="substep">
+                        Let $d^{\pi_{\th}}(s;s_0)=\sum_t \mu_t(s;s_0)$, and $d^{\pi_{\th}}(s;s_0)$ is the <i>stationary distribution</i> of state visitation under $\pi$. The theorem is also sometimes stated as 
+                        \[
+                        \nabla_{\theta}V^{\pi_{\theta}}(s_0)=\sum_{s}d^{\pi_{\th}}(s;s_0) \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta}}(s, a)
+                        \]
+                    </li>-->
                 </ul>
             </div>
-
             <div class="step slide">
                 <h1 class="nt">Policy Gradient Theorem (Discounted) </h1>
                 <ul>
