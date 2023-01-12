@@ -153,6 +153,7 @@ a:hover {
 .subject {
     text-align: center;
     flex: 20%;
+    font-weight: bold;
 }
 
 .topic {
