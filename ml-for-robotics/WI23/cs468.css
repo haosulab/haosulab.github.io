@@ -147,13 +147,15 @@ a:hover {
 
 .file {
     text-align: center;
-    flex: 15%;
+    flex: 10%;
 }
 
 .subject {
     text-align: center;
     flex: 20%;
     font-weight: bold;
+    margin-left: 1em;
+    margin-right: 1em;
 }
 
 .topic {
