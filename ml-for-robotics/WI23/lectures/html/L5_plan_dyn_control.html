@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>L5 Motion Planning</title>
+        <meta name="description" content="" />
+        <meta name="author" content="Hao Su" />
+        <link rel="stylesheet" href="../extras/highlight/styles/github.css">
+        <link rel="stylesheet" href="../extras/mermaid/mermaid.forest.css">
+        <link href="../css/impress-common.css" rel="stylesheet" />   
+        <link href="css/classic-slides.css" rel="stylesheet" />
+        <!-- <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>-->
+    </head>
+    <body class="impress-not-supported">
+        <div class="fallback-message">
+            <p>Your browser <b>doesn't support the features required</b> by impress.js, so you are presented with a simplified version of this presentation.</p>
+            <p>For the best experience please use the latest <b>Chrome</b>, <b>Safari</b> or <b>Firefox</b> browser.</p>
+        </div>
+        <div id="latex-macros"></div>
+        <script src="./latex_macros.js"></script>
+        <div id="impress"
+             data-width="1920"
+             data-height="1080"
+             data-max-scale="3"
+             data-min-scale="0"
+             data-perspective="1000"
+             data-transition-duration="0"
+             >
+             <div class="step slide title" data-x="-2200" data-y="-3000" id="title">
+                 <h1 class="nt">L5: Basic Planning, Dynamics, and Control</h1>
+                 <h2>Hao Su</h2>
+                 <h3>Winter, 2023</h3>
+             </div>
+             <div id="toc" class="step slide" data-rel-x="2200" data-rel-y="0">
+                 <h1 class="nt">Agenda</h1>
+                 <ul class="large" id="agenda"></ul>
+                 click to jump to the section.
+             </div>
+
+             <div class="step slide separator" id="form">
+                 <h1 class="nt">Concepts of Motion Planning</h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Configuration Space</h1>
+                 <ul>
+                     <li>Configuration space (\(\cal{C}\)-space) is a subset of \(\bb{R}^n\) containing all possible states of the system(state space in RL).</li>
+                     <li>\(\cal{C}_{free}\subseteq \cal{C}\) contains all valid states.</li>
+                     <li>\(\cal{C}_{obs}\subseteq \cal{C}\) represents obstacles. </li>
+                     <li>Examples:
+                         <ul>
+                             <li>All valid poses of a robot.</li>
+                             <li>All valid joint values of a robot.</li>
+                             <li>...</li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Motion Planning</h1>
+                 <ul>
+                     <li>
+                         Problem:
+                         <ul>
+                             <li>Given a configuration space \(\cal{C}_{free}\)
+                             </li>
+                             <li>
+                                 Given start state \(q_{start}\)and goal state \(q_{goal}\) in \(\cal{C}_{free}\)
+                             </li>
+                             <li>
+                                 Calculate a sequence of actions that leads from start to goal
+                             </li>
+                         </ul>
+                     </li>
+                     <li>
+                         Challenge:
+                         <ul>
+                             <li>
+                                 Need to avoid obstacles
+                             </li>
+                             <li>
+                                 Long planning horizon
+                             </li>
+                             <li>
+                                 High-dimensional planning space
+                             </li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Motion Planning</h1>
+                 <img src="./L5_files/planning_concept.png" width="65%"/>
+                 <div class="ack">LaValle, Steven M. Planning algorithms. Cambridge university press, 2006.</div>
+             </div>
+             <div class="step slide">
+                 <h1 class="et">Examples</h1>
+                 <img src="./L5_files/planning_example.gif" width="65%"/>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Examples</h1>
+
+                 <div class="row">
+                     <div class="column">
+                         <img src="./L5_files/eg1.png" width="80%"/>
+                         <div class="credit" style="margin-top: 200px">
+                             <ul>
+                                 <li>Ratliff N, Zucker M, Bagnell J A, et al. CHOMP: Gradient optimization techniques for efficient motion planning, ICRA 2009</li>
+                                 <li>Schulman, John, et al. Finding Locally Optimal, Collision-Free Trajectories with Sequential Convex Optimization, RSS 2013
+                                 </li>
+                             </ul>
+                         </div>
+                     </div>
+                     <div class="column">
+                         <div style=margin-top:200px>
+                             <img src="./L5_files/eg2.png" width="80%"/>
+                         </div>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Sample-based Algorithm</h1>
+                 <ul>
+                     <li>The key idea is to explore a smaller subset of possibilities randomly without exhaustively exploring all possibilities.
+                     </li>
+                     <li>
+                         Pros:
+                         <ul>
+                             <li>
+                                 Probabilistically complete
+                             </li>
+                             <li>
+                                 Solve the problem after knowing partial of \(\cal{C}_{free}\)
+                             </li>
+                             <li>
+                                 Apply easily to high-dimensional \(\cal{C}\)-space
+
+                             </li>
+                         </ul>
+                     </li>
+                     <li>
+                         Cons:
+                         <ul>
+                             <li>
+                                 Requires to find path between two close points
+                             </li>
+                             <li>
+                                 Does not work well when the connection of \(\cal{C}_{free}\) is bad
+                             </li>
+                             <li>
+                                 Never optimal
+                             </li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide separator" id="prm">
+                 <h1 class="nt"> Probabilistic Roadmap Method (PRM) </h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt"> Probabilistic Roadmap(PRM) </h1>
+                 <ul>
+                     <li>The algorithm contains two stages:</li>
+                     <ul>
+                         <li>Map construction phase</li>
+                         <ul>
+                             <li>Randomly sample states in \(\cal{C}_{free}\)</li>
+                             <li>Connect every sampled state to its neighbors</li>
+                             <li>Connect the start and goal state to the graph</li>
+                         </ul>
+                     </ul>
+                     <li>Query phase</li>
+                     <ul>
+                         <li>Run path finding algorithms like Dijkstra</li>                
+                     </ul>
+                 </ul>
+                 <div class="ack">
+                     Kavraki, Lydia E., et al. "Probabilistic roadmaps for path planning in high-dimensional configuration spaces." IEEE transactions on Robotics and Automation 12.4 (1996): 566-580.
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="vt">Rejection Sampling</h1>
+                 <ul>
+                     <li>
+                         Aim to sample uniformly in \(\cal{C}_{free}\).
+                     </li>
+                     <li>
+                         Method
+                         <ul>
+                             <li>Sample uniformly over \(\cal{C}\).</li>
+                             <li>Reject the sample not in the feasible area.</li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="et">Pipeline</h1>
+                 <img src="./L5_files/pipeline_prm.png" width="80%"/>
+             </div>
+             <div class="step slide">
+                 <h1 class="vt">Challenges</h1>
+                 <ul>
+                     <li>
+                         Connect neighboring points: 
+                         <ul><li>In general it requires solving dynamics</li></ul>
+                     </li>
+                     <li>Collision checking:
+                         <ul><li>It takes a lot of time to check if the edges are in the configuration space.</li></ul>
+                     </li>             
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Example</h1>
+                 PRM generates a graph \(G=(V,E)\) such that every edge is in the configuration space without colliding with obstacles.
+                 <p><img src="./L5_files/prm_map.png" width="50%"/></p>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Example</h1>
+                 Find the path from start state \(q_{start}\) to goal state \(q_{goal}\)
+                 <p><img src="./L5_files/prm_planning.png" width="50%"/></p>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Limitations: Narrow Passages</h1>
+                 It is unlikely to sample the points in the narrow bridge 
+                 <p><img src="./L5_files/prm_limitation.png" width="50%"/></p>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Gaussian Sampling</h1>
+                 <ul>
+                     <li>Generate one sample \(q_1\) uniformly in the configuration space</li>
+                     <li>Generate another sample \(q_2\) from a Gaussian distribution \(\cal{N}(q_1, \sigma^2)\)</li>
+                     <li>If \(q_1\in\cal{C}_{free}\) and  \(q_2\neq \cal{C}_{free}\) then add \(q_1\)</li>
+                 </ul>
+                 <div class="row">
+                     <div class="column">
+                         <img src="./L5_files/uniform.png" width="50%"></img>
+                     </div>
+                     <div class="column">
+                         <img src="./L5_files/gaussian.png" width="50%"></img>
+                     </div>
+                 </div>
+                 <div class="rby">Read by Yourself</div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Bridge Sampling</h1>
+                 <ul>
+                     <li>Generate one sample \(q_1\) uniformly in the configuration space</li>
+                     <li>Generate another sample \(q_2\) from a Gaussian distribution \(\cal{N}(q_1, \sigma^2)\)</li>
+                     <li>\(q_3=\frac{q_1+q_2}{2}\)</li>
+                     <li>If \(q_1\), \(q_2\) are not in \(\cal{C}_{free}\) then add \(q_3\)</li>
+                 </ul>
+                 <table>
+                     <tr>
+                         <td><img src="./L5_files/uniform.png" width="80%"/></td>
+                         <td><img src="./L5_files/bridge.png" width="80%"/></td>
+                         <td><img src="./L5_files/bridge_2.png" width="80%"/></td>
+                     </tr>
+                 </table>
+                 <div class="rby">Read by Yourself</div>
+             </div>
+             <div class="step slide separator" id="rrt">
+                 <h1 class="nt">Rapidly-exploring Random Trees (RRT)</h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="vt">Rapidly-exploring Random Tree(RRT) </h1>
+                 <ul>
+                     <li>RRT grows a tree rooted at the start state by using random samples from configuration space.</li>
+                     <li>As each sample is drawn, a connection is attempted between it and the nearest state in the tree. If the connection is in the configuration space, this results in a new state in the tree.</li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Extend Operation</h1>
+                 <img src="./L5_files/extend.png" width="60%"/>
+             </div>
+             <div class="step slide">
+                 <h1 class="et">Pipeline</h1>
+                 <img src="./L5_files/pipeline_rrt.png" width="70%">
+             </div>
+             <div class="step slide">
+                 <h1 class="et">Examples</h1>
+                 <img src="./L5_files/RRT_demo.gif" width="70%">
+             </div>
+             <div class="step slide">
+                 <h1 class="vt">Challenges</h1>
+                 <ul>
+                     <li>Find nearest neighbor in the tree</li>
+                     <ul>
+                         <li>We need to support online quick query</li>
+                         <li>Examples: KD Trees</li>
+                     </ul>
+                     <li>Need to choose a good \(\epsilon\) to expand the tree efficiently</li>
+                     <ul>
+                         <li>Large \(\epsilon\): hard to generate new samples </li>
+                         <li>Small \(\epsilon\): too many samples in the tree</li>
+                     </ul>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="vt">RRT-Connect</h1>
+                 <ul>
+                     <li>Grow two trees starting from \(q_{start}\) and \(q_{start}\) respectively instead of just one.</li>
+                     <li>Grow the trees towards each other rather than random configurations</li>
+                     <li>Use stronger greediness by growing the tree with multiple epsilon steps instead of a single one.</li>
+                 </ul>
+                 <div class="ack">
+                     Kuffner, James J., and Steven M. LaValle. "RRT-connect: An efficient approach to single-query path planning." Proceedings 2000 ICRA. Millennium Conference. IEEE International Conference on Robotics and Automation. Symposia Proceedings (Cat. No. 00CH37065). Vol. 2. IEEE, 2000.
+                 </div>
+             </div>
+
+             <div class="step slide">
+                 <h1 class="et">Pseudo Code</h1>
+                 <iframe src="./L5_files/RRT_Connect.pdf" width="100%" height="800px"></iframe>
+             </div>
+
+             <div class="step slide separator" id="form">
+                 <h1 class="nt">Concepts of Dynamics</h1>
+             </div>
+             <div class="step slide">
+                <h1 class="nt">Dynamics Example: Grasp</h1>
+                <div class="row">
+                    <div class="column">
+                        <ul>
+                            <li>Consider the right grasp problem
+                            </li>
+                            <ul>
+                                <li class="substep">
+                                    Assume that we are grasping this box using two arms
+                                </li>
+                                <li class="substep">
+                                    We apply torques at each joint through the installed motors 
+                                </li>
+                                <li class="substep">
+                                    <strong>These torques will be passed to the tips of the fingers.</strong>
+                                </li>
+                                <li class="substep">
+                                    ...
+                                </li>
+                            </ul>
+                        </ul>
+                        <div class="substep"><strong>Q1: How to compute force at the tips from the torques at joints?</strong></div>
+                        <div class="substep"><strong>Q2: To move the box with a certain acceleration, what is torque at joints?</strong></div>
+                    </div>
+                    <div class="column">
+                        <img src="L5_files/multifingers.png" width="100%"/>
+                    </div>
+                </div>
+            </div>
+            <div class="step slide">
+                <h1 class="nt">Dynamics Example: Grasp</h1>
+                <ul style="margin-top: 50px">
+                    <li>Parameterization</li>
+                    <ul>
+                        <li>\(\theta \in\bb{R}^n\): vector of joint variables</li>
+                        <li>\(\tau \in\bb{R}^n\): vector of joint forces/torques</li>
+                    </ul>
+                </ul>
+                <ul class="substep" style="margin-top: 50px">
+                    <li>Task</li>
+                    <ul>
+                        <li>
+                            <strong>Forward dynamics:</strong> Determine acceleration \(\ddot{\theta}\) given the state \((\theta, \dot{\theta})\) and the joint forces/torques
+                            \[\ddot{\theta}=\rm{FD}(\tau; \theta, \dot{\theta})\]
+                        </li>
+                        <li>
+                            <strong>Inverse dynamics:</strong> Finding torques/forces given state \(\theta, \dot{\theta}\) and desired acceleration \(\ddot{\theta}\)
+                            \[
+                            \tau=\rm{ID}(\ddot{\theta}; \theta, \dot{\theta})
+                            \]
+                        </li>
+                    </ul>
+                </ul>
+            </div>
+            <div class="step slide">
+                <h1 class="nt">Manipulator Equation</h1>
+                \[
+                \tau=\mv{M}^b(\theta)\ddot{\theta}+C^b(\theta,\dot{\theta})\dot{\theta}+g^b(\theta)
+                \]
+                <ul>
+                    <li>Essentially, $\mv{f}=m\mv{a}$</li>
+                    <li>We defer the derivation to the end of the quarter</li>
+                </ul>
+            </div>
+            <div class="step slide">
+                <ul>
+                    <li>Equations for a simple arm</li>
+                </ul>
+                <img src="L5_files/3dof_lagrangian.svg" width="100%"/>
+            </div>
+            <div class="step slide">
+                <ul>
+                    <li>Equations for PUMA 560 Arm</li>
+                </ul>
+                <img src="L5_files/puma_dynamics.svg" width="100%">
+            </div>
+
+            <div class="step slide separator" id="form">
+                <h1 class="nt">Concepts of Control</h1>
+            </div>
+            <div class="step slide">
+                <h1 class="nt">Plan versus Control</h1>
+                <ul>
+                    <li>Suppose we have a robot, how do we use it to move objects?  </li>
+                    <p><img src="./L5_files/plan_and_control.svg" width="100%"></p>
+                    <li>Motion planning algorithms can generate a trajectory (position, velocity, and acceleration) of the robot.</li>                             
+                    <li>Now we need to know how to <strong>control</strong> the robot to follow such a trajectory. </li>
+                </ul>
+            </div>
+            <div class="step slide">
+                <h1 class="nt">Control</h1>
+                <ul>
+                    <li>Let us look at what we have
+                        <ul>
+                            <li>A <em>desired</em> trajectory to follow: $(q_{d}, \dot{q}_d, \ddot{q}_d)$</li>
+                            <li>Forward dynamics $\ddot{q}=\rm{FD}(\mv{F}; q, \dot{q})$</li>
+                            <li>Inverse dynamics $\mv{F}=\rm{ID}(\ddot{q}; q, \dot{q})$</li>
+                        </ul>
+                    </li>
+                    <li>Ideally, we just use inverse dynamics to compute $\ddot{q}$ at every moment to match $\ddot{q}_d$, and we are done!  </li>
+                </ul>
+                <ul class="substep">
+                    <li>However, the real world is not perfect. There will be many sources of error, and error accumulates if only acceleration is matched.</li>
+                    <li>We use <strong>control</strong> to deal with delay, overshoot, or steady-state error, and ensure stability.
+                        \[
+                        e=q-q_d\tag{steady-state error}
+                        \]</li>
+                </ul>
+            </div>
+            <div class="step slide separator" id="PID">
+                <h1 class="nt">PID Controller</h1>
+            </div>
+            <div class="step slide">
+                <h1 class="nt">Feedforward and Feedback Control</h1>
+                <ul>
+                    <li>We need some force to match $\ddot{q}_d$. This component is called the <strong>feed-forward component</strong>, which comes from $\rm{ID}(\cdot)$:
+                        \[
+                        \mv{F}_{ff}=\rm{ID}(\ddot{q}_d; q, \dot{q})
+                        \]
+                    </li>
+                    <li>We also need some additional force to correct the steady-state error, which is called the <strong>feedback component</strong>.</li>
+                    <li>We assume two matrices $K_v, K_p \in\bb{S}^+$ which are tunable parameters, and use a linear form to construct the feedback component as
+                        \[
+                        \mv{F}_{fb}=M(q)(-K_v\dot{e}-K_p e)
+                        \]
+                        where $M(q)$ is the inertia of the system.
+                    </li>
+                </ul>
+            </div>
+            <div class="step slide">
+                <h1 class="nt">Computed Torque Control Law</h1>
+                <ul>
+                    <li>Let us apply the previous control law to our single-arm robot derived last lecture.</li>
+                    <li>Inverse dynamics equation:
+                        \[
+                        \tau=M(\theta)\ddot{\theta}+C(\theta,\dot{\theta})\dot{\theta}+g(\theta)
+                        \]
+                    </li>
+                    <li class="substep">
+                        Therefore,
+                        \[
+                        \aligned{
+                        \tau_{ff}&=M(\theta)\ddot{\theta}_d+C(\theta,\dot{\theta})\dot{\theta}+g(\theta)\\
+                        \tau_{fb}&=M(\theta)(-K_v\dot{e}-K_p e)
+                        }
+                        \]
+                        where $K_v, K_p \in\bb{S}^+$ are constant matrices ($\bb{S}^+$: positive-semidefinite matrices cone).
+                    </li>
+                    <li class="substep">Combine them together, and the <em>computed torque control law</em> is:
+                        \[
+                        \tau=
+                        M(\theta)(\ddot{\theta}_d-K_v\dot{e}-K_p e)+C(\theta,\dot{\theta})\dot{\theta}+g(\theta)
+                        \tag{computed torque control}
+                        \]
+                    </li>
+                </ul>
+            </div>
+            <div class="step slide">
+                <h1 class="nt">Convergence Analysis</h1>
+                <ul>
+                    <li>We will control the system by the torque
+                        \[
+                        \tau=M(\theta)(\ddot{\theta}_d-K_v\dot{e}-K_p e)+C(\theta,\dot{\theta})\dot{\theta}+g(\theta)\tag{1}
+                        \]
+                    </li>
+                    <li>However, inverse dynamics equation tells us that the acceleration from $\tau$ is
+                        \[
+                        \tau=M(\theta)\ddot{\theta}+C(\theta,\dot{\theta})\dot{\theta}+g(\theta)\tag{2}
+                        \]
+                    </li>
+                    <li>Subtracting (2) from (1) and cancel $M(\theta)$, we get the error equation:
+                        \[
+                        \ddot{e}+K_v\dot{e}+K_p e=0
+                        \]
+                    </li>
+                </ul>
+            </div>
+            <div class="step slide">
+                <h1 class="vt">Convergence Analysis</h1>
+                \[
+                \ddot{e}+K_v\dot{e}+K_p e=0
+                \]
+                <ul>
+                    <li>Because $K_v, K_p\in\bb{S}^+$, by the theory of ODE, $e(t)=\mathcal{O}(e^{\alpha t})$, $\alpha\le 0$. </li>
+                    <li>We say that the computed torque control law has <strong>exponential convergence rate</strong>.</li>
+                </ul>
+            </div>
+            <div class="step slide">
+                <h1 class="vt"></h1>
+
+                <div class="large">
+                    <ul>
+                        <li>Sometimes, we do not have the inverse dynamics equation of the system, but we still hope the controller to work</li>
+                        (Isn't that the advertisement of model-free reinforcement learning?)
+                    </ul>
+                </div>
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt">PD Control</h1>
+                <ul>
+                    <li>The PD control law has the form:
+                        \[
+                        \tau=-K_v\dot{e}-K_p e \tag{PD control}
+                        \]
+                        where $K_v, K_p\in\bb{S}^+$ and $e=\theta-\theta_d$.
+                    </li>
+                    <li>Does not compute inverse dynamics at all.</li>
+                    <li>No theoretical guarantee in general.</li>
+                    <li>Not practical in general</li>
+                    <li>$e$ may converge; however, it usually does not converge to $0$.</li>
+                </ul>
+            </div>
+            <div class="step slide">
+                <h1 class="nt">PID Control</h1>
+                <ul>
+                    <li>PID Control law has the form
+                        \[
+                        \tau=-K_v\dot{e}-K_p e-K_i \int_0^t e(t)\d{t} \tag{PID control}
+                        \]
+                        where $K_v, K_p, K_i\in\bb{S}^+$ and $e=\theta-\theta_d$.
+                    </li>
+                    <li>$K_i$ term: accumulate errors over all past time steps. </li>
+                    <li>Inherits all the issues of PD, except</li>
+                    <li>When $e$ converges, it usually converges to $0$.</li>
+                    <li>Widely used in practice.</li>
+                </ul>
+            </div>
+            <div class="step slide">
+                <h1 class="nt">Augmented PID Control</h1>
+                <ul>
+                    <li>Augmented PID control law has the form:
+                        \[
+                        \tau=\rm{ID}(\ddot{\theta}_d)-K_v\dot{e}-K_p e
+                        \]
+                    </li>
+                    <li>Recall the computed torque control law:
+                        \[
+                        \tau=\rm{ID}(\ddot{\theta_d})-M(\theta)K_v\dot{e}-M(\theta)K_p e
+
+                        \]
+                    </li>
+                    <li>Compared with the computed torque control law, $K$'s may be harder to tune.</li>
+                    <li>Does result in exponential convergence for $K_v, K_p\in\bb{S}^+$</li>
+                </ul>
+            </div>
+            <div class="step slide">
+                <h1 class="nt">Tuning PID</h1>
+                <center>
+                    <table class="bordertable">
+                        <caption>Effects of <i>increasing</i> a parameter independently                         </caption>
+                        <tbody>
+                            <tr> <th>Parameter </th>
+                                <th>Rise time </th> <th>Overshoot
+                                </th>
+                                <th>Settling time
+                                </th>
+                                <th>Steady-state error
+                                </th>
+                                <th>Stability
+                                </th>
+                            </tr>
+                            <tr style="text-align:center;">
+                                <th><span class="mwe-math-element"><span class="mwe-math-mathml-inline mwe-math-mathml-a11y" style="display: none;"><math xmlns="http://www.w3.org/1998/Math/MathML" alttext="{\displaystyle K_{p}}">
+                                            <semantics>
+                                            <mrow class="MJX-TeXAtom-ORD">
+                                            <mstyle displaystyle="true" scriptlevel="0">
+                                            <msub>
+                                            <mi>K</mi>
+                                            <mrow class="MJX-TeXAtom-ORD">
+                                            <mi>p</mi>
+                                            </mrow>
+                                            </msub>
+                                            </mstyle>
+                                            </mrow>
+                                            <annotation encoding="application/x-tex">{\displaystyle K_{p}}</annotation>
+                                            </semantics>
+                                            </math></span><img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/81d33ac9af047e93746da20160e9952cdfad0d17" class="mwe-math-fallback-image-inline" aria-hidden="true" style="vertical-align: -1.005ex; width:3.032ex; height:2.843ex;" alt="K_{p}"></span>
+                                </th>
+                                <td>Decrease
+                                </td>
+                                <td>Increase
+                                </td>
+                                <td>Small change
+                                </td>
+                                <td>Decrease
+                                </td>
+                                <td>Degrade
+                                </td>
+                            </tr>
+                            <tr style="text-align:center;">
+                                <th><span class="mwe-math-element"><span class="mwe-math-mathml-inline mwe-math-mathml-a11y" style="display: none;"><math xmlns="http://www.w3.org/1998/Math/MathML" alttext="{\displaystyle K_{i}}">
+                                            <semantics>
+                                            <mrow class="MJX-TeXAtom-ORD">
+                                            <mstyle displaystyle="true" scriptlevel="0">
+                                            <msub>
+                                            <mi>K</mi>
+                                            <mrow class="MJX-TeXAtom-ORD">
+                                            <mi>i</mi>
+                                            </mrow>
+                                            </msub>
+                                            </mstyle>
+                                            </mrow>
+                                            <annotation encoding="application/x-tex">{\displaystyle K_{i}}</annotation>
+                                            </semantics>
+                                            </math></span><img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/719736a1feb0bd7e73bb1425641a61229f55bb6d" class="mwe-math-fallback-image-inline" aria-hidden="true" style="vertical-align: -0.671ex; width:2.773ex; height:2.509ex;" alt="K_{i}"></span>
+                                </th>
+                                <td>Decrease
+                                </td>
+                                <td>Increase
+                                </td>
+                                <td>Increase
+                                </td>
+                                <td>Eliminate
+                                </td>
+                                <td>Degrade
+                                </td>
+                            </tr>
+                            <tr style="text-align:center;">
+                                <th><span class="mwe-math-element"><span class="mwe-math-mathml-inline mwe-math-mathml-a11y" style="display: none;"><math xmlns="http://www.w3.org/1998/Math/MathML" alttext="{\displaystyle K_{d}}">
+                                            <semantics>
+                                            <mrow class="MJX-TeXAtom-ORD">
+                                            <mstyle displaystyle="true" scriptlevel="0">
+                                            <msub>
+                                            <mi>K</mi>
+                                            <mrow class="MJX-TeXAtom-ORD">
+                                            <mi>d</mi>
+                                            </mrow>
+                                            </msub>
+                                            </mstyle>
+                                            </mrow>
+                                            <annotation encoding="application/x-tex">{\displaystyle K_{d}}</annotation>
+                                            </semantics>
+                                            </math></span><img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/af467d41e25cebc9640cba0240778eaae4057181" class="mwe-math-fallback-image-inline" aria-hidden="true" style="vertical-align: -0.671ex; width:3.065ex; height:2.509ex;" alt="K_{d}"></span>
+                                </th>
+                                <td>Minor change
+                                </td>
+                                <td>Decrease
+                                </td>
+                                <td>Decrease
+                                </td>
+                                <td>No effect in theory
+                                </td>
+                                <td>Improve if <span class="mwe-math-element"><span class="mwe-math-mathml-inline mwe-math-mathml-a11y" style="display: none;"><math xmlns="http://www.w3.org/1998/Math/MathML" alttext="{\displaystyle K_{d}}">
+                                            <semantics>
+                                            <mrow class="MJX-TeXAtom-ORD">
+                                            <mstyle displaystyle="true" scriptlevel="0">
+                                            <msub>
+                                            <mi>K</mi>
+                                            <mrow class="MJX-TeXAtom-ORD">
+                                            <mi>d</mi>
+                                            </mrow>
+                                            </msub>
+                                            </mstyle>
+                                            </mrow>
+                                            <annotation encoding="application/x-tex">{\displaystyle K_{d}}</annotation>
+                                            </semantics>
+                                            </math></span><img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/af467d41e25cebc9640cba0240778eaae4057181" class="mwe-math-fallback-image-inline" aria-hidden="true" style="vertical-align: -0.671ex; width:3.065ex; height:2.509ex;" alt="K_{d}"></span> small
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </center>
+                <p>
+                    <div class="credit"><span style="margin-left:10%">Kiam Heong Ang; Chong, G.; Yun Li (2005). "PID control system analysis, design, and technology". IEEE Transactions on Control Systems Technology. 13 (4): 559–576. </span></div>
+                    <div class="credit"><span style="margin-left:10%"> Jinghua Zhong (Spring 2006). "PID Controller Tuning: A Short Tutorial" (PDF). Archived from the original on 2015-04-21. Retrieved 2011-04-04.</span></div>
+                    <div class="credit"><span style="margin-left:10%"><a href="https://en.wikipedia.org/wiki/PID_controller#cite_note-24">https://en.wikipedia.org/wiki/PID_controller#cite_note-24</a></span></div>
+                </p>
+            </div>
+
+
+            
+             <!--<div class="step slide">-->
+                 <!--<h1 class="nt">A Single RRT-Connect Iteration</h1>-->
+                 <!--<img src="./L5_files/image20.png" width="80%"/>-->
+             <!--</div>-->
+             <!--<div class="step slide">-->
+                 <!--<h1 class="nt">A Single RRT-Connect Iteration</h1>-->
+                 <!--<img src="./L5_files/image21.png" width="80%"/>-->
+             <!--</div>-->
+             <!--<div class="step slide">-->
+                 <!--<h1 class="nt">A Single RRT-Connect Iteration</h1>-->
+                 <!--<img src="./L5_files/image22.png" width="80%"/>-->
+             <!--</div>-->
+             <!--<div class="step slide">-->
+                 <!--<h1 class="nt">A Single RRT-Connect Iteration</h1>-->
+                 <!--<img src="./L5_files/image23.png" width="80%"/>-->
+             <!--</div>-->
+             <!--<div class="step slide">-->
+                 <!--<h1 class="nt">A Single RRT-Connect Iteration</h1>-->
+                 <!--<img src="./L5_files/image24.png" width="80%"/>-->
+             <!--</div>-->
+             <!--<div class="step slide">-->
+                 <!--<h1 class="nt">A Single RRT-Connect Iteration</h1>-->
+                 <!--<img src="./L5_files/image25.png" width="80%"/>-->
+             <!--</div>-->
+             <!--<div class="step slide">-->
+                 <!--<h1 class="nt">A Single RRT-Connect Iteration</h1>-->
+                 <!--<img src="./L5_files/image26.png" width="80%"/>-->
+             <!--</div>-->
+             <!--<div class="step slide">-->
+                 <!--<h1 class="nt">A Single RRT-Connect Iteration</h1>-->
+                 <!--<img src="./L5_files/image27.png" width="80%"/>-->
+             <!--</div>-->
+             <!--<div class="step slide">-->
+                 <!--<h1 class="nt">A Single RRT-Connect Iteration</h1>-->
+                 <!--<img src="./L5_files/image28.png" width="80%"/>-->
+             <!--</div>-->
+             <!--             <div class="step slide">
+                 <h1 class="nt">Local Planners</h1>
+                 <ul>
+                 <li>Both RRT and PRM rely on a local planner which gives a sequence of action to connect two states.</li>
+                 <li>RL can give local planners without solving the dynamics equations explicitly. </li>
+                 <li>RL cannot solve long term high dimensional planning problem efficiently due to the exploration.</li>
+                 </ul>
+                 </div>-->
+
+                 <!--<div id="overview" class="step" data-x="4500" data-y="1500" data-scale="10" style="pointer-events: none;"></div>-->
+                 <!--
+                     <div id="markdown" class="step slide markdown" data-rel-x="0" data-rel-y="900">
+                     </div>
+                 -->
+        </div>
+
+        <!--
+            Add navigation-ui controls: back, forward and a select list.
+            Add a progress indicator bar (current step / all steps)
+            Add the help popup plugin
+        -->
+        <div id="impress-toolbar"></div>
+
+        <div class="impress-progressbar"><div></div></div>
+        <div class="impress-progress"></div>
+
+        <div id="impress-help"></div>
+
+        <script type="text/javascript" src="../extras/highlight/highlight.pack.js"></script>
+        <script src="../extras/mermaid/mermaid.min.js"></script>
+        <script type="text/javascript" src="../extras/markdown/markdown.js"></script>
+        <!--
+            To make all described above really work, you need to include impress.js in the page.
+            You also need to call a `impress().init()` function to initialize impress.js presentation.
+            And you should do it in the end of your document. 
+        -->
+        <script>
+            function setSlideID() {
+                x = document.getElementsByClassName("slide");
+                const titleSet = new Set();
+                var titleDict = {};
+                for (var i = 2; i < x.length; i++) {
+                    h1 = x[i].getElementsByTagName("h1")[0];
+                    if (h1) {
+                        // alert(title);
+                        title = '--'+h1.innerHTML.replace(/\W/g, '');
+                        if (titleSet.has(title)) {
+                            titleDict[title] += 1;
+                            title = title + '_' + titleDict[title].toString();
+                        }
+                        else {
+                            titleSet.add(title);
+                            titleDict[title] = 1;
+                        }
+                        x[i].id = title;
+                    }
+                }
+            }
+            setSlideID(); 
+        </script>
+        <script>
+            function getTitles() {
+                var secs = document.getElementsByClassName("separator");
+                var titleList = [];
+                var titleIdList = [];
+                const titleIdSet = new Set();
+                for (var i = 0; i < secs.length; i++) {
+                    h1 = secs[i].getElementsByTagName("h1")[0];
+                    titleId = 'Sec:'+h1.innerHTML.replace(/\W/g, '');
+                    if (titleIdSet.has(titleId)) {
+                        continue;
+                    }
+                    titleIdSet.add(titleId);
+                    titleList.push(h1.innerHTML);
+                    titleIdList.push(titleId);
+                    secs[i].id = titleId;
+                }
+                console.log(titleList);
+                return [titleList, titleIdList];
+            }
+
+            function addToC(titleList, titleIdList){
+                var agenda = document.getElementById("agenda");
+                agenda.innerHTML = '';
+                for (var i = 0; i < titleList.length; i++) {
+                    agenda.innerHTML += '<li><a href="#'+titleIdList[i]+'">'+titleList[i]+'</a></li>';
+                }
+            }
+
+            res = getTitles();
+            titleList = res[0]; titleIdList  = res[1];
+            addToC(titleList, titleIdList);
+        </script>
+        <script type="text/javascript" src="../js/impress.js"></script>
+        <script type="text/javascript">
+            (function(){
+                var vizPrefix = "language-viz-";
+                Array.prototype.forEach.call(document.querySelectorAll("[class^=" + vizPrefix + "]"), function(x){
+                    var engine;
+                    x.getAttribute("class").split(" ").forEach(function(cls){
+                        if (cls.startsWith(vizPrefix)) {
+                            engine = cls.substr(vizPrefix.length);
+                        }
+                    });
+                    var image = new DOMParser().parseFromString(Viz(x.innerText, {format:"svg", engine:engine}), "image/svg+xml");
+                    x.parentNode.insertBefore(image.documentElement, x);
+                    x.style.display = 'none'
+                    x.parentNode.style.backgroundColor = "white"
+                });
+            })();
+            window.MathJax = {
+                tex2jax: {
+                    inlineMath: [['$','$'], ['\\(','\\)']],
+                    displayMath: [['$$','$$'], ['\\[','\\]']],
+                    processEscapes: true,
+                    processEnvironments: true,
+                    skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+                    TeX: { equationNumbers: { autoNumber: "AMS" },
+                        extensions: ["AMSmath.js", "AMSsymbols.js", "color.js"],
+                    },
+                    jax: ["input/TeX", "output/SVG"]
+                },
+                AuthorInit: function () {
+                    MathJax.Hub.Register.StartupHook("Begin",function () {
+                        MathJax.Hub.Queue(function() {
+                            var all = MathJax.Hub.getAllJax(), i;
+                            for(i = 0; i < all.length; i += 1) {
+                                all[i].SourceElement().parentNode.className += ' has-jax';
+                            }
+                        })
+                    });
+                }
+            };
+        </script>
+        <script type="text/javascript" src="../extras/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+        <script>impress().init();</script>
+    </body>
+</html>
+<!-- discarded -->
