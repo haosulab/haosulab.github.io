@@ -156,7 +156,8 @@ a:hover {
 .subject {
     text-align: center;
     flex: 20%;
-    font-weight: bold;
+    /* font-weight: bold;*/
+    color: #800000;
     margin-left: 0.5em;
     margin-right: 0.5em;
     align-items: center;
