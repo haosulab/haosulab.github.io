@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>L8</title>
+        <meta name="description" content="" />
+        <meta name="author" content="Hao Su" />
+        <link rel="stylesheet" href="../extras/highlight/styles/github.css">
+        <link rel="stylesheet" href="../extras/mermaid/mermaid.forest.css">
+        <link href="../css/impress-common.css" rel="stylesheet" />
+        <link href="css/classic-slides.css" rel="stylesheet" />
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/1.7.1/viz.js"></script>
+        <link rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/vs.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+        <style>
+
+
+mark.red {
+    color:#ff0000;
+    background: none;
+}
+
+        </style>
+    </head>
+    <body class="impress-not-supported">
+        <div class="fallback-message">
+            <p>Your browser <b>doesn't support the features required</b> by impress.js, so you are presented with a simplified version of this presentation.</p>
+            <p>For the best experience please use the latest <b>Chrome</b>, <b>Safari</b> or <b>Firefox</b> browser.</p>
+        </div>
+        <div id="latex-macros"></div>
+        <script src="./latex_macros.js"></script>
+        <div id="impress"
+             data-width="1920"
+             data-height="1080"
+             data-max-scale="3"
+             data-min-scale="0"
+             data-perspective="1000"
+             data-transition-duration="0">
+            <div class="step slide title" data-x="-2200" data-y="-3000" id="title">
+                <h1 class="nt">L8: DQN and REINFORCE (Finite Action Space)</h1>
+                <h2>Hao Su
+                    <p style="font-size:30px">(slides prepared with the help from Tongzhou Mu and Shuang Liu)</p>
+                </h2>
+                <h3>Winter, 2023</h3>
+            </div>
+
+            <div id="toc" class="step slide" data-rel-x="2200" data-rel-y="0">
+                <h1 class="nt">Agenda</h1>
+                <ul class="large" id="agenda"></ul>
+                click to jump to the section.
+            </div>
+
+            <!-- ######################### New Section ############################# -->
+            <div class="step slide separator">
+                <h1 class="nt">Deep Q-Learning</h1>
+            </div>
+            <div class="step slide">
+                <h1 class="nt"> Taxonomy of RL Algorithms and Examples</h1>
+                <div class="mermaid" style="text-align:center">
+                    graph TD
+                    l1("RL Algorithms") 
+                    l11("Model-Free RL")
+                    l12("Model-Based RL")
+                    l111("MC Sampling<br/>")
+                    l112("Bellman based<br/>")
+                    l121("Learn the Model")
+                    l122("Given the Model")
+                    l1111("REINFORCE")
+                    l1121("Deep Q-Network")
+                    l1-->l11 
+                    l1-->l12
+                    l11-->l111
+                    l11-->l112
+                    l12-->l121
+                    l12-->l122
+                    l111-->l1111
+                    l112-->l1121
+                    style l11 fill:#eadfa4
+                    style l111 fill:#eadfa4
+                    style l112 fill:#eadfa4
+                    style l1111 fill:#eadfa4
+                    style l1121 fill:#FFA500
+                </div>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Challenge of Representing $Q$</h1>
+                <ul>
+                    <li>How do we represent $Q(s,a)$? </li>
+                    <li>Maze has a discrete and small <i>state space</i> that we can deal with by an array. </li>
+                    <li>However, for many cases the state space is continuous, or discrete but huge, array does not work. </li>
+                    <p>
+                        <iframe width="720" height="500" src="https://www.youtube.com/embed/V1eYniJ0Rnk?start=22" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </p>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Deep Value Network</h1>
+                <ul>
+                    <li>Use a neural network to parameterize $Q$:</li>
+                    <ul>
+                        <li>Input: state $s\in\bb{R}^n$</li>
+                        <li>Output: each dimension for the value of an action $Q(s, a;\theta)$</li>
+                    </ul>
+                    <img src="./L7/network.png" height="400px">
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Training Deep Q Network</h1>
+                <!--
+                    -                 <ul>
+                    -                     <li>Recall TD in tabular Q-learning:
+                    -                         <ul>
+                    -                             <li>TD error: $\delta_t=\underbrace{R_{t+1}+\gamma \max_{a'} Q(S_{t+1}, a')}_{target\ value}-Q(S_t, a)$</li>
+                    -                             [><li>TD update: $Q(S_t, a) \leftarrow Q(S_t, a) + \alpha(R_{t+1}+\gamma \max_{a'}Q(S_{t+1}, a')-Q(S_t, a))$</li><]
+                    -                         </ul>
+                    -
+                    -                     </li>
+                    -                     <li>Temporal Difference can also be plugged in an optimization objective to derive the update of the $Q$ network</li>
+                    -                 </ul>
+                -->
+                <ul>
+                    <li>Recall the Bellman optimality equation for action-value function:
+                        \[
+                        Q^*(s,a)=\bb{E}[R_{t+1}+\gamma \max_{a'}Q^*(S_{t+1}, a')|S_t=s, A_t=a]
+                        \]
+                    </li>
+                    <li>It is natural to build an <i>optimization problem</i>:
+                        \[
+                        L(\th)=\bb{E}_{\color{red}{(s,a,s')\sim Env}}[TD_{\th}(s,a,s')] \tag{TD loss}
+                        \]
+                        where $TD_{\th}(s,a,s')=\|Q_{\th}(s,a)-[R(s,a,s')+\gamma\max_{a'}Q_{\th}(s',a')]\|^2$.
+                    </li>
+                    <li>Note: How to obtain the $Env$ distribution has many options! 
+                        <ul>
+                            <li>It does not necessarily sample from the optimal policy.</li>
+                            <li>A suboptimal, or even bad policy (e.g., random policy), may allow us to learn a good $Q$.</li>
+                            <li>It is a cutting-edge research topic of studying how well we can do for non-optimal $Env$ distribution.</li>
+                        </ul>   
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Replay Buffer</h1>
+                <ul>
+                    <li>As in the previous Q-learning, we consider a routine that we take turns to</li>
+                    <ul>
+                        <li>Sample certain transitions using the current $Q_{\th}$</li>
+                        <li>Update $Q_{\th}$ by minimizing the TD loss</li>
+                    </ul>
+                    <li><b>Exploration:</b> 
+                        <ul>
+                            <li>We use $\epsilon$-greedy strategy to sample transitions, and add $(s,a,s',r)$ in a <b>replay buffer</b> (e.g., maintained by FIFO).</li>
+                        </ul>
+                        <li><b>Exploitation:</b> 
+                            <ul>
+                                <li>We sample a batch of transitions and train the network by gradient descent:
+                                    \[
+                                    \nabla_{\th}L(\th)=\bb{E}_{(s,a,s')\sim \rm{Replay Buffer}}[\nabla_{\th}TD_{\th}(s,a,s')]
+                                    \]
+                                </li>
+                            </ul>
+                        </li>
+                        <!--<img src="./L13/DQN.png" width="70%">-->
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Deep Q-Learning Algorithm</h1>
+                <ul>
+                    <li>Initialize the replay buffer $D$ and Q network $Q_{\th}$.</li>
+                    <li>For every episode:
+                        <ul>
+                            <li>Sample the initial state $s_0\sim P(s_0)$</li>
+                            <li>Repeat until the episode is over
+                                <ul>
+                                    <li>Let $s$ be the current state</li>
+                                    <li>With prob. $\epsilon$ sample a random action $a$. Otherwise select $a=\arg\max_a Q_{\th}(s,a)$ </li>
+                                    <li>Execute $a$ in the environment, and receive the reward $r$ and the next state $s'$</li>
+                                    <li>Add transitions $(s,a,s')$ in $D$</li>
+                                    <li>Sample a random batch from $D$ and build the batch TD loss</li>
+                                    <li>Perform one or a few gradient descent steps on the TD loss</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Some Engineering Concerns about<br/> Deep $Q$-Learning </h1>
+                <ul>
+                    <li>States and value network architecture</li>
+                    <ul>
+                        <li>First of all, a good computer vision problem worth research.</li>
+                        <li>Need to ensure that states are sufficient statistics for decision-making
+                            <ul>
+                                <li>Common practice: Stack a fixed number of frames (e.g., 4 frames) and pass through ConvNet</li>
+                                <li>If long-term history is important, may use LSTM/GRU/Transformer/... to aggregate past history</li>
+                            </ul>
+                        </li>
+                        <li>May add other computing structures that are effective for video analysis, e.g., optical flow map</li>
+                        <li>Not all vision layers can be applied without verification (e.g., batch normalization layer may be harmful)</li>
+                    </ul>
+                    <li>Replay buffer</li>
+                    <ul>
+                        <li>Replay buffer size matters. </li>
+                        <li>When sampling from the replay buffer, relatively large batch size helps stabilizing training.</li>
+                    </ul>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Some Theoretical Concerns about $Q$-Learning</h1>
+                <ul>
+                    <li>Behavior/Target Network: Recall that 
+                        $TD_{\th}(s,a,s')=\|\color{blue}{Q_{\th}(s,a)}-[R(s,a,s')+\gamma\max_{a'}\color{red}{Q_{\th}(s',a')}]\|^2$. We keep two $Q$ networks in practice. We only update the blue network by gradient descent and use it to sample new trajectories. Every few episodes we replace the red one by the blue one. The reason is that the blue one changes too fast. The red one is called <i>target network</i> (to build target), and the blue one is called <i>behavior network</i> (to sample actions).
+                    </li>
+                    <li>Value overestimation: Note that the TD loss takes the maximal $a$ for each $Q(s,\cdot)$. Since TD loss is not unbiased, the max operator will cause the $Q$-value to be overestimated! There are methods to mitigate (e.g., double Q-learning) or work around (e.g., advantage function) the issue. 
+                    </li>
+                    <li>Uncertainty of $Q$ estimation: Obviously, the $Q$ value at some $(s,a)$ are estimated from more samples, and should be more trustable. Those high $Q$ value with low confidence are quite detrimental to performance. Distributional Q-Learning quantifies the confidence of $Q$ and leverages the confidence to recalibrate target values and conduct exploration.
+                    </li>
+                    <li>Theoretically, $Q$-learning (more precisely, a variation of it) is an <b>optimal online learning algorithm</b> for tabular RL.</li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Convergence of Reinforcement Learning Algorithms</h1>
+                We state the facts without proof:
+                <ul>
+                    <li>Q-Learning:
+                        <ul>
+                            <li>Tabular setup: Guaranteed convergence to the optimal solution. <a href="http://users.isr.ist.utl.pt/~mtjspaan/readingGroup/ProofQlearning.pdf">A simple proof</a> (using contraction mapping).</li>
+                            <li>Value network setup: No convergence guarantee due to the approximation nature of networks.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide separator">
+                <h1 class="nt">Unbiased Policy Gradient Estimation (REINFORCE)</h1>
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt"> Taxonomy of RL Algorithms and Examples</h1>
+                <div class="mermaid" style="text-align:center">
+                    graph TD
+                    l1("RL Algorithms") 
+                    l11("Model-Free RL")
+                    l12("Model-Based RL")
+                    l111("MC Sampling<br/>")
+                    l112("Bellman based<br/>")
+                    l121("Learn the Model")
+                    l122("Given the Model")
+                    l1111("REINFORCE")
+                    l1121("Deep Q-Network")
+                    l1-->l11 
+                    l1-->l12
+                    l11-->l111
+                    l11-->l112
+                    l12-->l121
+                    l12-->l122
+                    l111-->l1111
+                    l112-->l1121
+                    style l11 fill:#eadfa4
+                    style l111 fill:#eadfa4
+                    style l112 fill:#eadfa4
+                    style l1111 fill:#FFA500
+                    style l1121 fill:#eadfa4
+                </div>
+            </div>
+            <!--
+                -[> ################################################################### <]
+                -<div class="step slide">
+                -    <h1 class="vt">Key Idea</h1>
+                -    <ul>
+                -        <li>Unlike Q-learning, REINFORCE method does not need to keep record of the value function of states $V$ or state-action pairs $Q$!  </li>
+                -        <li>It uses a neural network to parameterize the policy. </li>
+                -        <li>We update the policy network by applying stochastic gradient descent over the return, and the gradient is approximated through <b>Monte-Carlo method</b>. </li>
+                -    </ul>
+                -</div>
+            -->
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">First-Order Policy Optimization</h1>
+                <ul>
+                    <li>Recall that a policy $\pi$ (assume its independent of step $t$) is just a function that maps from a state to a distribution over the action space.
+                        <ul>
+                            <li>The quality of $\pi$ is determined by $V^{\pi}(s_0)$, where $s_0$ is the initial state
+                                <ul>
+                                    <li>Q: What if the initial state is a distribution? </li>
+                                    <!--<li>A: Create a virtual state $s_0$ which takes no action and will transit to other states with the starting state probability.</li>-->
+                                </ul>
+                            </li>
+                            <li>We can parameterize $\pi$ by $\pi_{\theta}$, e.g., 
+                                <ul>
+                                    <li>a neural network</li>
+                                    <li>a categorical distribution </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">First-Order Policy Optimization</h1>
+                <ul>
+                    <li>
+                        Now we can formulate policy optimization as
+                        \[
+                        \begin{align}
+                        \underset{\theta\in\Theta}{\text{maximize}}&&V^{\pi_{\theta}}(s_0). 
+                        \end{align}
+                        \]
+                    </li>
+                </ul>
+                <ul class="substep">
+                    <li>Sampling allows us to estimate values. </li>
+                    <li>If sampling also allows us to estimate the gradient of values w.r.t. policy parameters $\frac{\partial V^{\pi_{\theta}}(s_0)}{\partial \theta}$, we can improve our policies! </li>
+                </ul>
+                <center class="substep">
+                    <div class="hl">Goal: Derivate a way to directly estimate the gradient $\frac{\partial V^{\pi_{\theta}}(s_0)}{\partial \theta}$ from samples.</div>
+                </center>
+            </div>
+            <!--
+                -[> ################################################################### <]
+                -<div class="step slide">
+                -    <h1 class="vt">Intuitive Explanation</h1>
+                -    \[
+                -    \nabla_\th J(\th)\approx \frac{1}{n}\sum_t R(\tau_t)\sum_i\nabla_\th \log\pi_{\th}(a_i|s_i)
+                -    \]
+                -    <ul>
+                -        <li>Weighted sum of (log) policy gradients for all the trajectories. </li>
+                -        <li>Higher weights for trajectories with higher rewards. </li>
+                -    </ul>
+                -</div>
+            -->
+            <!--
+                -[> ################################################################### <]
+                -<div class="step slide">
+                -    <h1 class="vt">Some Comments on Policy Gradient Algorithm</h1>
+                -    <ul>
+                -        <li>We will introduce improved version of policy gradient in subsequent lectures. </li>
+                -        <li>As an MC-based method, the gradient estimation is unbiased. </li>
+                -        <li>However, its estimate of gradient has a large variance. Therefore, stabilizing the update of $\pi_\th$ is the key.</li>
+                -        <li>As a high-variance method, it is not quite efficient (even its improved version, e.g, TRPO/PPO). But since it is unbiased, for some hard tasks, it may outperform seemingly more sample-efficient Q-learning methods. </li>
+                -    </ul>
+                -</div>
+            -->
+
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="et">Policy Gradient Theorem (Undiscounted) </h1>
+                <ul>
+                    <li>By Bellman expectation equation, 
+                        \begin{align*} 
+                        V^{\pi_{\theta}}(s) &= \bb{E}_{\pi_{\theta}} [R_{t+1}+\gamma V_{\pi}(S_{t+1})|S_t=s]\\
+                        &=\sum_{a}\pi_{\theta}(s, a)\cdot\mathbb{E}_{s'\sim T(s, a)}\left[r(s, a) + V^{\pi_{\theta}}(s')\right].
+                        \end{align*}
+                    </li>
+                    <li>How to calculate $\nabla_{\theta}V^{\pi_{\theta}}(s_0)$? Note that,
+                        <span style="font-size: 20px">
+                            \begin{align*}
+                            \nabla_{\theta}V^{\pi_{\theta}}(s_0)
+                            &= \sum_{a_0}\nabla_{\theta}\left\{\pi_{\theta}(s_0, a_0)\cdot\mathbb{E}_{s_1\sim T(s_0, a_0)}\left[r(s_0, a_0, s_1) + V^{\pi_{\theta}}(s_1)\right]\right\}\\
+                            \text{(product rule)} 
+                            &= \sum_{a_0}
+                            \left\{
+                            \nabla_{\theta}\pi_{\theta}(s_0, a_0) \cdot Q^{\pi_{\theta}}(s_0, a_0) 
+                            + \pi_{\theta}(s_0, a_0)\cdot \mathbb{E}_{s_1\sim T(s_0, a_0)}\left[\nabla_{\theta}V^{\pi_{\theta}}(s_1)\right]
+                            \right\}\\
+                            &= \sum_{a_0}
+                            \left\{
+                            \nabla_{\theta}\pi_{\theta}(s_0, a_0) \cdot Q^{\pi_{\theta}}(s_0, a_0) 
+                            + \pi_{\theta}(s_0, a_0)\cdot \mathbb{E}_{s_1\sim T(s_0, a_0)}\left[\sum_{a_1}\{\nabla_{\theta}\pi(s_1,a_1)Q^{\pi_{\theta}}(s_1,a_1)+
+                            \pi_{\theta}(s_1,a_1)\bb{E}[\nabla_{\theta}V^{\pi_{\theta}}(s_2)]\}\right]
+                            \right\}\\
+                            &=\left\{\sum_{a_0} \nabla_{\theta}\pi_{\theta}(s_0, a_0) \cdot Q^{\pi_{\theta}}(s_0, a_0)\right\}
+                            + \left\{\sum_{a_0}\pi_{\theta}(s_0, a_0)\cdot \mathbb{E}_{s_1\sim T(s_0, a_0)}\left[\sum_{a_1}\nabla_{\theta}\pi(s_1,a_1)Q^{\pi_{\theta}}(s_1,a_1)\right]\right\}
+                            + ...  \\
+                            \text{(recursively repeat above)} &= \sum_{t = 0}^{\infty}\sum_s\mu_t(s;s_0)
+                            \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta}}(s, a)=\sum_{s}\sum_t^{\infty}\mu_t(s;s_0) \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta}}(s, a)
+                            \end{align*}
+                        </span>
+                        Q: What does $\mu_t(s;s_0)$ mean?
+                    </li>
+                </ul>
+                <!--One question remains: $Q^{\pi_{\theta}}(s, a)$ is not directly available!-->
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Policy Gradient Theorem (Undiscounted) </h1>
+                <ul>
+                    <li>Policy Gradient Theorem (Undiscounted):
+                        \[
+                        \nabla_{\theta}V^{\pi_{\theta}}(s_0)=\sum_{s}\sum_t^{\infty}\mu_t(s;s_0) \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta}}(s, a)
+                        \]
+                        where $\mu_t(s;s_0)$ is the average visitation frequency of the state $s$ in step $k$, and $\sum_s \mu_t(s;s_0)=1$. 
+                    </li>
+                    <li class="substep">Q: What is the intuitive interpretation from this equation?
+                        <ul class="substep">
+                            <li>Weighted sum of (log) policy gradients for all steps. </li>
+                            <li>Higher weights for states with higher frequency. </li>
+                            <li>Earlier steps has higher $Q$, thus higher weights.</li>
+                        </ul>
+                    </li>
+                    <!--
+                    <li class="substep">
+                        Let $d^{\pi_{\th}}(s;s_0)=\sum_t \mu_t(s;s_0)$, and $d^{\pi_{\th}}(s;s_0)$ is the <i>stationary distribution</i> of state visitation under $\pi$. The theorem is also sometimes stated as 
+                        \[
+                        \nabla_{\theta}V^{\pi_{\theta}}(s_0)=\sum_{s}d^{\pi_{\th}}(s;s_0) \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta}}(s, a)
+                        \]
+                    </li>-->
+                </ul>
+            </div>
+            <div class="step slide">
+                <h1 class="nt">Policy Gradient Theorem (Discounted) </h1>
+                <ul>
+                    <li>Policy Gradient Theorem (Discounted):
+                        \[
+                        \nabla_{\th}V^{\pi_{\theta, \gamma}}(s_0) = \sum_s\sum_{t = 0}^{\infty}\gamma^t\mu_t(s;s_0) \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta}, \gamma}(s, a).
+                        \]
+                        $\mu_t(s;s_0)$ is the average visitation frequency of the state $s$ in step $k$.
+                    </li>
+                    <li>Can you guess the influence of $\gamma$ in this result?</li>
+                </ul>
+                <center><div class="hl">We will assume the discounted setting from now on.</div></center>
+            </div>
+
+            <!-- ################################################################### -->
+
+            <div class="step slide">
+                <h1 class="et">Creating an Unbiased Estimate for PG</h1>
+                \[
+                \nabla_{\theta}V^{\pi_{\theta}, \gamma}(s_0) =\sum_{t = 0}^{\infty}\sum_s\gamma^t\mu_t(s;s_0) \sum_{a}\nabla_{\theta}\pi_{\theta}(s, a) \cdot Q^{\pi_{\theta}, \gamma}(s, a) 
+                \]
+                Let's say we have used $\pi_{\theta}$ to collect a rollout trajectory $\left\{(s_t, a_t, r_t)\right\}_{t = 0}^{\infty}$, where $s_t, a_t, r_t$ are random variables. Note that
+                $\nabla_{\th} \ln \pi_{\th}=\frac{\nabla \pi_{\th}}{\pi_{\th}}\Rightarrow \nabla \pi_{\th}=\nabla_{\theta} \ln(\pi_{\th})\cdot\pi_{\th}$
+                \begin{align*}
+                \nabla_{\theta}V^{\pi_{\theta}, \gamma}(s_0)&= \sum_s\sum_{t = 0}^{\infty}\gamma^t\mu_t(s;s_0)\sum_{a}\nabla_{\theta}\ln\left(\pi_{\theta}(s, a)\right) \cdot \pi_{\theta}(s, a) Q^{\pi_{\theta}, \gamma}(s, a)\\
+                \text{(absorb randomness of env. in $\mu_t$)} &=\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\sum_{a}\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a)\right)\cdot\pi_{\theta}(s_t, a)Q^{\pi_{\theta}, \gamma}(s_t, a)\right]\\
+                \text{(absorb randomness of action in  $\pi_{\th}$)}&=\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t)\right)\cdot Q^{\pi_{\theta}, \gamma}(s_t, a_t)\right]\\
+                &=\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t)\right)\cdot \sum_{i = t}^{\infty} \gamma^{i - k}\cdot r_i\right]\\
+                \end{align*}
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt">Creating an Unbiased Estimate for PG (Cont'd)</h1>
+                We have shown that
+                \begin{align*}
+                \nabla_{\theta}V^{\pi_{\theta}, \gamma}(s_0)=\mathbb{E}\left[\sum_{t = 0}^{\infty}\gamma^t\nabla_{\theta}\ln\left(\pi_{\theta}(s_t, a_t)\right)\cdot \sum_{i = t}^{\infty} \gamma^{i - t}\cdot r_i\right]\\
+                \end{align*}
+                <ul>
+                    <li>Using more trajectories, we can get more accurate gradient estimate (smaller variance)</li>
+                    <li>Since the unbiased estimate is a summation, we can sample from the individual terms to do batched gradient descent</li>
+                </ul>
+                <center>
+                    <div class="hl">
+                        We have established an MC sampling based method to <br/>estimate the gradient of value w.r.t. policy parameters!<br/>
+                        This estimate is <i>unbiased</i>.
+                    </div>
+                </center>
+                <ul>
+                    <li>In literature, this MC-sampling based policy gradient method is called <b>REINFORCE</b>.</li>
+                </ul>
+            </div>
+
+
+            <!--
+                -<div class="step slide">
+                -    <h1 class="nt">Escaping Local optima</h1>
+                -    Because policy gradient is essentially first-order optimization of a non-convex function, no convergence is guaranteed. People use regularization (exploration term) to encourage escaping local optima. For example, instead of taking the gradient of 
+                -    \begin{align*}
+                -    \theta' \mapsto \mathbb{E}\left[\sum_{t = 0}^{\infty}\ln\left(\pi_{\theta'}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t)\right]
+                -    \end{align*}
+                -    at $\theta$, people instead take the gradient of
+                -    \begin{align*}
+                -    \theta'\mapsto\mathbb{E}\left[\sum_{t = 0}^{\infty}\ln\left(\pi_{\theta'}(s_t, a_t)\right)\cdot \hat{A}^{\pi_{\theta}, \gamma}(s_t, a_t) + \eta \cdot\,\text{entropy}(\pi_{\theta'}(s_t, \cdot))\right]
+                -    \end{align*}
+                -    at $\theta$.
+                -</div>
+            -->
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <div style="margin-top:300px"></div>
+                <center>
+                    <div class="Large"><b>End</b></div>
+                </center>
+            </div>
+        </div>
+        <!--
+            Add navigation-ui controls: back, forward and a select list.
+            Add a progress indicator bar (current step / all steps)
+            Add the help popup plugin
+        -->
+        <div id="impress-toolbar"></div>
+
+        <div class="impress-progressbar"><div></div></div>
+        <div class="impress-progress"></div>
+
+        <div id="impress-help"></div>
+
+        <script type="text/javascript" src="../extras/highlight/highlight.pack.js"></script>
+        <script src="../extras/mermaid/mermaid.min.js"></script>
+        <script type="text/javascript" src="../extras/markdown/markdown.js"></script>
+        <!--
+            To make all described above really work, you need to include impress.js in the page.
+            You also need to call a `impress().init()` function to initialize impress.js presentation.
+            And you should do it in the end of your document. 
+        -->
+        <script>
+            function setSlideID() {
+                x = document.getElementsByClassName("slide");
+                const titleSet = new Set();
+                var titleDict = {};
+                for (var i = 2; i < x.length; i++) {
+                    h1 = x[i].getElementsByTagName("h1")[0];
+                    if (h1) {
+                        // alert(title);
+                        title = '--'+h1.innerHTML.replace(/\W/g, '');
+                        if (titleSet.has(title)) {
+                            titleDict[title] += 1;
+                            title = title + '_' + titleDict[title].toString();
+                        }
+                        else {
+                            titleSet.add(title);
+                            titleDict[title] = 1;
+                        }
+                        x[i].id = title;
+                    }
+                }
+            }
+            setSlideID(); 
+        </script>
+        <script>
+            function getTitles() {
+                var secs = document.getElementsByClassName("separator");
+                var titleList = [];
+                var titleIdList = [];
+                const titleIdSet = new Set();
+                for (var i = 0; i < secs.length; i++) {
+                    h1 = secs[i].getElementsByTagName("h1")[0];
+                    titleId = 'Sec:'+h1.innerHTML.replace(/\W/g, '');
+                    if (titleIdSet.has(titleId)) {
+                        continue;
+                    }
+                    titleIdSet.add(titleId);
+                    titleList.push(h1.innerHTML);
+                    titleIdList.push(titleId);
+                    secs[i].id = titleId;
+                }
+                console.log(titleList);
+                return [titleList, titleIdList];
+            }
+
+            function addToC(titleList, titleIdList){
+                var agenda = document.getElementById("agenda");
+                agenda.innerHTML = '';
+                for (var i = 0; i < titleList.length; i++) {
+                    agenda.innerHTML += '<li><a href="#'+titleIdList[i]+'">'+titleList[i]+'</a></li>';
+                }
+            }
+
+            res = getTitles();
+            titleList = res[0]; titleIdList  = res[1];
+            addToC(titleList, titleIdList);
+        </script>
+        <script type="text/javascript" src="../js/impress.js"></script>
+        <script type="text/javascript">
+            (function(){
+                var vizPrefix = "language-viz-";
+                Array.prototype.forEach.call(document.querySelectorAll("[class^=" + vizPrefix + "]"), function(x){
+                    var engine;
+                    x.getAttribute("class").split(" ").forEach(function(cls){
+                        if (cls.startsWith(vizPrefix)) {
+                            engine = cls.substr(vizPrefix.length);
+                        }
+                    });
+                    var image = new DOMParser().parseFromString(Viz(x.innerText, {format:"svg", engine:engine}), "image/svg+xml");
+                    x.parentNode.insertBefore(image.documentElement, x);
+                    x.style.display = 'none'
+                    x.parentNode.style.backgroundColor = "white"
+                });
+            })();
+            window.MathJax = {
+                tex2jax: {
+                    inlineMath: [['$','$'], ['\\(','\\)']],
+                    displayMath: [['$$','$$'], ['\\[','\\]']],
+                    processEscapes: true,
+                    processEnvironments: true,
+                    skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+                    TeX: { equationNumbers: { autoNumber: "AMS" },
+                        extensions: ["AMSmath.js", "AMSsymbols.js", "color.js"],
+                    },
+                    jax: ["input/TeX", "output/SVG"]
+                },
+                AuthorInit: function () {
+                    MathJax.Hub.Register.StartupHook("Begin",function () {
+                        MathJax.Hub.Queue(function() {
+                            var all = MathJax.Hub.getAllJax(), i;
+                            for(i = 0; i < all.length; i += 1) {
+                                all[i].SourceElement().parentNode.className += ' has-jax';
+                            }
+                        })
+                    });
+                }
+            };
+        </script>
+        <script type="text/javascript" src="../extras/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+        <script>impress().init();</script>
+    </body>
+</html>
+<!-- discarded -->
