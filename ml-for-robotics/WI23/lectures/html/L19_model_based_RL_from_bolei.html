@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8"/>
+    <title>L19</title>
+    <meta name="description" content=""/>
+    <meta name="author" content="Hao Su"/>
+    <link rel="stylesheet" href="../extras/highlight/styles/github.css">
+    <link rel="stylesheet" href="../extras/mermaid/mermaid.forest.css">
+    <link href="../css/impress-common.css" rel="stylesheet"/>
+    <link href="css/classic-slides.css" rel="stylesheet"/>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/1.7.1/viz.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/vs.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"
+            integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg=="
+            crossorigin="anonymous"></script>
+    <style>
+        mark.red {
+            color: #ff0000;
+            background: none;
+        }
+    </style>
+</head>
+
+<body class="impress-not-supported">
+<div class="fallback-message">
+    <p>Your browser <b>doesn't support the features required</b> by impress.js, so you are presented with a
+        simplified version of this presentation.</p>
+    <p>For the best experience please use the latest <b>Chrome</b>, <b>Safari</b> or <b>Firefox</b> browser.</p>
+</div>
+<div id="latex-macros"></div>
+<script src="./latex_macros.js"></script>
+<div id="impress" data-width="1920" data-height="1080" data-max-scale="3" data-min-scale="0" data-perspective="1000"
+     data-transition-duration="0">
+    <div class="step slide title" data-x="-2200" data-y="-3000" id="title">
+        <h1 class="nt">Model-based RL</h1>
+        <h2>Hao Su
+            <p style="font-size:30px">(Contents from <a href="https://cuhkrlcourse.github.io">IERG5350 taught
+                by Prof. Bolei Zhou.</a>)</p>
+        </h2>
+        <h3>Spring, 2021</h3>
+    </div>
+
+    <div id="toc" class="step slide" data-rel-x="2200" data-rel-y="0">
+        <h1 class="nt">Agenda</h1>
+        <ul class="large" id="agenda"></ul>
+        click to jump to the section.
+    </div>
+
+    <!-- ################################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Recall: Learning Objective of RL</h1>
+        <ul>
+            <li>Given an MDP, find a policy $\pi$ to maximize the expected return induced by $\pi$
+                <ul>
+                    <li>The conditional probability of trajectory $\tau$ given $\pi$ is</li>
+                    \[
+                    \begin{aligned}
+                    \text{Pr}(\tau|\pi)
+                    & = \text{Pr}(S_0=s_0)\prod_t\pi(a_t|s_t)P(s_{t+1}|s_t,a_t)\text{Pr}(r_{t+1}|s_t,a_t)\\
+                    \end{aligned}
+                    \]
+                    <li>RL Objective: $\max_\pi J(\pi)$</li>
+                    \[
+                    \begin{aligned}
+                    J(\pi)
+                    & = \bb{E}_{\tau\sim\pi}[R_1+\gamma R_2+...] \\
+                    & = \sum_{\tau}\text{Pr}(\tau|\pi)(r_1+\gamma r_2+...) \\
+                    \end{aligned}
+                    \]
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide separator">
+        <h1 class="nt">Concept of Model-based RL</h1>
+    </div>
+    <div class="step slide">
+        <h1 class="nt">RL with Environment Model</h1>
+        <ul>
+            <ul>
+                <li>Model-free RL</li>
+                <ul>
+                    <li>Learn policy from collected experience through policy gradient</li>
+                    <li>Learn value function through TD(DQN) or MC(PPO)</li>
+                    <li>
+                        In model-free reinforcement learning, transition dynamics $P(s_{t+1}|s_t,a_t)$ and reward
+                        function
+                        $R(r_{t}|s_t, a_t)$ is unknown and we do not attempt to learn it
+                    </li>
+                </ul>
+                <br/>
+                <li>Model-based RL</li>
+                <ul>
+                    <li>Learn/build model of environment from experience</li>
+                    <li>Utilize the model of environment to get (or improve) policy(or value)</li>
+                </ul>
+            </ul>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Model-free RL and Model-based RL</h1>
+        <ul>
+            <div class="column">
+                <ul>
+                    <li>Model-free RL</li>
+                    <img src="./L19_bolei/model-free.png" width="40%"/>
+                </ul>
+                <ul>
+                    <li>Model-based RL</li>
+                    <img src="./L19_bolei/model-base.png" width="55%"/>
+                </ul>
+            </div>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Concepts in Model-based RL</h1>
+        <ul>
+            <li class="substep">
+                <strong>Rollout:</strong>predict a short trajectory $s_1, s_2, ..., s_T$if we start at $s_0$ and execute
+                $a_0, a_1,
+                ...,
+                a_{N-1}$ sequentially using environment dynamics
+            </li>
+            <div class="substep">
+                <li><strong>Search:</strong> takes a model as input and produces or improves a policy by rollouts with
+                    the
+                    modeled
+                    environment
+                </li>
+                <div style="text-align: center">experience $\xrightarrow[]{\text{learning}}$ model
+                    $\xrightarrow[]{\text{search}}$ policy
+                </div>
+            </div>
+            <br/>
+            <div class="substep">
+                <li>
+                    <strong>Model-based value optimization:</strong>
+                </li>
+                <div style="text-align: center">model $\xrightarrow[]{}$ simulated trajectories
+                    $\xrightarrow[]{\text{backups}}$ value$\xrightarrow[]{\text{}}$ policy
+                </div>
+            </div>
+            <br/>
+            <div class="substep">
+                <li>
+                    <strong>Model-based policy optimization:</strong>
+                    <div style="text-align: center">model $\xrightarrow[]{}$ policy
+                    </div>
+                </li>
+                <br/>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Structure of Model-based RL</h1>
+        <ul>
+            <li>Relationships of concepts</li>
+            <img src="./L19_bolei/Structure of Model Based RL.png" width="40%"/>
+            <div class="substep">
+                <li>Two roles of real experience:</li>
+                <ul>
+                    <li>Improve the value and policy directly using off-policy methods</li>
+                    <li>Improve the learned model to match the real environment more accurately : $p(s_{t+1}|s_t, a_t)$,
+                        $R(r_{t}|s_t, a_t)$
+                </ul>
+            </div>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Advantage of Model-based RL</h1>
+        <ul>
+            <li>Higher sample efficiency, which is crucial for real-world RL applications such as robotics</li>
+            <img src="./L19_bolei/pros.png" width="80%"/>
+            <img src="./L19_bolei/sample-complexity.png" width="80%"/>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide separator">
+        <h1 class="nt">Models of the Environment</h1>
+    </div>
+    <div class="step slide">
+        <h1 class="vt">What is a Model</h1>
+        <ul>
+            <li>A model $M$ is a representation of an MDP parameterized by $\eta$</li>
+            <li>Usually a model $M$ represents state transition and reward function</li>
+            \[
+            s_{t+1} \sim P(s_{t+1}|s_t,a_t) \\
+            r_{t} \sim R(r_{t}|s_t, a_t)
+            \]
+            <li>Typically we assume conditional independence between state transitions and rewards</li>
+            \[
+            P(s_{t+1}, r_{t}| s_t, a_t) = P(s_{t+1}|s_t,a_t) R(r_{t}|s_t, a_t)
+            \]
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Perfect Model Without Learning</h1>
+        <ul>
+            <li>Games: Go, the rule of the game is known</li>
+            <img src="./L19_bolei/alpha-go.png" width="35%"/>
+            <li>Simulated Environment: Inverted pendulum, kinematics and dynamics can be modeled using physics</li>
+            <img src="./L19_bolei/inverted_pendulum.gif" width="30%"/>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Learning the Model</h1>
+        <ul>
+            <li>Goal: learn model $M_{\eta}$ from collected experience $\{ s_0, a_0, r_0, \cdot, r_{T-1} \}$</li>
+            <ul>
+                <li>The simplest way is to consider it s a supervised learning problem</li>
+                \[
+                s_0, a_0 \longrightarrow r_1, s_2 \\
+                s_1, a_1 \longrightarrow r_2, s_3 \\
+                \vdots \\
+                s_{T-1}, a_{T-1} \longrightarrow r_{T-1}, s_{T}
+                \]
+            </ul>
+            <li>Learning $s, a \longrightarrow r$ is a regression problem</li>
+            <li>Usually learning $s, a \longrightarrow s'$ is a density estimation problem. It can also be formulated as
+                a regression problem
+            </li>
+            <li>Pick a loss function, e.g., mean-squares error, KL divergence, to optimize model parameters that
+                minimize
+                the empirical loss
+            </li>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="vt">Examples of Model Parameterization</h1>
+        The model of the environment can be parameterized by different functions, for example:
+        <ul>
+            <li>Table Lookup Model</li>
+            <li>Linear Expectation Model</li>
+            <li>Linear Gaussian Model</li>
+            <li>Gaussian Process Model</li>
+            <li>Neural Network Model</li>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Table Lookup Model</h1>
+        <ul>
+            <li>Model is an explicit MDP for transition dynamics $P(s_{t+1}|s_t,a_t)$ and reward function $R(r_{t}|s_t,
+                a_t)$
+            </li>
+            <li>Table lookup model: Count visits $N(s,a)$ to each state action pairs</li>
+            \[
+            \hat{P}(s'|s,a) = \frac{1}{N(s,a)} \sum_{t=1}^{T} \mathbf{1} (S_t=s, A_t = a, S_{t+1}=s') \\
+            \hat{R}(r|s,a) = \frac{1}{N(s,a)} \sum_{t=1}^{T} \mathbf{1} (S_t=s, A_t = a)R_t \\
+            \]
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide separator">
+        <h1 class="nt">Models-based Value Optimization</h1>
+    </div>
+    <div class="step slide">
+        <h1 class="vt">Simplest Way to Utilize Learned Model</h1>
+        <ul>
+            <li>Use the model only to generate samples</li>
+            <li>General procedure:
+                <ul>
+                    <br/>
+                    <li>Sample experience from the model</li>
+                    \[
+                    S_{t+1} \sim P_{\eta}(S'|S_t, A_t) \\
+                    R_{t} \sim R_{\eta}(R_{t}|S_t, A_t)
+                    \]
+                    <li>
+                        Apply model-free RL to sampled experiences: e.g., Q-Learning, policy gradient
+                    </li>
+                </ul>
+            </li>
+
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="vt">Using an Inaccurate Model</h1>
+        <ul>
+            <li>Given an imperfect model $\langle P_{\eta}, R_{\eta} \rangle \neq \langle P, R \rangle$</li>
+            <li>Performance of model-based RL is limited to the optimal policy for approximate MDP</li>
+            <li>When the model is inaccurate, learning from sampled trajectory will generate a suboptimal policy</li>
+            <li>Possible solutions</li>
+            <ul>
+                <li>When the accuracy of the model is low, use model-free RL</li>
+                <li>Reason explicitly about the model uncertainty (how confident we are for the estimated state): use
+                    probabilistic model such as Bayesian Network or Gaussian Process
+                </li>
+            </ul>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="vt">Real and Simulated Experience</h1>
+        We now have two sources of experience:
+        <ul>
+            <div class="substep">
+                <li><strong>Real Experience:</strong> sampled from the environment (true MDP)</li>
+                \[
+                S', S \sim \mathcal{P}(S' | S, A) \\
+                R \sim \mathcal{R}(R|S, A)
+                \]
+            </div>
+            <div class="substep">
+                <li><strong>Simulated experience:</strong> sampled from the model (approximate MDP)</li>
+                \[
+                \hat{S'}, \hat{S} \sim \mathcal{P}_{\eta}(S' | S, A)\\
+                \hat{R} \sim \mathcal{R}_{\eta}(R|S,A)
+                \]
+            </div>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="vt">Integrating Real and Simulated Experience</h1>
+        <ul>
+            <li>Model-free RL:</li>
+            <ul>
+                <li>No model</li>
+                <li>Learn value function (and/or policy) from real experience</li>
+            </ul>
+            <li>Model-based RL that only using samples from learned model</li>
+            <ul>
+                <li>Learn a model from real experience</li>
+                <li>Update value function (and/or policy) from simulated experience</li>
+            </ul>
+            <li>Dyna</li>
+            <ul>
+                <li>Learn a model from real experience</li>
+                <li>Learn and update value function (and/or policy) from both real and simulated experience</li>
+            </ul>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Tabular Dyna-Q</h1>
+        Dyna-Q: combines direct RL, model learning, and model-based sampling together
+        <ul>
+            <li>Initialize $Q(s,a)$ and model $M_{\eta}(s,a)$</li>
+            <li>Repeat:</li>
+            <ul>
+                <li>$S \longleftarrow$ current(non-terminal) state</li>
+                <li>$A \longleftarrow$ $\epsilon$-greedy $(S,Q)$</li>
+                <li>Execute action $A$: observe resultant reward $R$, and state $S'$</li>
+                <li>Update $Q$: $Q(s,a) \longleftarrow Q(s,a) + \alpha[R + \gamma \max_{a}Q(S', a) - Q(s,a)]$</li>
+                <li>Update $M_{\eta}(s, a)$ via $R$ and $s'$</li>
+                <li>Repeat for $n$ times:</li>
+                <ul>
+                    <li>$s \longleftarrow$ random previously observed state</li>
+                    <li>$a \longleftarrow$ random previously action taken at s</li>
+                    <li>$r, s' \longleftarrow M_{\eta}(s, a)$</li>
+                    <li>$Q(s,a) \longleftarrow Q(s,a) + \alpha [R + \gamma \max_{a}Q(s', a) - Q(s, a)]$</li>
+                </ul>
+            </ul>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Result of Dyna</h1>
+        <ul>
+            <li>A simple maze environment: travel from start state to goal as quickly as possible</li>
+            <li>Learning curves vary with $n$ in previous page: the number of simulated steps used per real step</li>
+            <img src="./L19_bolei/Model based RL.png" width="45%"/>
+            <li>It learns faster with more number of simulated steps, but finally converges to the same performance</li>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide separator">
+        <h1 class="nt">Models-based Policy Optimization</h1>
+    </div>
+    <div class="step slide">
+        <h1 class="vt">Policy Optimization with Model-based RL</h1>
+        <ul>
+            <li>
+                Previous model-based RL:
+            </li>
+            <br/>
+            <div style="text-align: center">model $\xrightarrow[]{}$ simulated trajectories
+                $\xrightarrow[]{\text{backups}}$ value$\xrightarrow[]{\text{}}$ policy
+            </div>
+            <li>
+                Can we optimize the policy and learn the model directly, without estimating the value?
+            </li>
+            <br/>
+            <div style="text-align: center">model $\xrightarrow[]{\text{improves}}$ policy
+            </div>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="vt">Model-based Policy Optimization in RL</h1>
+        <ul>
+            <li>Policy gradient, as a model-free RL, only cares about the policy $\pi_{\theta}(a_t|s_t)$ and expected
+                return
+            </li>
+            \[
+            \tau = \{ s_0, a_0, s_1, a_1, \dots, s_{T-1}, a_{T-1} \} \sim \pi_{\theta}(a|s) \\
+            \underset{\theta}{\operatorname{argmax}} \mathbb{E}_{\tau \sim \pi_{\theta}}[\sum_{t}\gamma^t r(s_t, a_t)]
+            \]
+            <li>Can we do better if we know the model or are able to learn the model?</li>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Model-based Policy Optimization in RL</h1>
+        <li>Model-based policy optimization in RL is strongly influenced by the optimal control theory
+        </li>
+        <li>
+            In optimal control, the algorithm uses the model (transition function in L11) $\dot{x} = f(x, u)$ to
+            compute the optimal control signal to minimize the cost, recall LQR in L11
+        </li>
+        <li>If the dynamics and reward(cost) is known, we can use optimal control to solve the problem</li>
+        <img src="./L19_bolei/trajectory_optimization.png" width="60%"/>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="vt">Model Learning for Trajectory Optimization</h1>
+        <ul>
+            <li>If the dynamics model is unknown, we can combine model learning and trajectory optimization</li>
+            <li>A Simple Algorithm for Trajectory Optimization with Model Learning:</li>
+            <ul>
+                <li>Run base policy $\pi_{0}(a_t, s_t)$ (e.g., random policy) to collect $\{(s,a,s',r)\}$</li>
+                <li>Learn dynamics model $s' = f(s, a)$ to minimize $\sum_{i}||f(s_i, a_i) - s_i'||^2$</li>
+                <li>Trajectory optimization through f(s,a) to choose actions</li>
+            </ul>
+            <li class="substep">Step 2 is just supervised learning to minimize the least square error from the sampled
+                data
+            </li>
+            <li class="substep">Step 3 can be solved by any optimal control algorithm, e.g. LQR, to calculate the
+                optimal trajectory
+                using the model and a cost function
+            </li>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Model Learning for Trajectory Optimization</h1>
+        <ul>
+            <li>The environment model is not easy to learn and a tiny error
+                accumulates fast along the trajectory
+            </li>
+            <li>We may also land in areas where the model has not been learned yet</li>
+            <img src="./L19_bolei/drifting.png" width="60%"/>
+            <div class="substep">
+                <li>An Improved Algorithm for Trajectory Optimization with Model Learning Iteratively</li>
+                <ul>
+                    <li>Run base policy $\pi_{0}(a_t, s_t)$ (e.g., random policy) to collect
+                        $\{(s,a,s',r)\}$
+                    </li>
+                    <li>Repeat:</li>
+                    <ul>
+                        <li>Learn dynamics model $s' = f(s, a)$ to minimize $\sum_{i}||f(s_i, a_i) - s_i'||^2$</li>
+                        <li>Trajectory optimization through f(s,a) to choose actions</li>
+                        <li>Execute those actions and add the result data to the collect buffer $\{(s,a,s',r)\}$</li>
+                    </ul>
+                </ul>
+            </div>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Model Learning for Trajectory Optimization</h1>
+        <ul>
+            <li>Nevertheless, the previous method executes all computed actions before fitting the model again. We may
+                be off-grid too far already
+            </li>
+            <li>So we can use Model Predictive Control (MPC) to optimize the whole trajectory but we take the first
+                action only, then we observe and replan again
+            </li>
+            <div class="substep">
+                <li>Model Predictive Control (MPC): optimize the whole trajectory but we take the first action only. It
+                    can
+                    be used with perfect model or learned model
+                </li>
+                <li>The replan (since it only take first action) in MPC gives us a chance to take corrective action
+                    after
+                    observed
+                    the current state again
+                </li>
+                <img src="./L19_bolei/mpc_replan.png" width="80%"/>
+            </div>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="vt">Model Learning with MPC</h1>
+        <ul>
+            <li>Similar as before, run base policy $\pi_{0}(a_t, s_t)$ (e.g., random policy) to collect
+                $\{(s,a,s',r)\}$
+            </li>
+            <li>Repeat $n$ steps:</li>
+            <ul>
+                <li>Learn dynamics model $s' = f(s, a)$ to minimize $\sum_{i}||f(s_i, a_i) - s_i'||^2$</li>
+                <li>Loop each step:</li>
+                <ul>
+                    <li>Search through $f(s,a)$ to choose action and rollout trajectories</li>
+                    <li>Execute the first action in the trajectory and observe the resulting state $s'$ (MPC)</li>
+                    <li>Append $(s, a, s', r)$ to collected dataset $\{(s,a,s',r)\}$</li>
+                </ul>
+            </ul>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Search with Model: Random Shooting</h1>
+        <ul>
+            <li>Given environment model, we can compute the action with LQR. However, LQR does not work well
+                for model which is highly non-linear and running iLQR for each step is time consuming
+            </li>
+            <li>Random shooting is the simplest alternatives to search for an action with environment model</li>
+            <div class="substep">
+                <li>It follows the routine of guess and check:</li>
+                <ul>
+                    <li>
+                        Sample $m$ random action sequences from some distribution, e.g. uniform distribution:
+                    </li>
+                    \[ a_0^{0}, a_1^{0}, \dots, a_N^{0} \]
+                    \[ a_0^{1}, a_1^{1}, \dots, a_N^{1} \]
+                    \[ \vdots \]
+                    \[ a_0^{m-1}, a_1^{m-1}, \dots, a_N^{m-1} \]
+                    <li>
+                        Then evaluate the reward of each action sequence and choose the best one
+                    </li>
+                </ul>
+            </div>
+
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="vt">Search with Model: Cross Entropy Method</h1>
+        <ul>
+            <li>In random shooting, a uniform distribution is used to sample action</li>
+            <li>Can we have a more informative sampling?</li>
+            <li>Intuition: using previous evaluation result to fit a distribution</li>
+            <li>Cross Entropy Method (CEM) fit the distribution of solution with a Gaussian distribution</li>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Search with Model: Cross Entropy Method</h1>
+        <ul>
+            <li>Given: start state $s_0$ , population size $M$ , planning horizon $T$ , num of elites $e$, num of iters
+                $I$ , A Gaussian distribution $\mathcal{N}(\mu, \sigma)$
+            </li>
+            <li>Repeat for $I$ steps:</li>
+            <ul>
+                <li>Sample $M$ action sequences from $\mathcal{N}(\mu, \sigma)$, each sequence has a horizon $T$</li>
+                <li>Repeat for $M$ sequences:</li>
+                <ul>
+                    <li>For each action sequences, rollout $T$ steps with environment model $p(s_{t+1} | s_t, a_t)$</li>
+                    <li>Evaluate the rollouts using the reward function</li>
+                </ul>
+                <li>Select the top-$e$ elites from $M$ action sequences with highest reward</li>
+                <li>Fit a new Gaussian distribution based on elites to update $\mu, \sigma$</li>
+            </ul>
+            <li>Return the $\mu, \sigma$ after $I$ steps, execute $\mu$ in the real environment</li>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Learning Model and Policy Together</h1>
+        <ul>
+            <li>If we represent the environment model using a neural network, then it becomes differentiable
+            </li>
+            <li>Thus we can plug the policy learning along with model learning via a differentiable pipeline</li>
+            <img src="./L19_bolei/differentiable_policy_learning.png" width="80%"/>
+            <div class="substep">
+                <li><strong>Learning Model and Policy Together:</strong></li>
+                <ul>
+                    <li>Similar as before, run base policy $\pi_{0}(a_t, s_t)$ (e.g., random policy) to collect
+                        $\{(s,a,s',r)\}$
+                    <li>Repeats:</li>
+                    <ul>
+                        <li>Learn dynamics model $s' = f(s, a)$ to minimize $\sum_{i}||f(s_i, a_i) - s_i'||^2$</li>
+                        <li>Backpropagate through $f(s, a)$ into the policy to optimize $\pi_{\theta}(a_t|s_t)$</li>
+                        <li>Run policy $\pi_{\theta}(a_t|s_t)$ and append $(s, a, s', r)$ to collected dataset
+                            $\{(s,a,s',r)\}$
+                        </li>
+                    </ul>
+                </ul>
+            </div>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Parameterizing the Model</h1>
+        What function is used to parameterize the dynamics?
+        <ul>
+            <div class="substep">
+                <li>Global model: $s_{t+1} = f(s_t, a_t)$ is represented by a single neural network</li>
+                <ul>
+                    <li>Pros: simple and straight-forward, can directly use lots of data to fit</li>
+                    <li>Cons: not so great in low data regimes, and connot express model uncertainty</li>
+                </ul>
+            </div>
+
+            <div class="substep">
+                <li>Local model: model the transition as time-varying linear-Gaussian dynamics</li>
+                \[
+                p(x_{t+1}|x_t, u_t) = \mathcal{N}(f(x_t, u_t)) \\
+                f(x_t, u_t) = A_tx_t + B_tu_t \\
+                \]
+                <ul>
+                    <li>Pros: very data-efficient and can express model uncertainty</li>
+                    <li>What we need are only local gradients $A_t = \frac{df}{dx_t}$ and $B_t = \frac{df}{du_t}$</li>
+                    <li>Cons: not great with non-smooth dynamics</li>
+                    <li>Cons: very slow when dataset is large</li>
+                </ul>
+            </div>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Global Model versus Local Model</h1>
+        Local model as time-varying linear-gaussian
+        \[
+        p(x_{t+1}|x_t, u_t) = \mathcal{N}(f(x_t, u_t)) \\
+        f(x_t, u_t) = A_tx_t + B_tu_t \\
+        \]
+        <img src="./L19_bolei/local_model_vs_global_model.png" width="100%"/>
+    </div>
+
+    <!-- ################################################################### -->
+    <div class="step slide">
+        <div style="margin-top:300px"></div>
+        <center>
+            <div class="Large"><b>End</b></div>
+        </center>
+    </div>
+
+</div>
+<!--
+    Add navigation-ui controls: back, forward and a select list.
+    Add a progress indicator bar (current step / all steps)
+    Add the help popup plugin
+-->
+<div id="impress-toolbar"></div>
+
+<div class="impress-progressbar">
+    <div></div>
+</div>
+<div class="impress-progress"></div>
+
+<div id="impress-help"></div>
+
+<script type="text/javascript" src="../extras/highlight/highlight.pack.js"></script>
+<script src="../extras/mermaid/mermaid.min.js"></script>
+<script type="text/javascript" src="../extras/markdown/markdown.js"></script>
+<!--
+    To make all described above really work, you need to include impress.js in the page.
+    You also need to call a `impress().init()` function to initialize impress.js presentation.
+    And you should do it in the end of your document.
+-->
+<script>
+        function setSlideID() {
+            x = document.getElementsByClassName("slide");
+            const titleSet = new Set();
+            var titleDict = {};
+            for (var i = 2; i < x.length; i++) {
+                h1 = x[i].getElementsByTagName("h1")[0];
+                if (h1) {
+                    // alert(title);
+                    title = '--' + h1.innerHTML.replace(/\W/g, '');
+                    if (titleSet.has(title)) {
+                        titleDict[title] += 1;
+                        title = title + '_' + titleDict[title].toString();
+                    }
+                    else {
+                        titleSet.add(title);
+                        titleDict[title] = 1;
+                    }
+                    x[i].id = title;
+                }
+            }
+        }
+        setSlideID();
+</script>
+<script>
+        function getTitles() {
+            var secs = document.getElementsByClassName("separator");
+            var titleList = [];
+            var titleIdList = [];
+            const titleIdSet = new Set();
+            for (var i = 0; i < secs.length; i++) {
+                h1 = secs[i].getElementsByTagName("h1")[0];
+                titleId = 'Sec:' + h1.innerHTML.replace(/\W/g, '');
+                if (titleIdSet.has(titleId)) {
+                    continue;
+                }
+                titleIdSet.add(titleId);
+                titleList.push(h1.innerHTML);
+                titleIdList.push(titleId);
+                secs[i].id = titleId;
+            }
+            console.log(titleList);
+            return [titleList, titleIdList];
+        }
+
+        function addToC(titleList, titleIdList) {
+            var agenda = document.getElementById("agenda");
+            agenda.innerHTML = '';
+            for (var i = 0; i < titleList.length; i++) {
+                agenda.innerHTML += '<li><a href="#' + titleIdList[i] + '">' + titleList[i] + '</a></li>';
+            }
+        }
+
+        res = getTitles();
+        titleList = res[0]; titleIdList = res[1];
+        addToC(titleList, titleIdList);
+</script>
+<script type="text/javascript" src="../js/impress.js"></script>
+<script type="text/javascript">
+        (function () {
+            var vizPrefix = "language-viz-";
+            Array.prototype.forEach.call(document.querySelectorAll("[class^=" + vizPrefix + "]"), function (x) {
+                var engine;
+                x.getAttribute("class").split(" ").forEach(function (cls) {
+                    if (cls.startsWith(vizPrefix)) {
+                        engine = cls.substr(vizPrefix.length);
+                    }
+                });
+                var image = new DOMParser().parseFromString(Viz(x.innerText, { format: "svg", engine: engine }), "image/svg+xml");
+                x.parentNode.insertBefore(image.documentElement, x);
+                x.style.display = 'none'
+                x.parentNode.style.backgroundColor = "white"
+            });
+        })();
+        window.MathJax = {
+            tex2jax: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true,
+                skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+                TeX: {
+                    equationNumbers: { autoNumber: "AMS" },
+                    extensions: ["AMSmath.js", "AMSsymbols.js", "color.js"],
+                },
+                jax: ["input/TeX", "output/SVG"]
+            },
+            AuthorInit: function () {
+                MathJax.Hub.Register.StartupHook("Begin", function () {
+                    MathJax.Hub.Queue(function () {
+                        var all = MathJax.Hub.getAllJax(), i;
+                        for (i = 0; i < all.length; i += 1) {
+                            all[i].SourceElement().parentNode.className += ' has-jax';
+                        }
+                    })
+                });
+            }
+        };
+</script>
+<script type="text/javascript" src="../extras/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+<script>impress().init();</script>
+</body>
+</html>
+

@@ -1,0 +1,805 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>L12</title>
+        <meta name="description" content="" />
+        <meta name="author" content="Hao Su" />
+        <link rel="stylesheet" href="../extras/highlight/styles/github.css">
+        <link rel="stylesheet" href="../extras/mermaid/mermaid.forest.css">
+        <link href="../css/impress-common.css" rel="stylesheet" />   
+        <link href="css/classic-slides.css" rel="stylesheet" />
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/1.7.1/viz.js"> </script>
+        <link rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/vs.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+    </head>
+    <body class="impress-not-supported">
+        <div class="fallback-message">
+            <p>Your browser <b>doesn't support the features required</b> by impress.js, so you are presented with a simplified version of this presentation.</p>
+            <p>For the best experience please use the latest <b>Chrome</b>, <b>Safari</b> or <b>Firefox</b> browser.</p>
+        </div>
+        <div id="latex-macros"></div>
+        <script src="./latex_macros.js"></script>
+        <div id="impress"
+             data-width="1920"
+             data-height="1080"
+             data-max-scale="3"
+             data-min-scale="0"
+             data-perspective="1000"
+             data-transition-duration="0"
+             >
+            <div class="step slide title" data-x="-2200" data-y="-3000" id="title">
+                <h1 class="nt">L12: Framework of Reinforcement Learning (I)</h1>
+                <h2>Hao Su
+                    <p style="font-size:30px">(slides prepared by Tongzhou Mu)</p>
+                </h2>
+                <div class="ack">Contents are based on <a href="https://mitpress.mit.edu/books/reinforcement-learning-second-edition">Reinforcement Learning: An Introduction</a> from Prof. Richard S. Sutton and Prof. Andrew G. Barto, and <a href="https://www.davidsilver.uk/teaching/">COMPM050/COMPGI13</a> taught at UCL by Prof. David Silver.</div>
+            </div>
+
+            <div id="toc" class="step slide" data-rel-x="2200" data-rel-y="0">
+                <h1 class="nt">Agenda</h1>
+                <ul class="large" id="agenda"></ul>
+                click to jump to the section.
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide separator">
+                <h1 class="nt">Examples</h1>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="et">RL Applications</h1>
+                <div class="row">
+                    <div class="column" style="flex: 20%">
+                        <center>
+                            <div style="margin-top: 100px"></div>                      
+                            Control a humannoid in Mujoco. <br/>
+                            <video controls>
+                                <source src="./L12/mujoco_humanoid.mp4" type="video/mp4"/>
+                            </video>
+                            <div class="credit">https://gym.openai.com/envs/Humanoid-v2/</div>
+                        </center>
+                    </div>
+                    <div class="column" style="flex: 20%">
+                        <center>
+                            <div style="margin-top: 100px"></div>
+                            Play Atari games.  <br/>
+                            <video controls width="60%">
+                                <source src="./L12/atari_enduro.mp4" type="video/mp4"/>
+                            </video>
+                            <div class="credit">https://gym.openai.com/envs/Enduro-v0/</div>
+                        </center>
+                    </div>
+                </div>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="et">RL Applications</h1>
+                <div class="row">
+                    <div class="column" style="flex: 20%">
+                        <center>
+                            <div style="margin-top: 100px"></div>
+                            Learn motor skills for legged robots<br/>
+                            <iframe width="560" height="315" 
+                                                src="https://www.youtube.com/embed/ITfBKjBH46E" 
+                                                frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>
+                            </iframe>
+                            <div class="credit">https://www.youtube.com/watch?v=ITfBKjBH46E</div>
+                        </center>
+                    </div>
+                    <div class="column" style="flex: 20%">
+                        <center>
+                            <div style="margin-top: 100px"></div>
+                            Play Go.  <br/>
+                            <img src="./L12/alpha_go.jpg"/>
+                        </center>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step slide">
+                <h1 class="nt">Agent-Environment Interface</h1>
+                <ul>
+                    <li><b>Agent</b>: learner and decision maker.</li>
+                    <li><b>Environment</b>: the thing agent interacts with, comprising everything outside the agent.</li>
+                    <li><b>Action</b>: how agent interacts with the environment.</li>
+                    <li>In engineers’ terms, they are called controller, controlled system (or plant), and control signal.</li>
+                </ul>
+                <div style="margin-top: 50px"></div>
+                <img src="./L12/agent-env-interface.png"></img>
+                <!-- <div class="ack">Sutton, Richard S., and Andrew G. Barto. Reinforcement learning: An introduction. MIT press, 2018.</div> -->
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Agent-Environment Interface</h1>
+                <div class="row">
+                    <div class="column" style="flex: 30%">
+                        <ul>
+                            <li>At each step \(t\) the agent
+                                <ul>
+                                    <li>Executes action \(A_t\)</li>
+                                    <li>Receives state \(S_t\)</li>
+                                    <li>Receives scalar reward \(R_t\)</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="column" style="flex: 30%">
+                        <ul>
+                            <li>The environment
+                                <ul>
+                                    <li>Receives action \(A_t\)</li>
+                                    <li>Emits state \(S_{t+1}\)</li>
+                                    <li>Emits scalar reward \(R_{t+1}\)</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <img src="./L12/agent-env-interface.png"></img>
+                <!-- <div class="ack">Sutton, Richard S., and Andrew G. Barto. Reinforcement learning: An introduction. MIT press, 2018.</div> -->
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">RL: A Sequential Decision Making Problem</h1>
+                <ul>
+                    <li><b>Goal: select actions to maximize total future reward</b></li>
+                    <li>Actions may have long-term consequences</li>
+                    <li>Reward may be delayed</li>
+                    <li>It may be better to sacrifice immediate reward to gain more long-term reward </li>
+                    <li>Examples:
+                        <ul>
+                            <li>A financial investment (may take months to mature)</li>
+                            <li>Refuelling a helicopter (might prevent a crash in several hours)</li>
+                            <li>Blocking opponent moves (might help winning chances many moves from now)</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+
+            <!-- ################################################################### -->
+            <!-- # New section                                                     # -->
+            <!-- ################################################################### -->
+            <div class="step slide separator">
+                <h1 class="nt">Environment Description and Learning Objective</h1>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="vt">State</h1>
+                <ul>
+                    <li>State: A representation of the entire environment, it may contain
+                        <ul>
+                            <li>Description about the external environment</li>
+                            <li>Description about the agent</li>
+                            <li>Description about the desired task / goal</li>
+                            <li>...</li>
+                        </ul>
+                    </li>
+                    <li>As in control problems, we can use a vector $\mv{s}\in\bb{R}^n$ to represent the state.</li>
+                    <li>We can also use advanced data structures, such as images, small video clips, sets, and graphs.</li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="vt">Transition</h1>
+                <ul>
+                    <li>State transition functions can be deterministic or stochastic. More generally, we use a stochastic transition function.</li>
+                    <li>A state transition function is defined as 
+                        <ul>
+                            <li>$\mc{P}^{a}_{s,s'}=P(s'|s,a)=\text{Pr}(S_{t+1}=s'|S_t=s,A_t=a)$</li>
+                        </ul>
+                    </li>
+                    <li>$\mc{P}$ defines the dynamics of the environment.</li>
+                </ul>
+            </div>
+
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="vt">Markov Property</h1>
+                <ul>
+                    <li>"The future is independent of the past given the present"</li>
+                    <li>Markov state
+                        <ul>
+                            <li>A state $S_t$ is Markov if and only if
+                                <ul>
+                                    <li>$\text{Pr}(S_{t+1}|S_t, A_t)=\text{Pr}(S_{t+1}|S_1, A_1,...,S_t,A_t)$</li>
+                                </ul>
+                            </li>
+                            <li>The state captures all relevant information from the history</li>
+                            <li>Once the state is known, the history may be thrown away</li>
+                            <li>i.e. The state is a sufficient statistic of the future</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Observation</h1>
+                <ul>
+                    <li>The concept of state can be extended to <b>observation</b>, which is the thing directly received by the agent from the environment</li>
+                    <li class="substep"><b>Full observability</b>: the observations are <i>Markov</i> states,
+                        <ul>
+                            <li>the RAM of Atari games</li>
+                            <li>full state in simulator like SAPIEN</li>
+                        </ul>
+                    </li>
+                    <li class="substep"><b>Partial observability</b>: there are <em>invisible latent variables</em> to determine the transition.
+                        <ul>
+                            <li>A robot with camera vision isn’t told its absolute location</li>
+                            <li>A trading agent only observes current prices</li>
+                            <li>A poker playing agent only observes public cards</li>
+                        </ul>
+                    </li>
+                    <li class="substep">In RL community, observation and state are sometimes used interchangeably, but "state" is more like to be Markov state, "observation" is more like to be non-Markov state.</li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Reward</h1>
+                <ul>
+                    <li>A reward \(R_{t+1}\) is a <b>scalar random variable</b> about the feedback signal
+                        <ul>
+                            <li>Indicates how well agent is doing at step $t$</li>
+                            <li>Like a negative concept of "cost" in optimal control</li>
+                        </ul>
+                    </li>
+                    <li>The agent’s job is to maximize cumulative reward</li>
+                    <li>Examples:
+                        <ul>
+                            <li>Make a humanoid robot walk
+                                <ul>
+                                    <li>+ reward for forward motion</li>
+                                    <li>- reward for falling over</li>
+                                </ul>
+                            </li>
+                            <li>Playing Go
+                                <ul>
+                                    <li>+/− reward for winning/losing a game</li>
+                                </ul>
+                            </li>
+                            <li>Manage an investment portfolio
+                                <ul>
+                                    <li>+ reward for each $ in bank</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Probabilistic Description of Environment: Markov Decision Processes</h1>
+                <ul>
+                    <li>A Markov decision process (MDP) is a Markov process with rewards and decisions. </li>
+                    <li>Definition: </li>
+                    <li>A <b>Markov decision process</b> is a tuple $(\mc{S}, \mc{A}, \mc{P}, \mc{R})$
+                        <ul>
+                            <li>$\mc{S}$ is a set of states (discrete or continuous)</li>
+                            <li>$\mc{A}$ is a set of actions (discrete or continuous)</li>
+                            <li>$\mc{P}$ is a state transition probability function
+                                <ul>
+                                    <li>$\mc{P}^{a}_{s,s'}=P(s'|s,a)=\text{Pr}(S_{t+1}=s'|S_t=s,A_t=a)$</li>
+                                </ul>
+                            </li>
+                            <li>$\mc{R}$ is a reward function
+                                <ul>
+                                    <li>$\mc{R}^{a}_{s}=R(s,a)=\bb{E}[R_{t+1}|S_t=s,A_t=a]$</li>
+                                </ul>
+                                <li>Sometimes, an MDP also includes an initial state distribution $\mu$</li>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Probabilistic Description of Environment: Markov Decision Processes</h1>
+                <ul>
+                    <li>Markov decision processes formally describe an environment for reinforcement learning</li>
+                    <li>Almost all RL problems can be formalized as MDPs, e.g.
+                        <ul>
+                            <li>Optimal control primarily deals with continuous MDPs</li>
+                            <li>Partially observable problems can be converted into MDPs</li>
+                            <li>Bandits are MDPs with one state (we won't discuss this in our class)</li>
+                        </ul>
+                    </li>
+                    <li>In this course, our RL algorithms are based on the MDP assumption (i.e., fully observable states).</li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Return</h1>
+                <ul>
+                    <li>Infinite-horizon return (total discounted reward) from time-step $t$ (for a given policy):
+                        <ul>
+                            <li>$G_t=R_{t+1}+\gamma R_{t+2}+...=\sum_{k=0}^\infty\gamma^k R_{t+k+1}$ </li>
+                            <li>$\gamma\in[0,1]$: discount factor</li>
+                            <li>Note: $G_t$ is a <b>random variable</b>, because reward is a random variable</li>
+                            <li><em>Does it remind you the concept of "cost-to-go" function?</em></li>
+                        </ul>
+                    </li>
+                    <li class="substep">Introducing $\gamma$ values immediate reward over delayed reward
+                        <ul>
+                            <li>$\gamma$ close to $0$ $\to$ "myopic" evaluation</li>
+                            <li>$\gamma$ close to $1$ $\to$ "far-sighted" evaluation</li>
+                        </ul>
+                    </li>
+                    <li class="substep">Most Markov reward and decision processes are discounted. Why?
+                        <ul>
+                            <li>Mathematically, total reward gets bounded (if step rewards are bounded).</li>
+                            <li>Uncertainty about the future may not be fully represented</li>
+                            <li>Animal/human behaviour shows preference for immediate reward</li>
+                            <!-- <li>It is sometimes possible to use <i>undiscounted</i> Markov reward processes (i.e. $\gamma=1$), e.g. if all sequences terminate.</li> -->
+                        </ul>
+                    </li>
+                    <!-- <li class="substep">Formally, the objective of an RL agent is to maximize its <i>expected return</i></li> -->
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Episode</h1>
+                <ul>
+                    <!-- <li>Agent–environment interaction usually breaks naturally into subsequences, which we call episodes</li> -->
+                    <li>Agent-environment interaction usually breaks naturally into subsequences, which we call episodes, e.g.,
+                        <ul>
+                            <li>plays of a game</li>
+                            <li>trips through a maze</li>
+                        </ul>
+                    </li>
+                    <li>Termination of an episode
+                        <ul>
+                            <li>Each episode ends in a special state called the <i>terminal state</i>, followed by a <b>reset</b> to a standard starting state or to a sample from a standard distribution of starting states.</li>
+                            <li>Even if you think of episodes as ending in different ways, such as winning and losing a game, the next episode begins independently of how the previous one ended.</li>
+                            <li><b>The time of termination</b>, $T$, is a random variable that normally varies from episode to episode.</li>
+                        </ul>
+                    </li>
+                    <li>Tasks with episodes of this kind are called <i>episodic tasks</i>.</li>
+                    <li>In episodic tasks, returns will be truncated to finite-horizon.</li>  
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Learning Objective of RL</h1>
+                <ul>
+                    <li>Formally, the objective of an RL agent is to maximize its <i>expected return</i></li>
+                    <li>Given an MDP, find a policy $\pi$ to maximize the expected return induced by $\pi$
+                        <ul>
+                            <li>We use $\tau$ to denote a trajectory $s_0,a_0,r_1,s_1,a_1,r_2,...$ generated by $\pi$
+                                <ul>
+                                    <li>The conditional probability of $\tau$ given $\pi$ is</li>
+                                    \[
+                                    \begin{aligned}
+                                    \text{Pr}(\tau|\pi)
+                                    & = \text{Pr}(s_0,a_0,r_1,s_1,a_1,r_2,...|\pi)\\
+                                    & = \text{Pr}(S_0=s_0)\text{Pr}(a_0,r_1,s_1,a_1,r_2,...|\pi,s_0)\\
+                                    & = \text{Pr}(S_0=s_0)\text{Pr}(a_0,r_1,s_1|\pi)\text{Pr}(a_1,r_2,...|\pi,s_1) \qquad\mbox{// by Markovian property}\\
+                                    & = \text{Pr}(S_0=s_0)\pi(a_0|s_0)P(s_1|s_0,a_0)\text{Pr}(r_1|s_0,a_0)\text{Pr}(a_1,r_2,...|\pi,s_1)\\
+                                    & = ~...\\
+                                    & = \text{Pr}(S_0=s_0)\prod_t\pi(a_t|s_t)P(s_{t+1}|s_t,a_t)\text{Pr}(r_{t+1}|s_t,a_t)\\
+                                    \end{aligned}
+                                    \]
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Learning Objective of RL</h1>
+                <ul>
+                    <li>Formally, the objective of an RL agent is to maximize its <i>expected return</i></li>
+                    <li>Given an MDP, find a policy $\pi$ to maximize the expected return induced by $\pi$
+                        <ul>
+                            <li>We use $\tau$ to denote a trajectory $s_0,a_0,r_1,s_1,a_1,r_2,...$ generated by $\pi$
+                            </li>
+                            <li>Optimization problem: $\max_\pi J(\pi)$</li>
+                            \[
+                            \begin{aligned}
+                            J(\pi)
+                            & = \bb{E}_{\tau\sim\pi}[R_1+\gamma R_2+...] \\
+                            & = \sum_{\tau}\text{Pr}(\tau|\pi)(r_1+\gamma r_2+...) \\
+                            & = \sum_{\tau}\left(\text{Pr}(S_0=s_0)\prod_t\Big(\pi(a_t|s_t)P(s_{t+1}|s_t,a_t)\text{Pr}(r_{t+1}|s_t,a_t)\Big)(r_1+\gamma r_2+...) \right)\\
+                            \end{aligned}
+                            \]
+                            <!-- <li>The expectation counts for all the randomness from policy, state transition, and reward.</li> -->
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Data Collection in Supervised Learning and Reinforcement Learning</h1>
+                <ul>
+                    <li>In supervised learning,
+                        <ul>
+                            <li>A dataset $\mc{D}=\{(x_i,y_i)\}$ is usually given and fixed</li>
+                            <li>where $x_i$ is input of a data sample, $y_i$ is the corresponding label</li>
+                        </ul>
+                    </li>
+                    <li>In reinforcement learning,
+                        <ul>
+                            <li>The "dataset" $\mc{D}=\{(s_t, a_t, r_{t+1}, s_{t+1})\}$ is sampled by the agent itself by its policy $\pi$</li>
+                            <li>And the data distribution will shift according to the change of $\pi$</li>
+                        </ul>
+                    </li>
+                    <li>This difference introduces a core problem in RL: exploration, which we will elaborate later in this course.</li>
+                </ul>
+            </div>
+
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="et">Relationship between Optimal Control and Reinforcement Learning</h1>
+                <div class="row">
+                    <div class="column" style="flex: 30%">
+                        <ul>
+                            <li>Optimal Control
+                                <ul>
+                                    <li>Controller</li>
+                                    <li>Controlled System</li>
+                                    <li>Control Signal</li>
+                                    <li>State</li>
+                                    <li>Cost</li>
+                                    <li>Cost-to-go function</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="column" style="flex: 30%">
+                        <ul>
+                            <li>Reinforcement Learning
+                                <ul>
+                                    <!-- <li>State / Observation
+                                        <ul>
+                                        <li>Executes action \(A_t\)</li>
+                                        </ul>
+                                        </li> -->
+                                        <li>Agent</li>
+                                        <li>Environment</li>
+                                        <li>Action</li>
+                                        <li>State / Observation</li>
+                                        <li>Reward</li>
+                                        <li>Return</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <ul>
+                    <li>Differences
+                        <ul>
+                            <li>Environment dynamics is usually known in optimal control, but likely to be unknown in RL.</li>
+                            <li>RL extends the ideas from optimal control to non-traditional control problems.</li>
+                            <li>RL is more data-driven while optimal control is model-driven.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <!-- # New section                                                     # -->
+            <!-- ################################################################### -->
+            <div class="step slide separator" id="agent">
+                <h1 class="nt">Inside an RL Agent</h1>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="vt">Major Components of an RL Agent</h1>
+                <ul>
+                    <li>An RL agent may include one or more of these components:
+                        <ul>
+                            <li><b>Model</b>: agent's representation of the environment</li>
+                            <li><b>Policy</b>: agent's behaviour function</li>
+                            <li><b>Value function</b>: how good is each state and/or action</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Model</h1>
+                <ul>
+                    <li>In RL community, the term "model" has a specific meaning</li>
+                    <li>A <b>model</b> predicts what the environment will do next</li>
+                    <li>$\mc{P}$ predicts the next state
+                        <ul>
+                            <li>$\mc{P}^{a}_{s,s'}=\text{Pr}(S_{t+1}=s'|S_t=s,A_t=a)$</li>
+                            <li>Sometimes this is also called <i>dynamics model</i></li>
+                        </ul>
+                    </li>
+                    <li>$\mc{R}$ predicts the next (immediate) reward
+                        <ul>
+                            <li>$\mc{R}_{s}^a=\bb{E}[R_{t+1}|S_t=s,A_t=a]$</li>
+                            <li>Sometimes this is also called <i>reward model</i></li>
+                        </ul>
+                    </li>
+                    <li>If the agent maintains a model of the environment to learn policies and value, we call its learning method is <i>model-based</i>.</li>
+                    <li>It is also possible for the agents to learn about policies and environments without an environment model. Then, it is called <i>model-free</i>.</li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Maze Example</h1>
+                <div class="row">
+                    <div class="column" style="flex: 30%">
+                        <ul>
+                            <li>States: Agent's location</li>
+                            <li>Actions: N, E, S, W, stay</li>
+                            <li>Reward: -1 per time-step</li>
+                            <li>Termination: Reach goal</li>
+                        </ul>
+                    </div>
+                    <div class="column" style="flex: 30%">
+                        <img src="./L12/maze.png"></img>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Maze Example: Model</h1>
+                <div class="row">
+                    <div class="column" style="flex: 30%">
+                        <ul>
+                            <li>Agent may have an internal model of the environment</li>
+                            <li>Dynamics: how actions change the state</li>
+                            <li>Rewards: how much reward from each state</li>
+                            <li>In the right figure:
+                                <ul>
+                                    <li>Grid layout represents transition model $\mc{P}_{s,s'}^a$</li>
+                                    <li>Numbers represent immediate reward $\mc{R}_s^a$ from each state $s$
+                                        (same for all $a$)</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="column" style="flex: 30%">
+                        <img src="./L12/maze_model.png"></img>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="vt">Policy</h1>
+                <ul>
+                    <li>A policy is the agent's behaviour</li>
+                    <li>It is a map from state to action, e.g.,
+                        <ul>
+                            <li>Deterministic policy: $a=\pi(s)$</li>
+                            <li>Stochastic policy: $\pi(a|s)=\text{Pr}(A_t=a|S_t=s)$</li>
+                        </ul>
+                    </li>
+                    <!-- <li>People usually denote the optimal policy of a task as $\pi^*$</li> -->
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Maze Example: Policy</h1>
+                <div class="row">
+                    <div class="column" style="flex: 30%">
+                        <ul>
+                            <li>Arrows represent policy $\pi(s)$ for each state s</li>
+                            <li>This is the optimal policy for this Maze MDP</li>
+                        </ul>
+                    </div>
+                    <div class="column" style="flex: 30%">
+                        <img src="./L12/maze_policy.png"></img>
+                    </div>
+                </div>
+            </div>
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="et">Value Function</h1>
+                <ul>
+                    <li>Value function is a prediction of future reward</li>
+                    <li>Evaluates the goodness/badness of states</li>
+                    <li class="substep"><b>State-value function</b>
+                        <ul>
+                            <li>The state-value function $V_\pi(s)$ of an MDP is the expected return starting from state $s$, following the policy $\pi$</li>
+                            <li>$V_\pi(s)=\bb{E}_\pi[G_t|S_t=s]$ (assuming infinite horizon here)</li>
+                        </ul>
+                    </li>
+                    <li class="substep"><b>Action-value function</b>                             
+                        <ul>
+                            <li>The action-value function $Q_\pi(s,a)$ is the expected return
+                                starting from state $s$, taking action $a$, following policy $\pi$</li>
+                            <li>$Q_\pi(s,a)=\bb{E}_\pi[G_t|S_t=s, A_t=a]$ (assuming infinite horizon here)</li>
+                        </ul>
+                    </li>
+                    <li class="substep">Notation explanation:                             
+                        <ul>
+                            <li>In this lecture, when we write $\bb{E}_\pi$, 
+                                it means we take expectation over all samples/trajectories generated by running the policy $\pi$ in the environment</li>
+                            <li>So it counts for all the randomness from policy, initial state, state transition, and reward.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Bellman Expectation Equation</h1>
+                <ul>
+                    <li>Value functions satisfy recursive relationships:</li>
+                    \[
+                    V_{\pi}(s)= \bb{E}_{\pi}[R_{t+1}+\gamma V_{\pi}(S_{t+1})|S_t=s] \tag{Bellman expectation equation}
+                    \]
+                    \(
+                    \aligned{
+                    \mbox{Proof:}\qquad\qquad
+                    V_\pi(s)&= \bb{E}_\pi[G_t|S_t=s] = \bb{E}_\pi[R_{t+1}+\gamma R_{t+2}+\gamma^2 R_{t+3} +...|S_t=s] \\
+                    & = \bb{E}_\pi[R_{t+1}+\gamma (R_{t+2}+\gamma R_{t+3} +...)|S_t=s] \\
+                    &= \bb{E}_\pi[R_{t+1}+\gamma G_{t+1}|S_t=s] 
+                    }
+                    \)
+
+                    </li>
+                    <li>The value function can be decomposed into two parts:
+                        <ul>
+                            <li>immediate reward $R_{t+1}$</li>
+                            <li>discounted value of successor state $\gamma V_\pi(S_{t+1})$</li>
+                        </ul>
+                    </li>
+                    <li>The action-value function can similarly be decomposed:
+                        \[
+                        Q_{\pi}(s,a)=\bb{E}_{\pi}[R_{t+1}+\gamma Q_{\pi}(S_{t+1}, A_{t+1})|S_t=s, A_t=a]
+                        \]
+                </ul>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="nt">Maze Example: Value Function</h1>
+                <div class="row">
+                    <div class="column" style="flex: 30%">
+                        <ul>
+                            <li>Numbers represent value $V_\pi(s)$ of each state $s$</li>
+                            <li>This is the value function corresponds to the optimal policy we showed previously</li>
+                        </ul>
+                    </div>
+                    <div class="column" style="flex: 30%">
+                        <img src="./L12/maze_value.png"></img>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <h1 class="et">A Taxonomy of RL Algorithms and Examples</h1>
+                <div style=margin-top:50px>
+                    <img src="./L12/taxonomy.svg" width="90%"/>
+                </div>
+                <div class="credit"><a href="https://spinningup.openai.com/en/latest/spinningup/rl_intro2.html">OpenAI Spinning Up</a></div>
+            </div>
+
+            <!-- ################################################################### -->
+            <div class="step slide">
+                <div style="margin-top:300px"></div>
+                <center>
+                    <div class="Large"><b>End</b></div>
+                </center>
+            </div>
+        </div>
+
+        <!--
+            Add navigation-ui controls: back, forward and a select list.
+            Add a progress indicator bar (current step / all steps)
+            Add the help popup plugin
+        -->
+        <div id="impress-toolbar"></div>
+
+        <div class="impress-progressbar"><div></div></div>
+        <div class="impress-progress"></div>
+
+        <div id="impress-help"></div>
+
+        <script type="text/javascript" src="../extras/highlight/highlight.pack.js"></script>
+        <script type="text/javascript" src="../extras/mermaid/mermaid.min.js"></script>
+        <script type="text/javascript" src="../extras/markdown/markdown.js"></script>
+        <!--
+            To make all described above really work, you need to include impress.js in the page.
+            You also need to call a `impress().init()` function to initialize impress.js presentation.
+            And you should do it in the end of your document. 
+        -->
+        <script>
+            function getTitles() {
+                var secs = document.getElementsByClassName("separator");
+                var titleList = [];
+                var titleIdList = [];
+                const titleIdSet = new Set();
+                for (var i = 0; i < secs.length; i++) {
+                    h1 = secs[i].getElementsByTagName("h1")[0];
+                    titleId = 'Sec:'+h1.innerHTML.replace(/\W/g, '');
+                    if (titleIdSet.has(titleId)) {
+                        continue;
+                    }
+                    titleIdSet.add(titleId);
+                    titleList.push(h1.innerHTML);
+                    titleIdList.push(titleId);
+                    secs[i].id = titleId;
+                }
+                console.log(titleList);
+                return [titleList, titleIdList];
+            }
+
+            function addToC(titleList, titleIdList){
+                var agenda = document.getElementById("agenda");
+                agenda.innerHTML = '';
+                for (var i = 0; i < titleList.length; i++) {
+                    agenda.innerHTML += '<li><a href="#'+titleIdList[i]+'">'+titleList[i]+'</a></li>';
+                }
+            }
+
+            res = getTitles();
+            titleList = res[0]; titleIdList  = res[1];
+            addToC(titleList, titleIdList);
+        </script>
+        <script type="text/javascript" src="../js/impress.js">
+        </script>
+        <script type="text/javascript">
+            (function(){
+                var vizPrefix = "language-viz-";
+                Array.prototype.forEach.call(document.querySelectorAll("[class^=" + vizPrefix + "]"), function(x){
+                    var engine;
+                    x.getAttribute("class").split(" ").forEach(function(cls){
+                        if (cls.startsWith(vizPrefix)) {
+                            engine = cls.substr(vizPrefix.length);
+                        }
+                    });
+                    var image = new DOMParser().parseFromString(Viz(x.innerText, {format:"svg", engine:engine}), "image/svg+xml");
+                    x.parentNode.insertBefore(image.documentElement, x);
+                    x.style.display = 'none'
+                    x.parentNode.style.backgroundColor = "white"
+                });
+            })();
+            window.MathJax = {
+                tex2jax: {
+                    inlineMath: [['$','$'], ['\\(','\\)']],
+                    displayMath: [['$$','$$'], ['\\[','\\]']],
+                    processEscapes: true,
+                    processEnvironments: true,
+                    skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+                    TeX: { equationNumbers: { autoNumber: "AMS" },
+                        extensions: ["AMSmath.js", "AMSsymbols.js", "color.js"],
+                    },
+                    jax: ["input/TeX", "output/SVG"]
+                },
+                AuthorInit: function () {
+                    MathJax.Hub.Register.StartupHook("Begin",function () {
+                        MathJax.Hub.Queue(function() {
+                            var all = MathJax.Hub.getAllJax(), i;
+                            for(i = 0; i < all.length; i += 1) {
+                                all[i].SourceElement().parentNode.className += ' has-jax';
+                            }
+                        })
+                    });
+                }
+            };
+        </script>
+        <script type="text/javascript" src="../extras/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+        <script>impress().init();</script>
+    </body>
+</html>
+<!-- discarded -->

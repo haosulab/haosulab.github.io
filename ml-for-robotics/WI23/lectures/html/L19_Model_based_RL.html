@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8"/>
+    <title>L19</title>
+    <meta name="description" content=""/>
+    <meta name="author" content="Hao Su"/>
+    <link rel="stylesheet" href="../extras/highlight/styles/github.css">
+    <link rel="stylesheet" href="../extras/mermaid/mermaid.forest.css">
+    <link href="../css/impress-common.css" rel="stylesheet"/>
+    <link href="css/classic-slides.css" rel="stylesheet"/>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/1.7.1/viz.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/vs.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"
+            integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg=="
+            crossorigin="anonymous"></script>
+    <style>
+        mark.red {
+            color: #ff0000;
+            background: none;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </style>
+</head>
+
+<body class="impress-not-supported">
+<div class="fallback-message">
+    <p>Your browser <b>doesn't support the features required</b> by impress.js, so you are presented with a
+        simplified version of this presentation.</p>
+    <p>For the best experience please use the latest <b>Chrome</b>, <b>Safari</b> or <b>Firefox</b> browser.</p>
+</div>
+<div id="latex-macros"></div>
+<script src="./latex_macros.js"></script>
+<div id="impress" data-width="1920" data-height="1080" data-max-scale="3" data-min-scale="0" data-perspective="1000"
+     data-transition-duration="0">
+    <div class="step slide title" data-x="-2200" data-y="-3000" id="title">
+        <h1 class="nt">Model-based RL</h1>
+        <h2>Hao Su
+            <p style="font-size:30px">(slides prepared with the help from Quan Vuong)</p>
+        </h2>
+        <h3>Spring, 2021</h3>
+        <div class="ack">Some contents are based on <a
+                href="https://www.cambridge.org/core/books/bandit-algorithms/8E39FD004E6CE036680F90DD0C6F09FC">Bandit
+            Algorithms</a> from Dr. Tor Lattimore and Prof. Csaba Szepesvári, and <a
+                href="https://www.davidsilver.uk/teaching/">COMPM050/COMPGI13</a> taught at UCL by Prof. David
+            Silver.
+        </div>
+    </div>
+
+    <div id="toc" class="step slide" data-rel-x="2200" data-rel-y="0">
+        <h1 class="nt">Agenda</h1>
+        <ul class="large" id="agenda"></ul>
+        click to jump to the section.
+    </div>
+
+    <!-- ################################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Recall: Learning Objective of RL</h1>
+        <ul>
+            <li>Given an MDP, find a policy $\pi$ to maximize the expected return induced by $\pi$
+                <ul>
+                    <li>The conditional probability of trajectory $\tau$ given $\pi$ is</li>
+                    \[
+                    \begin{aligned}
+                    \text{Pr}(\tau|\pi)
+                    & = \text{Pr}(S_0=s_0)\prod_t\pi(a_t|s_t)P(s_{t+1}|s_t,a_t)\text{Pr}(r_{t+1}|s_t,a_t)\\
+                    \end{aligned}
+                    \]
+                    <li>RL Objective: $\max_\pi J(\pi)$</li>
+                    \[
+                    \begin{aligned}
+                    J(\pi)
+                    & = \bb{E}_{\tau\sim\pi}[R_1+\gamma R_2+...] \\
+                    & = \sum_{\tau}\text{Pr}(\tau|\pi)(r_1+\gamma r_2+...) \\
+                    \end{aligned}
+                    \]
+                </ul>
+            </li>
+        </ul>
+        <div class="substep">
+            <ul>
+                <li>
+                    In model-free reinforcement learning, transition dynamics $P(s_{t+1}|s_t,a_t)$ is unknown and we do
+                    not attempt to learn
+                    it
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">RL with Environment Dynamics</h1>
+        Knowing the environment environment dynamics can make things easier
+        <ul>
+            <li>In some case, we have a accurate environment model:
+                <ul>
+                    <li>Games (e.g. Atari games, chess, go)</li>
+                    <li>Easily modeled system (e.g. geometric planning)</li>
+                    <li>Simulation (e.g. Physical Simulator)</li>
+                </ul>
+            </li>
+            <li class="substep">If we do not know the dynamics, we can also try to fit it
+                <ul>
+                    <li>System Identification: fit unknown model parameters of a known models</li>
+                    <li>Learning: fit a general purpose model to observed transition data</li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Search and Model-based RL</h1>
+        <ul>
+            <li>Search:
+                <ul>
+                    <li>With accurate environment transition dynamics, only focus on how to choose action to maximize
+                        the
+                        objective, e.g. Optimal Control, RRT
+                    </li>
+                </ul>
+            </li>
+            <br/>
+            <li>Model-based RL:
+                <ul>
+                    <li>Learn the environment transition dynamics, then figure out how to choose action to maximize the
+                        objective
+                    </li>
+                    <li>
+                        After learning the environment transition dynamics, learn policies by imitating optimal control
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Search to Explore Sub-MDP</h1>
+        <ul>
+            <li>There are two main ideas, which we will explain next:
+                <ul>
+                    <li>Forward Search</li>
+                    <li>Sampling</li>
+                </ul>
+            </li>
+            <li>This is a very different perspective compared to previous RL methods you have seen:
+                <ul>
+                    <li>In RL, to pick an action at test time, we just need to perform a forward pass
+                        through the policy
+                    </li>
+                    <li>In search algorithms, we perform a lot more computation at test time</li>
+                </ul>
+            </li>
+            <li>
+                Rollout is a common operation in search:
+                <ul>
+                    <li>
+                        Predict a short trajectory $s_1, s_2, ..., s_T$if we start at $s_0$ and execute $a_0, a_1, ...,
+                        a_{N-1}$ sequentially using environment dynamics
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Forward Search: Tabular Case</h1>
+        <ul>
+            <li>Assume we are given the MDP state space, action space, transition and reward function.</li>
+            <li>To compute action $a_t$ given current state $s_t$, forward search focuses computation with these
+                steps:
+                <ul>
+                    <li>Build a search tree with the current state $s_t$ at the root</li>
+                    <li>Use the model of the MDP to perform lookahead
+                        <!--                        <ul>-->
+                        <!--                            <li>lookahead means running simulation using the model to compute state-action value-->
+                        <!--                                estimates-->
+                        <!--                            </li>-->
+                        <!--                            <li>computing the value estimates can be done with model-free RL algorithm (such as-->
+                        <!--                                Q-learning)-->
+                        <!--                            </li>-->
+                        <!--                        </ul>-->
+                    </li>
+                    <li>Select the best action based on value estimates computed by exhaustive lookahead</li>
+                </ul>
+            </li>
+            <li>No need to solve the whole MDP, only the sub-MDP starting from the current state.</li>
+            <div style=margin-top:10px>
+                <img src="./L17/exhaustive_lookahead.png" width="35%"/>
+            </div>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Exhaustive Search to Explore Sub-MDP</h1>
+        <div class="row">
+            <img src="./L19/atari-ms-pac-man.jpg" height="80%"/>
+            <div class="column" style="margin-left: 10%">
+                <ul>
+                    <li>For environment with discrete action space: e.g. PacMan</li>
+                    <li>We can solve it with exhaustive search: BFS, DFS</li>
+                </ul>
+                <img src="./L19/bfsdfs.png" height="80%"/>
+            </div>
+        </div>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="vt">Limitation of Naive Forward Search</h1>
+        <ul>
+            <li>When the MDP becomes larger: from PacMan to GO</li>
+            <li>Action space increases from 4 to 19x19</li>
+            <li>Nodes in the search tree grows exponentially with respect to action space</li>
+            <li>Exhaustive search like BFS becomes implausible</li>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Sampling-based Forward Search</h1>
+        <ul>
+            <li>Naive forward search performs exhaustive lookahead.</li>
+            <li>Sampling-based forward search focuses computations by sampling to perform the simulation:
+                <ul>
+                    <li>Sampling actions from the current policy and transitions from the MDP model</li>
+                    <li>Estimate state-action values from the simulated episodes, will talk later</li>
+                </ul>
+            </li>
+            $\Longrightarrow$Only perform lookahead on actions and transitions that occur with high probability.
+            <ul>
+                <li>Case study: Monte-Carlo Tree Search</li>
+            </ul>
+            <div style=margin-top:10px>
+                <img src="./L17/sampling_based_lookahead.png" width="45%"/>
+            </div>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Simple Monte-Carlo Search</h1>
+        <ul>
+            <!--            <li>Given the state space, action space, transition and reward function of MDP $\mathcal{M}$.</li>-->
+            <li>Pick a <b>fixed</b> default policy $\pi$.</li>
+            <li>Given the current state $s_t$, perform rollouts using the model of MDP and $\pi$:
+                <ul>
+                    <li>For each valid action $a$, simulate $K$ episodes of experience</li>
+                    \[
+                    \left\{s_{t}, a, R_{t+1}^{k}, S_{t+1}^{k}, A_{t+1}^{k}, \ldots, S_{T}^{k}\right\}_{k=1}^{K} \sim
+                    \mathcal{M}, \pi
+                    \]
+                    <li>Estimate the value of each action by Monte-Carlo estimation</li>
+                    \[
+                    \hat{Q}\left(s_{t}, a\right)=\frac{1}{K} \sum_{k=1}^{K} G_{k}
+                    \]
+                    <ul>
+                        <li>where $G_k$ is the return of the $k$-th episode.</li>
+                    </ul>
+                </ul>
+            </li>
+            <li>To pick the real action taken in the MDP, pick action with the highest estimated value:</li>
+            \[
+            a_{t}=\underset{a \in \mathcal{A}}{\operatorname{argmax}} \hat{Q}\left(s_{t}, a\right)
+            \]
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Limitations of Simple Monte-Carlo Search</h1>
+        <ul>
+            <li>Note that across different episodes, the default policy $\pi$ is fixed and does not improve.</li>
+            <ul>
+                <li>The quality of the action does not improve across different episodes</li>
+            </ul>
+            <li>We only estimate action values for the current state $s_t$.</li>
+            <li>We now introduce tree as a data structure to store value estimates and improve the policy.</li>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Monte-Carlo Tree Search</h1>
+        <ul>
+            <li>Given the state space, action space, transition and reward function of MDP $\mathcal{M}$.</li>
+            <li>Pick a <b>fixed</b> default policy $\pi$.</li>
+            <li>Given the current state $s_t$, perform rollouts for $K$ simulated episodes:
+                <ul>
+                    <li>Initialize empty search tree</li>
+                    <li>Each episode starts from the current state $s_t$</li>
+                    <li>For each episode, to pick action for a state $s$:
+                        <ul>
+                            <li>If $s$ is not in the search tree, use the default policy to pick action</li>
+                            <li>If $s$ is in the search tree, pick action that maximize current value
+                                estimate $\hat{Q}(s, a)$
+                            </li>
+                        </ul>
+                    </li>
+                    <li>After each episode:
+                        <ul>
+                            <li>Estimate the value for all state-action pairs visitted in the episode using
+                                Monte-Carlo estimation
+                            </li>
+                            <li>Add all new state-action pairs and their value estimates to the search tree</li>
+                            <li>Update the value estimates of existing state-action pairs in the search tree</li>
+                        </ul>
+
+                </ul>
+            </li>
+            <li>To pick the real action taken in the MDP from state $s_t$, pick action with highest estimated value.
+            </li>
+            <!-- \[
+                        a_{t}=\underset{a \in \mathcal{A}}{\operatorname{argmax}} \hat{Q}\left(s_{t}, a\right)
+                        \] -->
+        </ul>
+    </div>
+
+    <!-- ################################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Monte-Carlo Tree Search</h1>
+        <ul>
+            <li>In MCTS, there are thus 2 policies, so-called tree policy and the default policy:</li>
+            <table style="width:100%">
+                <tr>
+                    <th></th>
+                    <th>When to use?</th>
+                    <th>Action selection method?</th>
+                    <th>Improve across epsisodes?</th>
+                </tr>
+                <tr>
+                    <td>Tree Policy</td>
+                    <td>When a state $s$ is in the search tree</td>
+                    <td>Select action with highest estimated state-action value</td>
+                    <td>Yes, since the state-action value estimates are updated and improved across episodes</td>
+                </tr>
+                <tr>
+                    <td>Default Policy</td>
+                    <td>When a state $s$ is not in the search tree</td>
+                    <td>Manually defined prior to any simulation, e.g. uniformly random</td>
+                    <td>No</td>
+                </tr>
+            </table>
+            <li>To improve exploration by the tree policy, we can use $\epsilon$-greedy or bandit algorithms.</li>
+            <li>Note that the search tree is discarded after picking action $a_t$ and not re-used when computing
+                action for $s_{t+1}$.
+            </li>
+            <li>The value estimates are also stored in a table lookup (not feasible for large state space).
+            </li>
+            <li>Using a neural network to store the value estimates will solve these two issues (AlphaGo).</li>
+        </ul>
+    </div>
+
+    <!-- ################################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Performance</h1>
+        <img src="./L17/alphago.png" width="100%"/>
+        <div class="ack">Source: https://en.wikipedia.org/wiki/AlphaGo_versus_Lee_Sedol.</div>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Monte-Carlo Tree Search</h1>
+        <ul>
+            <li>Intuition: choose nodes with best reward, but also prefer rarely visited nodes</li>
+            <li>Generic MCTS algorithm sketch</li>
+            <ul>
+                <li>Find a leaf $s_l$ to expand using a TreePolicy $\pi_{t}$</li>
+                <li>Evaluate the leaf using the default policy like simple Monte-Carlo Search</li>
+                <li>Update the values in tree for leaf $s_l$</li>
+            </ul>
+            <li>How to choose the TreePolicy?</li>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Monte-Carlo Tree Search</h1>
+        <ul>
+            <li>Recall: Upper Confidence Bound (UCB) and UCB1 Algorithm for Single-Step RL</li>
+            \[
+            a_{t}=\underset{a \in \mathcal{A}}{\operatorname{argmax}} \hat{Q}_{t}(a) + \sqrt{\frac{2 \log
+            t}{N_{t}(a)}}
+            \]
+            <li>We can build a TreePolicy based on UCB1</li>
+            \[
+            a_{t}=\underset{a \in \mathcal{A}}{\operatorname{argmax}} \frac{\hat{Q}(s_t)}{N_t(s_t)} + 2C\sqrt{
+            \frac{2lnN_t(s_{t-1})} {N_t(s_t)} }
+            \]
+            <li>TODO: interpretation</li>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="vt">Sampling-based Search: Continuous Case</h1>
+        <ul>
+            <li>MCTS can only be applied to MDP with discrete action space</li>
+            <ul>
+                <li>Given the environment dynamics $P(s_{t+1}|s_t,a_t)$ and the current state $s_0$, we
+                    want to maximum the expected return for $T$ steps
+                </li>
+            </ul>
+            \[
+            \sum_{t=0}^T \gamma^t R(s_{t}, a)
+            \]
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Random Shooting Method</h1>
+        <ul>
+            <li>Random shooting is the simplest sampling-based search method</li>
+            <li>It follows the routine of guess and check</li>
+            <li>
+                Sample $M$ random action sequences from some distribution, e.g. uniform distribution:
+            </li>
+            \[ a_0^{0}, a_1^{0}, \dots, a_N^{0} \]
+            \[ a_0^{1}, a_1^{1}, \dots, a_N^{1} \]
+            \[ \vdots \]
+            \[ a_0^{M}, a_1^{M}, \dots, a_N^{M} \]
+            <li>
+                Then evaluate the reward of each action sequence and choose the best one
+            </li>
+
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Model Predictive Control</h1>
+        <ul>
+            <li>Model Predictive Control (MPC) also samples $M$ action sequences from some distribution</li>
+            <li>
+                It evaluate the reward of each action sequence and only choose the first action of the best sequence to
+                execute
+            </li>
+            <li>MPC will search new actions again for each step</li>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Model Predictive Control</h1>
+        <ul>
+            <li>Repeat:</li>
+            <ul>
+                <li>Observe the current state $s$</li>
+                <li>Sample $N$ random action trajectories</li>
+                <li>Evaluate the reward of each action sequence from $s$ to find the best action sequence $\{a_0^{K},
+                    a_1^{K}, \dots, a_N^{K}\}$
+                </li>
+                <li>Execute $a_0^k$ in the environment</li>
+            </ul>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="vt">Cross Entropy Method</h1>
+        <ul>
+            <li>In random shooting, a uniform distribution is used to sample action</li>
+            <li>Can we have a more informative sampling?</li>
+            <li>Intuition: using previous evaluation result to fit a distribution</li>
+            <li>Cross Entropy Method (CEM) fit the distribution of solution with a Gaussian distribution</li>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Cross Entropy Method with One Step Horizon</h1>
+        <ul>
+            <li>Hyper-parameters: number of iterations $n_{iter}$, number of populations $n_{pop}$, number of elites
+                $n_{elites}$
+            </li>
+            <li>Input: A Gaussian distribution $\mathcal{N}(\mu, \sigma)$</li>
+            <li>Repeat for $n_{iter}$:</li>
+            <ul>
+                <li>Sample $n_{pop}$ action candidates from $\mathcal{N}(\mu, \sigma)$</li>
+                <li>For each action candidate, evaluate it with environment model</li>
+                <li>Select the top-$n_{elites}$ action candidates as elites</li>
+                <li>Fit a new Gaussian distribution based on elites and update $\mu, \sigma$</li>
+            </ul>
+            <li>Execute the best action in the environment</li>
+        </ul>
+    </div>
+
+    <!-- ###################################################### -->
+    <div class="step slide">
+        <h1 class="nt">Combine MPC with CEM</h1>
+        <ul>
+            <li>Hyper-parameters: Horizon $T$, $n_{iter}$, $n_{pop}$, $n_{elites}$</li>
+            <li>Initialize parameters: $\mu, \sigma$</li>
+            <li>Repeat:</li>
+            <ul>
+                <li>Observe the current state $s$</li>
+                <li>Search an action sequence with horizon $T$ $\{a_0', a_1', \dots, a_{T-1}^{K}\}$ with CEM</li>
+                <li>Execute $a_0'$ in the environment</li>
+                <li>Update $\mu$ and $\sigma$ based on selected elites</li>
+            </ul>
+            <li>Choose the action sequence to be the current $\mu$</li>
+            <li>Execute the first action of the action sequence in the environment</li>
+
+            <li>Note that the dimension of $\mu$ and $\sigma$ is $T *$ action_dim</li>
+        </ul>
+    </div>
+
+    <!-- ################################################################### -->
+    <div class="step slide">
+        <div style="margin-top:300px"></div>
+        <center>
+            <div class="Large"><b>End</b></div>
+        </center>
+    </div>
+
+</div>
+<!--
+    Add navigation-ui controls: back, forward and a select list.
+    Add a progress indicator bar (current step / all steps)
+    Add the help popup plugin
+-->
+<div id="impress-toolbar"></div>
+
+<div class="impress-progressbar">
+    <div></div>
+</div>
+<div class="impress-progress"></div>
+
+<div id="impress-help"></div>
+
+<script type="text/javascript" src="../extras/highlight/highlight.pack.js"></script>
+<script src="../extras/mermaid/mermaid.min.js"></script>
+<script type="text/javascript" src="../extras/markdown/markdown.js"></script>
+<!--
+    To make all described above really work, you need to include impress.js in the page.
+    You also need to call a `impress().init()` function to initialize impress.js presentation.
+    And you should do it in the end of your document.
+-->
+<script>
+        function setSlideID() {
+            x = document.getElementsByClassName("slide");
+            const titleSet = new Set();
+            var titleDict = {};
+            for (var i = 2; i < x.length; i++) {
+                h1 = x[i].getElementsByTagName("h1")[0];
+                if (h1) {
+                    // alert(title);
+                    title = '--' + h1.innerHTML.replace(/\W/g, '');
+                    if (titleSet.has(title)) {
+                        titleDict[title] += 1;
+                        title = title + '_' + titleDict[title].toString();
+                    }
+                    else {
+                        titleSet.add(title);
+                        titleDict[title] = 1;
+                    }
+                    x[i].id = title;
+                }
+            }
+        }
+        setSlideID();
+
+
+
+
+
+
+
+
+
+</script>
+<script>
+        function getTitles() {
+            var secs = document.getElementsByClassName("separator");
+            var titleList = [];
+            var titleIdList = [];
+            const titleIdSet = new Set();
+            for (var i = 0; i < secs.length; i++) {
+                h1 = secs[i].getElementsByTagName("h1")[0];
+                titleId = 'Sec:' + h1.innerHTML.replace(/\W/g, '');
+                if (titleIdSet.has(titleId)) {
+                    continue;
+                }
+                titleIdSet.add(titleId);
+                titleList.push(h1.innerHTML);
+                titleIdList.push(titleId);
+                secs[i].id = titleId;
+            }
+            console.log(titleList);
+            return [titleList, titleIdList];
+        }
+
+        function addToC(titleList, titleIdList) {
+            var agenda = document.getElementById("agenda");
+            agenda.innerHTML = '';
+            for (var i = 0; i < titleList.length; i++) {
+                agenda.innerHTML += '<li><a href="#' + titleIdList[i] + '">' + titleList[i] + '</a></li>';
+            }
+        }
+
+        res = getTitles();
+        titleList = res[0]; titleIdList = res[1];
+        addToC(titleList, titleIdList);
+
+
+
+
+
+
+
+
+
+</script>
+<script type="text/javascript" src="../js/impress.js"></script>
+<script type="text/javascript">
+        (function () {
+            var vizPrefix = "language-viz-";
+            Array.prototype.forEach.call(document.querySelectorAll("[class^=" + vizPrefix + "]"), function (x) {
+                var engine;
+                x.getAttribute("class").split(" ").forEach(function (cls) {
+                    if (cls.startsWith(vizPrefix)) {
+                        engine = cls.substr(vizPrefix.length);
+                    }
+                });
+                var image = new DOMParser().parseFromString(Viz(x.innerText, { format: "svg", engine: engine }), "image/svg+xml");
+                x.parentNode.insertBefore(image.documentElement, x);
+                x.style.display = 'none'
+                x.parentNode.style.backgroundColor = "white"
+            });
+        })();
+        window.MathJax = {
+            tex2jax: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true,
+                skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+                TeX: {
+                    equationNumbers: { autoNumber: "AMS" },
+                    extensions: ["AMSmath.js", "AMSsymbols.js", "color.js"],
+                },
+                jax: ["input/TeX", "output/SVG"]
+            },
+            AuthorInit: function () {
+                MathJax.Hub.Register.StartupHook("Begin", function () {
+                    MathJax.Hub.Queue(function () {
+                        var all = MathJax.Hub.getAllJax(), i;
+                        for (i = 0; i < all.length; i += 1) {
+                            all[i].SourceElement().parentNode.className += ' has-jax';
+                        }
+                    })
+                });
+            }
+        };
+
+
+
+
+
+
+
+
+
+</script>
+<script type="text/javascript" src="../extras/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+<script>impress().init();</script>
+</body>
+
+</html>
+<!-- discarded -->
+
+<!-- 
+    Modifications requested on May 22:
+
+    1. Add example of how UCB can be extended to deep RL and improve over taught algo. Done.
+
+    2. For the section of long-horizon RL, i want you to change it. 
+    - make it a section of "intrinsic rewards"
+    - add the approaches that uses intrinsic rewards to drive exploration: 
+    - curiosity-driven exploration by forward dynamic prediction, 
+    - inverse dynamic prediction, and 
+    - RND. 
+    - we can actually also explain SAC here. Done.
+
+    3. structural environment modeling based
+-->
