@@ -1,0 +1,918 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>L9</title>
+        <meta name="description" content="" />
+        <meta name="author" content="Hao Su" />
+        <link rel="stylesheet" href="../extras/highlight/styles/github.css">
+        <link rel="stylesheet" href="../extras/mermaid/mermaid.forest.css">
+        <link href="../css/impress-common.css" rel="stylesheet" />   
+        <!--
+           -<link rel="stylesheet" type="text/css" href="./js/tikzjax/fonts.css">
+           -<script src="./js/tikzjax/tikzjax.js"></script>       
+           -->
+        <link href="css/classic-slides.css" rel="stylesheet" />
+        <!--<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/6.7.0/d3.min.js"> </script>-->
+        <!--
+           -<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/1.7.1/viz.js"> </script>
+           -->
+        <!-- <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>-->
+        \[
+        \newcommand{\mc}[1]{\mathcal{#1}} 
+        \newcommand{\mv}[1]{\boldsymbol{#1}}\newcommand{\mvinfty}{\boldsymbol{\infty}}\newcommand{\mvzero}{\boldsymbol{0}}
+        \newcommand{\f}[1]{\mathfrak{#1}}
+        \newcommand{\bb}[1]{\mathbb{#1}}
+        \newcommand{\d}[1]{\mathrm{d}#1}
+        \newcommand{\ddt}{\frac{\d{}}{\d{t}}}
+        \newcommand{\pLp}[1]{\frac{\partial L}{\partial #1}}
+        \newcommand{\bm}[1]{\begin{bmatrix}#1\end{bmatrix}}
+        \newcommand{\lagrangian}{F=\ddt\pLp{\dot{q}}-\pLp{q}}
+        \newcommand{\mxi}{\mv{\xi}}
+        \newcommand{\aligned}[1]{\begin{aligned}#1\end{aligned}}
+        \]
+    </head>
+    <body class="impress-not-supported">
+        <div class="fallback-message">
+            <p>Your browser <b>doesn't support the features required</b> by impress.js, so you are presented with a simplified version of this presentation.</p>
+            <p>For the best experience please use the latest <b>Chrome</b>, <b>Safari</b> or <b>Firefox</b> browser.</p>
+        </div>
+        <div id="impress"
+             data-width="1920"
+             data-height="1080"
+             data-max-scale="3"
+             data-min-scale="0"
+             data-perspective="1000"
+             data-transition-duration="0"
+             >
+
+             <div class="step slide title" data-x="-2200" data-y="-3000" id="title">
+                 <h1 class="nt">L9: Lagrangian Dynamics</h1>
+                 <h2>Hao Su</h2>
+                 <h3>Spring, 2021</h3>
+                 <div class="ack">The flow and some contents are based on <a href="http://www2.ece.ohio-state.edu/~zhang/RoboticsClass/docs/LN12_DynamicsOfOpenChains_Lagrangian_a.pdf">ECE5463</a> taught at Ohio State University by Prof. Wei Zhang</div>
+             </div>
+             <div id="toc" class="step slide" data-rel-x="2200" data-rel-y="0">
+                 <h1 class="nt">Agenda</h1>
+                 <ul class="large" id="agenda"></ul>
+                 click to jump to the section.
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Dynamics Example: Grasp</h1>
+                 <div class="row">
+                     <div class="column">
+                         <ul>
+                             <li>Consider the right grasp problem
+                             </li>
+                             <ul>
+                                 <li class="substep">
+                                     Assume that we are grasping this box using two arms
+                                 </li>
+                                 <li class="substep">
+                                     We apply torques at each joint through the installed motors 
+                                 </li>
+                                 <li class="substep">
+                                     <strong>These torques will be passed to the tips of the fingers.</strong>
+                                 </li>
+                                 <li class="substep">
+                                     ...
+                                 </li>
+                             </ul>
+                         </ul>
+                         <div class="substep"><strong>Q1: How to compute force at the tips from the torques at joints?</strong></div>
+                         <div class="substep"><strong>Q2: To keep the box static, what is the balance condition?</strong></div>
+                     </div>
+                     <div class="column">
+                         <img src="L7/multifingers.png" width="100%"/>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Dynamics Example: Grasp</h1>
+                 <ul style="margin-top: 50px">
+                     <li>Parameterization</li>
+                     <ul>
+                         <li>\(\theta \in\bb{R}^n\): vector of joint variables</li>
+                         <li>\(\tau \in\bb{R}^n\): vector of joint forces/torques</li>
+                     </ul>
+                 </ul>
+                 <ul class="substep" style="margin-top: 50px">
+                     <li>Task</li>
+                     <ul>
+                         <li>
+                             <strong>Forward dynamics:</strong> Determine acceleration \(\ddot{\theta}\) given the state \((\theta, \dot{\theta})\) and the joint forces/torques
+                             \[\ddot{\theta}=\rm{FD}(\tau; \theta, \dot{\theta})\]
+                         </li>
+                         <li>
+                             <strong>Inverse dynamics:</strong> Finding torques/forces given state \(\theta, \dot{\theta}\) and desired acceleration \(\ddot{\theta}\)
+                             \[
+                             \tau=\rm{ID}(\ddot{\theta}; \theta, \dot{\theta})
+                             \]
+                         </li>
+                     </ul>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Lagrangian vs. Newton-Euler Methods</h1>
+                 <ul>
+                     <li>There are typically two ways to derive the equation of motion for an
+                         open-chain robot: Lagrangian method and Newton-Euler method</li>
+                 </ul>
+                 <div class="row" style="margin-top: 100px">
+                     <div class="column">
+                         <strong><div style="text-align: center; font-size: 1.2em">Lagrangian Formulation</div></strong>
+                         <ul>
+                             <ul>
+                                 <li>Energy-based method</li>
+                                 <li>Often used for study of dynamic properties and analysis of control methods</li>
+                             </ul>
+                         </ul>
+                     </div>
+                     <div class="column">
+                         <strong><div style="text-align: center; font-size: 1.2em">Newton-Euler Formulation</div></strong>
+                         <ul>
+                             <ul>
+                                 <li>Balance of forces/torques</li>
+                                 <li>Often used for numerical solution of forward/inverse dynamics</li>
+                             </ul>
+                         </ul>
+                     </div>
+                 </div>
+             </div>
+
+             <div class="step slide separator" id="lag_method">
+                 <h1 class="nt">Lagrangian Method</h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Generalized Coordinates and Forces</h1>
+                 <ul>
+                     <li>Consider \(k\) particles. Let \(\mv{f}_i\) be the force acting on the \(i\)th particle, \(p_i\) be its position.
+                     </li>
+                     <li class="substep">Now consider the case in which some particles are rigidly connected, imposing constraints on their positions
+                         \[
+                         \alpha_j(p_1, \ldots, p_k)=0, \quad j=1,\ldots, n_c
+                         \]
+                         where \(n_c\) is the number of constraints
+                     </li>
+                     <li class="substep">\(k\) particles in \(\bb{R}^3\) under \(n_c\) constraints \(\Rightarrow 3k-n_c\) degree of freedom</li>
+                     <li class="substep">We introduce \(n:=3k-n_c\) independent variables \(q_i\)'s, called the <strong>generalized coordinates</strong>
+                         \[
+                         \left\{
+                         \begin{aligned}
+                         &\alpha_j(p_1,\ldots,p_k)=0\\
+                         &j=1,\ldots,n_c
+                         \end{aligned}
+                         \right.
+                         \qquad
+                         \Leftrightarrow 
+                         \qquad
+                         \left\{
+                         \begin{aligned}
+                         &p_i=\gamma_i(q_1,\ldots,q_n)\\
+                         &i=1,\ldots,k
+                         \end{aligned}
+                         \right.
+                         \]</li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Generalized Coordinates and Forces</h1>
+                 <ul>
+                     <li>To describe equation of motion in terms of generalized coordinates, we also need to express external forces applied to the system in terms components along generalized coordinates. These "forces" are called <em>generalized forces</em>. </li>
+                     <li class="substep">Generalized force \(\mv{F}_i\) and coordinate rate \(\dot{q}_i\) are dual to each other <strong>in the sense that \(\mv{F}^T\dot{q}\) corresponds to power</strong>, the derivative of energy</li>
+                     <li class="substep">The equation of motion of the \(k\)-particle system can thus be described in terms of \(3k-n_c\) independent variables instead of the \(3k\) position variables subject to \(n_c\) constraints.</li>
+                     <li class="substep">This idea of handling constraints can be extended to interconnected rigid bodies (robot arm).</li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="vt">Lagrangian Function</h1>
+                 <ul>
+                     <li>Now let \(q\in\bb{R}^n\) be the generalized coordinates. 
+                     </li>
+                     <li><strong>Lagrangian function:</strong> \(L(q, \dot{q})=T(q,\dot{q})-V(q)\)
+                         <ul>
+                             <li>\(T(q,\dot{q})\): kinetic energy of system</li>
+                             <li>\(V(q)\): potential energy (given by some conservative force, e.g., gravity, electrostatic force)</li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">The Principle of Stationary Action</h1>
+                 <div class="row">
+                     <div class="column" style="flex: 70%">
+                         <ul>
+                             <li>Given a pair of time instants, \(t_1\) and \(t_2\)  </li>
+                             <li>What is the curve \(\mv{q}:[t_1, t_2]\to \cal{C}\) in the generalized coordinate space \(\cal{C}\)?</li>
+                         </ul>
+                         <ul class="substep">
+                             <li><strong>Action</strong> is defined to be a functional of \(\mv{q}(t)\):
+                                 \[
+                                 S[\mv{q}]=\int_{t_1}^{t_2} L(q, \dot{q}) \d{t}
+                                 =\int_{t_1}^{t_2} [T(\mv{q}, \dot{\mv{q}})-V(\mv{q})] \d{t}
+                                 \]</li>
+                         </ul>
+                     </div>
+                     <div class="column" style="flex: 30%">
+                         <img src="./L9/least_action_principle.svg" width="100%"/>
+                         <div class="credit"><a href="https://en.wikipedia.org/wiki/Stationary_Action_Principle">Wikipedia: Stationary Action Principle</a></div>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">The Principle of Stationary Action</h1>
+                 <div class="row">
+                     <div class="column" style="flex: 70%">
+                         <ul>
+                             <li>The actual curve \(\mv{q}(t)\) is a stationary point of the \(S[\mv{q}]\):
+                                 \[
+                                 \forall  \mv{\delta}:[t_1, t_2]\to \cal{C},\quad \lim_{\epsilon\to 0}\frac{1}{\epsilon}(S[\mv{q}+\epsilon \mv{\delta}]-S [\mv{q}])=0 \tag{1}
+                                 \]
+                             </li>
+                             <li>Note: Treating $\mv{q}$ as a variable, and (1) is an extension of the first-order optimality condition that we use in calculus: \[
+                                 \nabla_{q}S[q]=0
+                                 \]</li>
+                             <li class="substep">Using <em>variational method</em>, condition (1) becomes 
+                                 \[
+                                 \frac{\d{}}{\d{t}}\frac{\partial L}{\partial \dot{q}}-\frac{\partial L}{\partial q}=0
+                                 \]
+                             </li>
+                         </ul>
+                     </div>
+                     <div class="column" style="flex: 30%">
+                         <img src="./L9/least_action_principle.svg" width="100%"/>
+                         <div class="credit"><a href="https://en.wikipedia.org/wiki/Stationary_Action_Principle">Wikipedia: Stationary Action Principle</a></div>
+                     </div>
+                 </div>
+             </div>
+            <div class="step slide">
+                <h1 class="nt">A Simple Example</h1>
+                <ul>
+                    <li>Consider a point with mass $m$ and velocity $v$ is falling down to the ground due to gravity, $g$ is gravitational acceleration
+                        \[
+                        L = \frac{1}{2}mv^2 - mgh
+                        \]
+                    </li>
+                    <li>
+                        The generalized coordinate is $h$ and no external force are applied on this system, then
+                        \[
+                        \frac{d}{dt}\frac{\partial L}{\partial \dot{q}} = ma, \frac{\partial L}{\partial q} = -mg
+                        \]
+                    </li>
+                    <li>
+                        Therefore we get
+                        \[
+                        ma + mg = 0
+                        \]
+                    </li>
+
+                </ul>
+            </div>
+             <div class="step slide">
+                 <h1 class="vt">Euler-Lagrange Equation</h1>
+                 <ul>
+                     <li>When there are external non-conservative generalized force \(\mv{F}\in\bb{R}^n\) added to the system (e.g., torque at robot arm joints), we have the following Euler-Lagrange equation:
+                         \[
+                         \mv{F}=\frac{\d{}}{\d{t}}\frac{\partial L}{\partial \dot{q}}-\frac{\partial L}{\partial q}\tag{Euler-Lagrange Equation}
+                         \]
+                     </li>
+                 </ul>
+             </div>
+
+             <div class="step slide">
+                 <h1 class="nt">Logic behind Concepts in Lagrangian Dynamics</h1>
+                 <div class="mermaid" style="text-align:center">
+                     graph TD
+                     q["q (gen. coordinate)"]
+                     v["q&#x0307 (gen. velocity)"]
+                     m["m (gen. inertia)"]
+                     T["T (kinetic energy)"]
+                     f["F (gen. force)"]
+                     P[power]
+                     m-->T;
+                     q-->T;
+                     v-->T;
+                     T-->P;
+                     dt-->P;
+                     q-->v;
+                     dt-->v;
+                     v--dual-->f;
+                     P-->f;
+                 </div>
+             </div>
+
+             <div class="step slide separator" id="inverted_pendulum">
+                 <h1 class="nt">Example: Inverted Pendulum</h1>
+                 <h3>(describe using spatial frame)</h3>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Inverted Pendulum</h1>
+                 <div class="row">
+                     <div class="column">
+                         <div style="margin-top: 100px"></div>
+                         <ul>
+                             <li>Kinetic energy: $T=\frac{1}{2}m(\dot{\theta} l)^2$</li> 
+                             <li>Potential energy: $V=mgl \cos\theta$</li> 
+                         </ul>
+                     </div>
+                     <div class="column" style="flex: 20%">
+                         <img src="./L9/inverted_pendulum.svg" width="80%"></img><br/>
+                         A schematic drawing of the inverted pendulum. The rod is considered massless. 
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Generalized Coordinates and Force</h1>
+                 <div class="row">
+                     <div class="column">
+                         <!--
+                             -<div style="margin-top: 200px"></div>
+                         -->
+                         <ul>
+                             <li>The generalized coordinate of the system is $\theta$.</li>
+                             <li>What is the generalized force?</li>
+                             <li>Recall that the inner product of generalized force and generalized velocity is the input power, so we think from the perspective of power</li>
+                         </ul>
+                         <ul class="substep">
+                             <li>Assume the coordinate of $m$ is $(x, y)$, so $P=f \frac{\d{x}}{\d{t}}$</li>
+                             <li>If $F$ is a generalized force, then $F \dot{q} = F \frac{\d{\theta}}{\d{t}} = P=f\frac{\d{x}}{\d{t}}$</li>
+                             <li>Therefore, $F=f\frac{\d{x}}{\d{\theta}}$</li>
+                             <li>But $x=-l\sin\theta$, so $F=-fl\cos\theta$.</li>
+                         </ul>
+                     </div>
+                     <div class="column" style="flex: 20%">
+                         <img src="./L9/inverted_pendulum.svg" width="80%"></img><br/>
+                         A schematic drawing of the inverted pendulum. The rod is considered massless. 
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Lagrangian Equation</h1>
+                 <div class="row">
+                     <div class="column">
+                         \[
+                         \begin{aligned}
+                         L&=T-V=\frac{1}{2}ml^2\dot{\theta}^2-mgl \cos\theta\\
+                         F&=-fl\cos\theta
+                         \end{aligned}
+                         \]
+                         <ul>
+                             <li>Plug in $\lagrangian$, and we have
+                             \[
+                             ml\ddot{\theta}=-f\cos\theta+mg\sin\theta
+                             \]</li> 
+                             <li>In Newton's system, the left is $ma$ and right is the total force tangential to $\vec l$.</li>
+                         </ul>
+                     </div>
+                     <div class="column" style="flex: 20%">
+                         <img src="./L9/inverted_pendulum.svg" width="80%"></img><br/>
+                         A schematic drawing of the inverted pendulum. The rod is considered massless. 
+                     </div>
+                 </div>
+             </div>
+
+
+             <div class="step slide separator" id="cart_pole">
+                 <h1 class="nt">Example: Cart Pole</h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Cart Pole</h1>
+                 <div class="row">
+                     <div class="column">
+                         <ul>
+                             <li>Kinetic energy: $T=\frac{1}{2}M v_1^2+\frac{1}{2}m v_2^2$</li> 
+                             <li>Assume the joint position is $[x(t), 0]^T$, then
+                                 <ul>
+                                     <li>$v_1^2=\dot{x}^2$</li>
+                                     <li>$v_2^2=\left(\ddt{\left(x-\ell \sin \theta \right)}\right)^2+\left(\ddt{\left(\ell \cos \theta \right)}\right)^2$</li>
+                                 </ul>
+                             </li>
+                             <li>Further computation shows that \[
+                                 T={\frac {1}{2}}\left(M+m\right){\dot {x}}^{2}-m\ell {\dot {x}}{\dot {\theta }}\cos \theta +{\frac {1}{2}}m\ell ^{2}{\dot {\theta }}^{2}
+                                 \]
+                             </li>
+                             <li>Potential energy: $V=mgl\cos\theta$</li> 
+                         </ul>
+                     </div>
+                     <div class="column" style="flex: 20%">
+                         <img src="./L9/cart-pendulum.svg" width="80%"></img><br/>
+                         A schematic drawing of the inverted pendulum on a cart. The rod is considered massless. 
+                         <div class="credit">https://en.wikipedia.org/wiki/Inverted_pendulum</div>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Generalized Coordinates and Force</h1>
+                 <div class="row">
+                     <div class="column">
+                         <ul>
+                             <li>First of all, note that there is an external force $F$, and the joint is an Underactuated joint (i.e., <em>no</em> torque at the joint)</li>
+                             <li>The generalized coordinates of the system are $q=[x,\theta]^T$, each should have a generalized force.</li>
+                             <li>What are the generalized forces?</li>
+                         </ul>
+                         <ul class="substep">
+                             <li>The input power is $P=f\frac{\d{x}}{\d{t}}$</li>
+                             <li>Therefore, $[f, 0]^T$ is the generalized force dual to $[x,\theta]^T$</li>
+                         </ul>
+                     </div>
+                     <div class="column" style="flex: 20%">
+                         <img src="./L9/cart-pendulum.svg" width="80%"></img><br/>
+                         A schematic drawing of the inverted pendulum on a cart. The rod is considered massless. 
+                         <div class="credit">https://en.wikipedia.org/wiki/Inverted_pendulum</div>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Lagrangian Equation</h1>
+                 <div class="row">
+                     <div class="column">
+                         \[
+                         \aligned{
+                         L&=T-V\\
+                         &={\frac {1}{2}}\left(M+m\right){\dot {x}}^{2}-m\ell {\dot {x}}{\dot {\theta }}\cos \theta +{\frac {1}{2}}m\ell ^{2}{\dot {\theta }}^{2}-mgl\cos\theta\\
+                         F&=[f,0]^T
+                         }
+                         \]
+                         <ul>
+                             <li>Plug in $\lagrangian$, and we have
+                                 \[
+                                 (M+m)\ddot{x}-ml\cos\theta\ddot{\theta}+ml\sin\theta\dot{\theta}^2=f\\
+                                 l\ddot{\theta}-g\sin\theta-\ddot{x}\cos\theta=0
+                                 \]
+                             </li>
+                         </ul>
+
+                     </div>
+                     <div class="column" style="flex: 20%">
+                         <img src="./L9/cart-pendulum.svg" width="80%"></img><br/>
+                         A schematic drawing of the inverted pendulum on a cart. The rod is considered massless. 
+                         <div class="credit">https://en.wikipedia.org/wiki/Inverted_pendulum</div>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide separator" id="single_object">
+                 <h1 class="nt">Example: Single-Object Dynamics</h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Setup</h1>
+                 <ul>
+                     <li>Consider a moving body that is only affected by a force-torque pair (in the sense of the conventional force and torque)</li>
+                     <img src="./L9/single_object.svg" width="30%">
+                 </ul>
+             </div>
+
+             <div class="step slide">
+                 <h1 class="vt">Prep: Derivative of Acceleration</h1>
+                 <ul>
+                     <li>Like for velocity, we use the following rule to compute the gradient of velocity in an arbitrary observer's frame</li>
+                     <li>We introduce $t_0$ to indicate which frame is cloned when calculating the derivative
+                         \[
+                         \mv{a}^{o(t_0)}_{b(t_0)}=\left.\frac{\d{}}{\d{t}}\mv{v}^{o(t_0)}_{s(t_0)\to \color{red}{b(t)}}\right\vert_{t=t_0}
+                         \]
+                     </li>
+                     <li>Different from the definition of velocity, acceleration only has one subscript
+                     </li>
+                     <li>We clone a frame $s(t_0)$ when taking the derivative, so the definition of acceleration is invariant to $s(t)$</li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Prep: Derivative of Acceleration</h1>
+                 <ul>
+                     <li>Spatial acceleration (spatial frame is an inertia frame):
+                         \(
+                         \mv{a}^{s(t_0)}_{b(t_0)}=\left.\frac{\d{}}{\d{t}}\mv{v}^{s(t_0)}_{s(t_0)\to \color{red}{b(t)}}\right\vert_{t=t_0}
+                         \)
+                     </li>
+                     <li>Body acceleration: 
+                         \[
+                         \because
+                         \frac{\d{}}{\d{t}}\mv{v}^{b(t)}_{s(t_0)\to b(t)}=\frac{\d{}}{\d{t}}R^{b(t)}_{b(t)\to b(t_0)}\mv{v}^{b(t_0)}_{s(t_0)\to b(t)}=-[\omega^{b(t)}]\mv{v}^{b(t)}_{s(t)\to b(t)} + \frac{\d{}}{\d{t}}\mv{v}^{b(t_0)}_{s(t_0)\to b(t)}
+                         \]
+                         \[
+                         \therefore 
+                         \boxed{
+                         \mv{a}^{b(t_0)}_{b(t_0)}=\left.\frac{\d{}}{\d{t}}\mv{v}^{b(t_0)}_{s(t_0)\to \color{red}{b(t)}}\right\vert_{t=t_0}
+                         =\left.\frac{\d{}}{\d{t}}\mv{v}^{\color{red}{b(t)}}_{s(t_0)\to \color{red}{b(t)}}\right\vert_{t=t_0}+[\mv{\omega}^{b(t_0)}]\mv{v}^{b(t_0)}_{s(t_0)\to b(t_0)}}
+                         \]
+                     </li>
+                     <li>Using $\mv{v}^{s(t)}_{s(t)\to b(t)}=R^{s(t)}_{s(t)\to b(t)}\mv{v}^{b(t)}_{s(t)\to b(t)}$, you can verify that $R^{b(t)}_{b(t)\to s(t)}\mv{a}^{s(t)}=\mv{a}^{b(t)}$ (so that $\mv{f}^o=m\mv{a}^o$ for both the spatial and body frames).</li>
+                     <li>The second term in the body-frame acceleration is the <em>Coriolis acceleration</em>.</li>
+                 </ul>
+             </div>
+
+             <div class="step slide">
+                 <h1 class="vt">Body-Frame Lagrangian Derivation</h1>
+                 <ul>
+                     <!--
+                         -<li>Assume recording in body frame. So $\mv{\nu}^{b(t)}=\mv{v}^{b(t)}$, and we also have $\mv{\omega}^{b(t)}$, $\mv{f}^{b(t)}$, $\mv{\tau}^{b(t)}$</li>
+                     -->
+                     <li>Recall that the kinetic energy $T$ is:
+                         \[
+                         T=\frac{1}{2} (\mv{\xi}^{b(t)}_{s(t)\to b(t)})^T \mv{\f{M}}^{b} \mv{\xi}^{b(t)}_{s(t)\to b(t)}
+                         \]
+                         where 
+                         \(
+                         \mv{\f{M}}^b=\begin{bmatrix}
+                         m \rm{Id}_{3\times 3} & 0\\
+                         0 & \mv{I}^{b}
+                         \end{bmatrix}\in\bb{R}^{6\times 6} \mbox{ and }
+                         \mv{\xi}^b=\begin{bmatrix}
+                         \mv{v}^b\\\mv{\omega}^b
+                         \end{bmatrix}
+                         \)
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Generalized Velocity and Force</h1>
+                 <ul>
+                     <li>Recall that we introduced 
+                         $
+                         \mv{F}^{b(t)}=
+                         \begin{bmatrix}
+                         \mv{f}^{b(t)}\\\mv{\tau}^{b(t)}
+                         \end{bmatrix}
+                         $ and $(\mv{F}^{b(t)})^T\mv{\xi}^{b(t)}=\frac{\d{T}}{\d{t}}$
+                         <ul>
+                             <li>implies that ($\mv{\xi}^{b(t)}$, $\mv{F}^{b(t)}$) is a dual pair</li>
+                             <li>$\mv{F}^{b(t)}$ is a generalized force and $\mv{\xi}^{b(t)}$ is a generalized velocity</li>
+                         </ul>
+                     </li>
+                     <li class="substep">
+                         Therefore, we can plug them in Euler-Lagrange equation:
+                         $$\lagrangian\tag{Euler-Lagrange Equation}$$
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Body-Frame Lagrangian Derivation</h1>
+                 <ul>
+                     <li>Since the object is only affected by a force-torque pair, there is no potential energy in this problem.</li>
+                     <li>Lagrangian function: $L=T$ </li>
+                     <!--
+                         -<li>Because $(\mv{F}^{b(t)})^T\mv{\xi}^{b(t)}=\mbox{Power}$, $\mv{F}^{b(t)}$ is the generalized force and $\mv{\xi}^{b(t)}$ is the generalized velocity. </li>
+                     -->
+                     <li class="substep">Therefore, the Lagrangian equation becomes
+                         \[
+                         \frac{\d{}}{\d{t}}\frac{\partial L}{\partial \mv{\xi}^{b(t)}}=\mv{F}^{b(t)}
+                         \]
+                     </li>
+                     <li class="substep">Recall that we have derived that
+                         \[
+                         L=\frac{1}{2}(\mv{\xi}^{b(t)})^T \f{M}^{b(t)}\mv{\xi}^{b(t)}=\frac{1}{2} m\|\mv{v}^{b(t)}\|^2+\frac{1}{2}(\mv{\omega}^{b(t)})^T\mv{I}^b\mv{\omega}^{b(t)}
+                         \]
+                     </li>
+                     <li class="substep">Therefore,
+                         \(
+                         \frac{\partial L}{\partial \mv{v}^{b(t)}}=m\mv{v}^{b(t)}, 
+                         \frac{\partial L}{\partial \mv{\omega}^{b(t)}}=\mv{I}^b\mv{\omega}^{b(t)}
+                         \)
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="et">Body-Frame Lagrangian Derivation</h1>
+                 \[
+                 \ddt\pLp{\mv{\xi}^{b(t)}}=\mv{F}^{b(t)},\qquad 
+                 \pLp{\mv{v}^{b(t)}}=m\mv{v}^{b(t)}, \qquad 
+                 \pLp{\mv{\omega}^{b(t)}}=\mv{I}^b\mv{\omega}^{b(t)}
+                 \]
+                 <ul>
+                     <li>Therefore,
+                         \[
+                         \mv{f}^{b(t_0)}=\ddt\pLp{\mv{v}^{b(t_0)}}=m\ddt \mv{v}^{b(t_0)}_{s(t_0) \to b(t)}=m\left.\ddt \mv{v}^{b(t)}_{s(t_0)\to b(t)}\right\vert_{t=t_0}+m[\omega^{b(t_0)}_{s(t_0)\to b(t_0)}]\mv{v}^{b(t_0)}_{s(t_0)\to b(t_0)}
+                         \]
+                         \[
+                         \mv{\tau}^{b(t_0)}=\ddt\pLp{\mv{\omega}^{b(t_0)}}=\left.\ddt \mv{I}^{b}\mv{\omega}^{b(t)}_{s(t_0)\to b(t)}\right\vert_{t=t_0}=\mv{I}^{b}\left.\ddt \mv{\omega}^{b(t)}_{s(t_0)\to b(t)}\right\vert_{t=t_0} + [\mv{\omega}^{b(t_0)}]\mv{I}^{b}\mv{\omega}^{b(t_0)}
+                         \]
+                     </li>
+                     <li class="substep">In matrix form, we have the famous <strong>body-frame Newton-Euler equation</strong>:
+                         \[
+                         \bm{
+                         m \rm{Id}_{3\times 3} & 0\\
+                         0 & \mv{I}^b
+                         \end{bmatrix}
+                         \begin{bmatrix}
+                         \dot{\mv{v}}^b\\
+                         \dot{\mv{\omega}}^b
+                         }
+                         +
+                         \bm{
+                         \mv{\omega}^b\times m\mv{v}^b\\
+                         \mv{\omega}^b\times \mv{I}^b\mv{\omega}^b
+                         }
+                         =
+                         \bm{
+                         \mv{f}^{b}\\
+                         \mv{\tau}^{b}
+                         }
+                         \]
+                         in which the precise definition of symbols are as above.
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Spatial-Frame Lagrangian Derivation</h1>
+                 <ul>
+                     <li>The kinetic energy $T$ can also be computed by spatial frame velocities:
+                         \[
+                         T=\frac{1}{2} m\|\mv{v}^{s(t)}\|^2+\frac{1}{2}(\mv{\omega}^{s(t)})^T\mv{I}^s\mv{\omega}^{s(t)}
+                         \]
+                     </li>
+                     <li>Force-velocity duality:
+                         $\bm{\mv{f}^{s(t)}\\\mv{\tau}^{s(t)}}$ and $\bm{\mv{v}^{s(t)}\\\mv{\omega}^{s(t)}}$ form a duality pair
+                     </li>
+                     <li class="substep">Justification: 
+                         <ul>
+                             <li>The translational kinetic energy can be justified by $\mv{v}^{s(t)}=R^{s(t)}_{s(t)\to b(t)}\mv{v}^{b(t)}$</li>
+                             <li>The rotational kinetic energy can be justified by $\mv{\omega}^{s(t)}=R^{s(t)}_{s(t)\to b(t)}\mv{\omega}^{b(t)}$ and $\mv{I}^{s}=R^{s(t)}_{s(t)\to b(t)}\mv{I}^{b}(R^{s(t)}_{s(t)\to b(t)})^T$</li>
+                             <li>The force-velocity duality can be justified by $\mv{f}^{s(t)}=R^{s(t)}_{s(t)\to b(t)}\mv{f}^{b(t)}$, $\mv{\tau}^{s(t)}=R^{s(t)}_{s(t)\to b(t)}\mv{\tau}^{b(t)}$, and the frame rules for $\mv{v}$ and $\mv{\omega}$</li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="et">Spatial-Frame Lagrangian Derivation</h1>
+                 \[
+                 \pLp{\mv{v}^{s(t)}}=m\mv{v}^{s(t)}, \qquad 
+                 \pLp{\mv{\omega}^{s(t)}}=\mv{I}^b\mv{\omega}^{s(t)}
+                 \]
+                 <ul>
+                     <li>Therefore,
+                         \[
+                         \mv{f}^{s(t_0)}=\ddt\pLp{\mv{v}^{s(t_0)}}=m\ddt \mv{v}^{s(t_0)}=m\left.\ddt \mv{v}^{s(t_0)}_{s(t_0)\to b(t)}\right\vert_{t=t_0}
+                         \]
+                         \[
+                         \mv{\tau}^{s(t_0)}=\ddt\pLp{\mv{\omega}^{s(t_0)}}=\left.\ddt \mv{I}^{s}\mv{\omega}^{s(t_0)}_{s(t_0)\to b(t)}\right\vert_{t=t_0}
+                         =[\mv{\omega}^{s(t_0)}_{s(t_0)\to b(t_0)}]\mv{I}^{s}\mv{\omega}^{s(t_0)}_{s(t_0)\to b(t_0)}+\mv{I}^{s}\left.\ddt \mv{\omega}^{s(t_0)}_{s(t_0)\to b(t)}\right\vert_{t=t_0}
+                         \]
+                     </li>
+                     <li class="substep">In matrix form, we have the famous <strong>spatial frame Newton-Euler equation</strong>:
+                         \[
+                         \bm{
+                         m \rm{Id}_{3\times 3} & 0\\
+                         0 & \mv{I}^s
+                         \end{bmatrix}
+                         \begin{bmatrix}
+                         \dot{\mv{v}}^s\\
+                         \dot{\mv{\omega}}^s
+                         }
+                         +
+                         \bm{
+                         \color{red}{0}\\
+                         \mv{\omega}^s\times \mv{I}^s\mv{\omega}^s
+                         }
+                         =
+                         \bm{
+                         \mv{f}^{s}\\
+                         \mv{\tau}^{s}
+                         }
+                         \]
+                         in which the precise definition of symbols are as above.
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide separator" id="robot_arm">
+                 <h1 class="nt">Example: Robot Arm</h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Robot Arm</h1>
+                 <ul>
+                     <li>For kinematic chains with $n$ joints, it is convenient and always possible to choose the joint angles $\theta=(\theta_1,\ldots,\theta_n)$ and the joint torques $\tau=(\tau_1,\ldots,\tau_n)$ as the generalized coordinates and generalized forces, respectively.
+                         <ul>
+                             <li>If joint $i$ is revolute: $\theta_i$ joint angle and $\tau_i$ is joint torque</li>
+                             <li>If joint $i$ is prismatic: $\theta_i$ joint position and $\tau_i$ is joint force</li>
+                         </ul>
+                     </li>
+                     <li>Lagrangian Equations:
+                         \[
+                         \tau_i=\ddt\pLp{\dot{\theta}_i}-\pLp{\theta_i}
+                         \]
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Some Notations</h1>
+                 For each link $i=1,\ldots,n$, $\cal{F}_i$ is attached to the center of mass of link $i$. All the following quantities are expressed in $\cal{F}_i$
+                 <ul>
+                     <li>$\mxi^b_i$: twist of link $i$</li>
+                     <li>$m_i$: mass; $\mv{I}^b_i$: rotational inertia matrix;</li>
+                     <li>$\f{M}_i^b=\bm{m_i\rm{Id}_{3\times 3}& 0\\0 & \mv{I}^b_i }$: body inertia matrix</li>
+                     <li>Kinetic energy of link $i$: $T_i=\frac{1}{2}(\mxi_i^b)^T \f{M}^b_i\mxi_i^b$</li>
+                     <li>$J^b_i\in\bb{R}^{6\times n}$: body Jacobian of link $i$</li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Kinetic and Potential Energies</h1>
+                 <ul>
+                     <li>Total kinetic energy:
+                         \[
+                         T(\theta,\dot{\theta})=\frac{1}{2}\sum_{i=1}^n (\mxi^b_i)^T\f{M}^b_i\mxi^b_i=\frac{1}{2}\dot{\theta}^T\underbrace{(\sum_{i=1}^n(J^b_i(\theta)\f{M}^b_i J^b_i(\theta)))}_{\mv{M}^b(\theta)}\dot{\theta}:=\frac{1}{2}\dot{\theta}^T\mv{M}^b(\theta)\dot{\theta}
+                         \]
+                     </li>
+                     <li>Potential energy:
+                         \[
+                         V(\theta)=\sum_{i=1}^n m_i g h_i(\theta)
+                         \]
+                         <ul>
+                             <li>$h_i(\theta)$: height of center of mass of link $i$</li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Lagrangian Equation</h1>
+                 <ul>
+                     <li>Plug $L=T-V$ into $\lagrangian$, and we have
+                     </li>
+                     <li>$\tau_i=\ddt\pLp{\dot{\theta}}-\pLp{\theta_i}$
+                         \[
+                         \tau_i=\sum_{j=1}^n M^b_{ij}(\theta)\ddot{\theta}_j+\sum_{j=1}^n\sum_{k=1}^n\Gamma^b_{ijk}(\theta)\dot{\theta}_j\dot{\theta}_k+\frac{\partial V}{\partial \theta_i}
+                         \]
+                         $M^b_{ij}$ is the $(i, j)$-th entry of matrix $\mv{M}^b$
+                     </li>
+                     <li>$\Gamma^b_{ijk}(\theta)$ is called the <strong>Christoffel symbols of the first kind</strong>
+                         \[
+                         \Gamma^b_{ijk}(\theta)=\frac{1}{2}\left(\frac{\partial M^b_{ij}}{\partial \theta_k}+\frac{\partial M^b_{ik}}{\partial \theta_j}-\frac{\partial M^b_{jk}}{\partial \theta_i}\right)
+                         \]
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Lagrangian Equation</h1>
+                 <ul>
+                     <li>Lagrangian equation in vector form:
+                         \[
+                         \tau=\mv{M}^b(\theta)\ddot{\theta}+C^b(\theta,\dot{\theta})\dot{\theta}+g^b(\theta)
+                         \]
+                         <ul>
+                             <li>$C^b_{ij}(\theta,\dot{\theta}):=\sum_{k=1}^n \Gamma^b_{ijk}\dot{\theta}_k$ is called the <strong>Coriolis matrix</strong>
+                                 <ul>
+                                     <li>Recall that in the body-frame Newton Euler equation, we also have a Coriolis term that comes from the derivate of rotational inertia. It was used to compensate for the rotational acceleration of the body frame</li>
+                                     <li>This $C^b_{ij}(\theta,\dot{\theta})$ also comes from taking the derivative of $\mv{M}^b$ w.r.t. $\theta$. Because $\mv{M}^b$ and $\mxi^b$ are described in the body frame in our derivation, we also need this Coriolis term to compensate for the movement of the body frame.</li>
+                                 </ul>
+                             </li>
+                             <li>$g^b(\theta)$ is due to gravity in our derivation. If there are other external forces (e.g., friction), it would also show up here.
+                             </li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <ul>
+                     <li>Equations for a simple arm</li>
+                 </ul>
+                 <img src="L9/3dof_lagrangian.svg" width="100%"/>
+             </div>
+             <div class="step slide">
+                 <ul>
+                     <li>Equations for PUMA 560 Arm</li>
+                 </ul>
+                 <img src="./L9/puma_dynamics.svg" width="100%">
+             </div>
+
+
+
+
+
+
+
+
+
+
+
+
+             <div id="overview" class="step" data-x="4500" data-y="1500" data-scale="10" style="pointer-events: none;"></div>
+             <!--
+                 <div id="markdown" class="step slide markdown" data-rel-x="0" data-rel-y="900">
+                 </div>
+             -->
+        </div>
+
+        <!--
+            Add navigation-ui controls: back, forward and a select list.
+            Add a progress indicator bar (current step / all steps)
+            Add the help popup plugin
+        -->
+        <div id="impress-toolbar"></div>
+
+        <div class="impress-progressbar"><div></div></div>
+        <div class="impress-progress"></div>
+
+        <div id="impress-help"></div>
+
+        <!-- Extra modules
+            Load highlight.js, mermaid.js, markdown.js and MathJax.js from extras.
+            If you're curious about details, these are initialized in src/plugins/extras/extras.js -->
+            <script type="text/javascript" src="../extras/highlight/highlight.pack.js"></script>
+            <script type="text/javascript" src="../extras/mermaid/mermaid.min.js"></script>
+            <script type="text/javascript" src="../extras/markdown/markdown.js"></script>
+            <!--
+                To make all described above really work, you need to include impress.js in the page.
+                You also need to call a `impress().init()` function to initialize impress.js presentation.
+                And you should do it in the end of your document. 
+            -->
+            <script>
+                function setSlideID() {
+                    x = document.getElementsByClassName("slide");
+                    const titleSet = new Set();
+                    var titleDict = {};
+                    for (var i = 2; i < x.length; i++) {
+                        h1 = x[i].getElementsByTagName("h1")[0];
+                        if (h1) {
+                            // alert(title);
+                            title = '--'+h1.innerHTML.replace(/\W/g, '');
+                            if (titleSet.has(title)) {
+                                titleDict[title] += 1;
+                                title = title + '_' + titleDict[title].toString();
+                            }
+                            else {
+                                titleSet.add(title);
+                                titleDict[title] = 1;
+                            }
+                            x[i].id = title;
+                        }
+                    }
+                }
+                setSlideID(); 
+            </script>
+            <script>
+                function getTitles() {
+                    var secs = document.getElementsByClassName("separator");
+                    var titleList = [];
+                    var titleIdList = [];
+                    const titleIdSet = new Set();
+                    for (var i = 0; i < secs.length; i++) {
+                        h1 = secs[i].getElementsByTagName("h1")[0];
+                        titleId = 'Sec:'+h1.innerHTML.replace(/\W/g, '');
+                        if (titleIdSet.has(titleId)) {
+                            continue;
+                        }
+                        titleIdSet.add(titleId);
+                        titleList.push(h1.innerHTML);
+                        titleIdList.push(titleId);
+                        secs[i].id = titleId;
+                    }
+                    console.log(titleList);
+                    return [titleList, titleIdList];
+                }
+
+                function addToC(titleList, titleIdList){
+                    var agenda = document.getElementById("agenda");
+                    agenda.innerHTML = '';
+                    for (var i = 0; i < titleList.length; i++) {
+                        agenda.innerHTML += '<li><a href="#'+titleIdList[i]+'">'+titleList[i]+'</a></li>';
+                    }
+                }
+
+                res = getTitles();
+                titleList = res[0]; titleIdList  = res[1];
+                addToC(titleList, titleIdList);
+            </script>
+            <script type="text/javascript" src="../js/impress.js">
+            </script>
+            <script type="text/javascript">
+                (function(){
+                    var vizPrefix = "language-viz-";
+                    Array.prototype.forEach.call(document.querySelectorAll("[class^=" + vizPrefix + "]"), function(x){
+                        var engine;
+                        x.getAttribute("class").split(" ").forEach(function(cls){
+                            if (cls.startsWith(vizPrefix)) {
+                                engine = cls.substr(vizPrefix.length);
+                            }
+                        });
+                        var image = new DOMParser().parseFromString(Viz(x.innerText, {format:"svg", engine:engine}), "image/svg+xml");
+                        x.parentNode.insertBefore(image.documentElement, x);
+                        x.style.display = 'none'
+                        x.parentNode.style.backgroundColor = "white"
+                    });
+                })();
+                window.MathJax = {
+                    tex2jax: {
+                        inlineMath: [['$','$'], ['\\(','\\)']],
+                        displayMath: [['$$','$$'], ['\\[','\\]']],
+                        processEscapes: true,
+                        processEnvironments: true,
+                        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+                        TeX: { equationNumbers: { autoNumber: "AMS" },
+                            extensions: ["AMSmath.js", "AMSsymbols.js", "color.js"],
+                        },
+                        jax: ["input/TeX", "output/SVG"]
+                    },
+                    AuthorInit: function () {
+                        MathJax.Hub.Register.StartupHook("Begin",function () {
+                            MathJax.Hub.Queue(function() {
+                                var all = MathJax.Hub.getAllJax(), i;
+                                for(i = 0; i < all.length; i += 1) {
+                                    all[i].SourceElement().parentNode.className += ' has-jax';
+                                }
+                            })
+                        });
+                    }
+                };
+            </script>
+            <script type="text/javascript" src="../extras/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+            <script>impress().init();</script>
+    </body>
+</html>
+<!-- discarded -->

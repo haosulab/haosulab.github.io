@@ -1,0 +1,1000 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>L18</title>
+    <meta name="description" content="" />
+    <meta name="author" content="Hao Su" />
+    <link rel="stylesheet" href="../extras/highlight/styles/github.css">
+    <link rel="stylesheet" href="../extras/mermaid/mermaid.forest.css">
+    <link href="../css/impress-common.css" rel="stylesheet" />
+    <link href="css/classic-slides.css" rel="stylesheet" />
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/1.7.1/viz.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/vs.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"
+        integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg=="
+        crossorigin="anonymous"></script>
+    <style>
+        mark.red {
+            color: #ff0000;
+            background: none;
+        }
+    </style>
+</head>
+
+<body class="impress-not-supported">
+    <div class="fallback-message">
+        <p>Your browser <b>doesn't support the features required</b> by impress.js, so you are presented with a
+            simplified version of this presentation.</p>
+        <p>For the best experience please use the latest <b>Chrome</b>, <b>Safari</b> or <b>Firefox</b> browser.</p>
+    </div>
+    <div id="latex-macros"></div>
+    <script src="./latex_macros.js"></script>
+    <div id="impress" data-width="1920" data-height="1080" data-max-scale="3" data-min-scale="0" data-perspective="1000"
+        data-transition-duration="0">
+        <div class="step slide title" data-x="-2200" data-y="-3000" id="title">
+            <h1 class="nt">Exploration</h1>
+            <h2>Quan Vuong
+                <p style="font-size:30px">(slides prepared in tandem with Prof. Hao Su, Tongzhou Mu and Zhiao Huang)</p>
+            </h2>
+            <h3>Winter, 2023</h3>
+            <div class="ack">Some contents are based on <a
+                    href="https://www.cambridge.org/core/books/bandit-algorithms/8E39FD004E6CE036680F90DD0C6F09FC">Bandit
+                    Algorithms</a> from Dr. Tor Lattimore and Prof. Csaba Szepesvári, and <a
+                    href="https://www.davidsilver.uk/teaching/">COMPM050/COMPGI13</a> taught at UCL by Prof. David
+                Silver.</div>
+        </div>
+
+        <div id="toc" class="step slide" data-rel-x="2200" data-rel-y="0">
+            <h1 class="nt">Agenda</h1>
+            <ul class="large" id="agenda"></ul>
+            click to jump to the section.
+        </div>
+        <!-- ######################### New Section ############################# -->
+        <div class="step slide separator">
+            <h1 class="nt">Intrinsic Rewards (continued)</h1>
+        </div>
+
+        <div class="step slide">
+            <h1 class="nt">Novelty-driven Exploration</h1>
+            <ul>
+
+                <li>Takeaway: novelty bonus works well when increasing novelty aligns with making progress in the task
+                    <ul>
+                        <li>
+                            Novelty in a game setting means going to the next level in the game
+                        </li>
+                        <li>When will this break down?</li>
+                        <!-- 
+                            When novelty correlates poorly with solving the task (i.e. robot manipulation)
+                        -->
+                        <!-- <li>Can we encourage exploration in frontier states directly?</li> -->
+                        <!-- 
+                            Rhetorical question to motivate next set of slide
+                        -->
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">As an aside: Distribution Distance Measure </h1>
+            <ul>
+                <li>Given two distributions $Q$ and $P$ over the same space.</li>
+                <li>The cross entropy is:</li>
+                \[
+                H(Q, P) = - \mathrm{E}_{x \sim Q}[\log P(x)]
+                \]
+                <li>The Kullback–Leibler divergence (relative entropy) is:</li>
+                \[
+                D_{\mathrm{KL}}(Q \| P) = -\sum_{x} Q(x) \log \left(\frac{P(x)}{Q(x)}\right) = - \mathrm{E}_{x \sim
+                Q} \left[\log \left(\frac{P(x)}{Q(x)}\right)\right]
+                \]
+                <li>Their relationship:</li>
+                \[
+                H(Q, P)=H(Q)+D_{\mathrm{KL}}(Q \| P)
+                \]
+                <li>Widely used in ML.</li>
+            </ul>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">As an aside: Evidence Lower Bound</h1>
+            <ul>
+                <li>In statistical inference, we have $2$ sets of variables:
+                    <ul>
+                        <li>Unobserved variables $\mathbf{Z}$</li>
+                        <li>Observed variables $\mathbf{X}$ that is a function of $\mathbf{Z}$</li>
+                    </ul>
+                </li>
+                <li>The inference problem is to estimate the value of $\mathbf{Z}$ given $\mathbf{X}$.</li>
+                <li>The Bayesian inference problem is to estimate the so-called posterior $P(\mathbf{Z} \mid
+                    \mathbf{X})$ given a prior $P(\mathbf{Z})$ and the observed data $\mathbf{X}$.</li>
+                <li>Computing the posterior $P(\mathbf{Z} \mid
+                    \mathbf{X})$ exactly is often intractable.</li>
+                <li>Variational inference offers a tractable approximation to the posterior $P(\mathbf{Z} \mid
+                    \mathbf{X})$.</li>
+            </ul>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">As an aside: Evidence Lower Bound</h1>
+            <ul>
+                <li>In variational inference, we learn a distribution $Q$ over $\mathbf{Z}$ to approximate $P(\mathbf{Z}
+                    \mid \mathbf{X})$.</li>
+                <li>To learn $Q$, we maximize the objective function:</li>
+                \[
+                L(\mathbf{X})=H(Q)-H(Q ; P(\mathbf{X}, \mathbf{Z}))
+                \]
+                <li>where:
+                    <ul>
+                        <li>$H(Q)$ is the entropy of $Q$</li>
+                        <li>$H(Q ; P(\mathbf{X}, \mathbf{Z}))$ is the cross entropy</li>
+                    </ul>
+                </li>
+                <li>The objective is called the variational lower bound or evidence lower bound (abbreviated as ELBO).
+                </li>
+                <li>Very influential idea in ML.</li>
+            </ul>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">As an aside: Justifying the Evidence Lower Bound</h1>
+            <ul>
+                <li>It can be shown that:</li>
+                \[
+                \log P(\mathbf{X})-D_{\mathrm{KL}}(Q \| P) = L(\mathbf{X})
+                \]
+                <li>Thus, maximizing the evidence lower bound $L(\mathbf{X})$ is equivalent to minimizing the KL from
+                    $Q$ to the
+                    true posterior $P$.</li>
+                <li>Some good properties:
+                    <ul>
+                        <li>$L(\mathbf{X})$ and its gradients wrt parameters of $Q$ can be obtained for specific choice
+                            of $Q$,
+                            such as a
+                            diagonal Gaussian.</li>
+                        <li>$L(\mathbf{X})$ is maximized when $D_{\mathrm{KL}}(Q \| P)$ is $0$</li>
+                    </ul>
+                </li>
+                <li>Evidence Lower Bound is thus both well-motivated and easily optimizable.</li>
+            </ul>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Curiosity-driven Exploration through Forward Prediction</h1>
+            <ul>
+                <li>The RL agent can model the MDP transition function with a model $p\left(s_{t+1} \mid s_{t}, a_{t} ;
+                    \theta\right)$ where $\theta$ belongs to a particular parameter space, i.e. $\theta \in \Theta$.
+                </li>
+                <li>Curiosity-driven exploration can be seen as taking action that allows the agent to learn more about
+                    the MDP transition function.</li>
+                <li>Let $\xi_{t}=\left\{s_{1}, a_{1}, \ldots, s_{t}\right\}$ be the history of interaction until
+                    timestep $t$.</li>
+                <li>Actions that maximize the reduction in uncertainty about the transition function can be viewed as
+                    maximizing the
+                    reduction in entropy over the transition function parameter space:</li>
+                \[
+                H\left(\Theta \mid \xi_{t} \right)-H\left(\Theta \mid S_{t+1}, \xi_{t}, a_{t}\right)
+                \]
+                <li>We now derive an estimate of this reduction.</li>
+            </ul>
+            <div class="ack">VIME: Variational Information Maximizing Exploration. Houthooft et al.</div>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Curiosity-driven Exploration through Forward Prediction</h1>
+            <ul>
+                <li>It can be shown that:</li>
+                \[
+                H\left(\Theta \mid \xi_{t} \right)-H\left(\Theta \mid S_{t+1}, \xi_{t}, a_{t}\right) =
+                \mathbb{E}_{s_{t+1} \sim \mathcal{P}\left(\cdot \mid \xi_{t},
+                a_{t}\right)}\left[D_{\mathrm{KL}}\left[p\left(\theta \mid \xi_{t}, a_{t}, s_{t+1}\right) \|
+                p\left(\theta \mid \xi_{t}\right)\right]\right]
+                \]
+                <ul>
+                    <li>where $\mathcal{P}\left(\cdot \mid \xi_{t}, a_{t}\right)$ is the true transition function of the
+                        MDP.</li>
+
+                </ul>
+                <li>We can therefore estimate the reduction in entropy with a single sample of $s_{t+1}$:
+                    \[
+                    H\left(\Theta \mid \xi_{t}\right)-H\left(\Theta \mid S_{t+1}, \xi_{t}, a_{t}\right) \approx
+                    D_{\mathrm{KL}}\left[p\left(\theta \mid \xi_{t}, a_{t}, s_{t+1}\right) \|
+                    p\left(\theta \mid \xi_{t}\right)\right]
+                    \]
+                </li>
+                <li>We can thus promote curiosity-driven exploration by modifying the reward as follows:</li>
+                \[
+                r^{\prime}\left(s_{t}, a_{t}, s_{t+1}\right)=r\left(s_{t}, a_{t}\right)+\eta
+                D_{\mathrm{KL}}\left[p\left(\theta \mid \xi_{t}, a_{t}, s_{t+1}\right) \| p\left(\theta \mid
+                \xi_{t}\right)\right]
+                \]
+                <ul>
+                    <li>where $\eta$ is a hyper-parameter.</li>
+
+                </ul>
+            </ul>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Curiosity-driven Exploration through Forward Prediction</h1>
+            <ul>
+                \[
+                r^{\prime}\left(s_{t}, a_{t}, s_{t+1}\right)=r\left(s_{t}, a_{t}\right)+\eta
+                D_{\mathrm{KL}}\left[p\left(\theta \mid \xi_{t}, a_{t}, s_{t+1}\right) \| p\left(\theta \mid
+                \xi_{t}\right)\right]
+                \]
+                </li>
+                <li>But $D_{\mathrm{KL}}\left[p\left(\theta \mid \xi_{t}, a_{t}, s_{t+1}\right) \|
+                    p\left(\theta \mid \xi_{t}\right)\right]$ is intractable still:
+                    <ul>
+                        <li>
+                            Both $p\left(\theta \mid \xi_{t}, a_{t}, s_{t+1}\right)$ and $
+                            p\left(\theta \mid \xi_{t}\right)$ are posterior given different datasets
+                        </li>
+                        <li>Such posterior is often intractable as we have discussed</li>
+                    </ul>
+                </li>
+                <li>In the language of statistical inference:
+                    <ul>
+                        <li>$\theta$ plays the role of the unobserved variables $\mathbf{Z}$</li>
+                        <li>$ \xi_{t}$ or $\{\xi_{t}, a_{t}, s_{t+1}\}$ plays the role of the observed variables
+                            $\mathbf{X}$</li>
+                    </ul>
+                </li>
+            </ul>
+            </li>
+            $\Longrightarrow$ Use variational inference to learn an approximation to the posteriors.
+            </ul>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Curiosity-driven Exploration through Forward Prediction</h1>
+            <ul>
+                <li>We abstract the observed data as $\mathcal{D}$.</li>
+                <li>To approximate the posterior $p(\theta \mid \mathcal{D})$, we learn a function $q(\theta ; \phi)
+                    \approx p(\theta \mid \mathcal{D})$.</li>
+                <li>$q(\theta ; \phi)$ plays the role of $Q$ and has parameters $\phi$.</li>
+                <li>To learn $\phi$, we maximize the objective with gradient ascent:</li>
+                \[
+                L[q(\theta ; \phi), \mathcal{D}]=\mathbb{E}_{\theta \sim q(\cdot ; \phi)}[\log p(\mathcal{D} \mid
+                \theta)]-D_{\mathrm{KL}}[q(\theta ; \phi) \| p(\theta)]
+                \]
+                <ul>
+                    <li>Interpretation?</li>
+                    <li>Do not worry about the alphabet soup.</li>
+                    <li>It is the variational lower bound you have seen before.</li>
+                </ul>
+                <li>$p(\theta)$ is a prior over the parameter space of the learned transition function.
+                    <ul>
+                        <li>Often chosen to be uniform or unit diagonal Gaussian</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Curiosity-driven Exploration through Forward Prediction</h1>
+            <ul>
+                <li>The intractable curiosity-driven reward:</li>
+                \[
+                r^{\prime}\left(s_{t}, a_{t}, s_{t+1}\right)=r\left(s_{t}, a_{t}\right)+\eta
+                D_{\mathrm{KL}}\left[p\left(\theta \mid \xi_{t}, a_{t}, s_{t+1}\right) \| p\left(\theta \mid
+                \xi_{t}\right)\right]
+                \]
+                <li>can now be approximated with:</li>
+                \[
+                r^{\prime}\left(s_{t}, a_{t}, s_{t+1}\right)=r\left(s_{t}, a_{t}\right)+\eta
+                D_{\mathrm{KL}}\left[q\left(\theta ; \phi_{t+1}\right) \| q\left(\theta ; \phi_{t}\right)\right]
+                \]
+                <li>where:
+                    <ul>
+                        <li> $ q\left(\theta ; \phi_{t} \right) \approx p\left(\theta \mid \xi_{t}\right) $ </li>
+                        <li> $ q\left(\theta ; \phi_{t+1}\right) \approx p\left(\theta \mid \xi_{t}, a_{t},
+                            s_{t+1}\right) $ </li>
+                    </ul>
+                </li>
+                <li>We can plug this reward function into any RL algorithm.</li>
+            </ul>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Performance</h1>
+            <center>
+                <div style=margin-top:10px>
+                    <img src="./L17/vime_perf.png" width="3000" />
+                </div>
+            </center>
+            <ul>
+                <li>
+
+                    TRPO: Blue curve.
+                </li>
+                <li>
+                    TRPO + curiosity-driven exploration reward: Orange curve.
+
+                </li>
+                <li>Rightmost figure shows the extensive exploration behavior when the curiosity-driven exploration
+                    reward is
+                    added.</li>
+            </ul>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Forward Dynamics vs. Inverse Dynamics Prediction</h1>
+            <ul>
+                <li>Learning a forward model means approximating the transition function of the MDP:</li>
+                \[
+                p(s_{t+1} | s_t, a_t; \theta_F)
+                \]
+                <ul>
+                    <li>
+                        $\theta_F$ is the parameter of the learned transition function
+                    </li>
+                </ul>
+                <li>Learning an inverse model means predicting which action transitions state $s_t$ to state $s_{t+1}$:
+                </li>
+                \[
+                \hat{a}_t = g(s_t, s_{t+1} ; \theta_I)
+                \]
+                <ul>
+                    <li>
+                        $\theta_I$ is the parameter of the learned inverse model
+                    </li>
+                </ul>
+            </ul>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">When can the inverse model help?</h1>
+            <ul>
+                <li>The inverse model ignores factors of variation in the data that do not affect the agent.
+                    <ul>
+                        <li>If information in the states $s_{t}, s_{t+1}$ contains distractor that is not relevant to
+                            predicting $a_t$, the inverse model will ignore it</li>
+                    </ul>
+                </li>
+                <li>For example, there are three categories of information:
+                    <ul>
+                        <li>
+                            Things that can be controlled by the agent
+                        </li>
+                        <li>
+                            Things that the agent cannot control but that can affect the agent (e.g.
+                            a vehicle driven by another agent)
+                        </li>
+                        <li>
+                            Things out of the agent’s control and not affecting the agent (e.g.
+                            moving leaves)
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+            <div class="ack">Curiosity-driven Exploration by Self-supervised Prediction. Pathak et al.</div>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Training the Inverse Model</h1>
+            <ul>
+                \[
+                \hat{a}_t = g(s_t, s_{t+1} ; \theta_I)
+                \]
+                <li>For MDP with discrete action space:
+                    <ul>
+                        <li>parameterize the output of $g$ with a softmax</li>
+                        <li>maximize the log probability of the ground truth action $a_t$ given $s_t, s_{t+1}$</li>
+                    </ul>
+                </li>
+                <li>Training data, consisting of tuples of $(s_t, a_t, s_{t+1})$, can be collected during RL training
+                    process.</li>
+                <li>This is just a supervised learning problem.</li>
+            </ul>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Inverse Model Architecture</h1>
+            <ul>
+                <li>The inverse model $g$ consists of two sub-modules:
+                    <ul>
+                        <li>state feature encoder $\phi(s)$</li>
+                        <li>inverse model in feature space:
+                            <ul>
+                                <li>input: feature encoding of the current state $\phi(s_t)$ and the next state
+                                    $\phi(s_{t+1})$</li>
+                                <li>output: the action $a_t$</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+                <li>The inverse model no longer has to predict pixel values directly if the states are image.
+                    <ul>
+                        <li>Predicting pixel values are generally quite hard</li>
+                    </ul>
+                </li>
+                <li>$\phi(s)$ encodes the state $s$ into a feature space that extracts information that is only relevant
+                    to the agent.</li>
+            </ul>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Intrinsic Rewards using Forward Prediction in Feature Space</h1>
+            <ul>
+                <li>$\phi(s)$ provides a good feature space.</li>
+                <li>We train a forward dynamics model $f$ in the feature space of $\phi$:</li>
+                \[
+                \hat{\phi}\left(s_{t+1}\right)=f\left(\phi\left(s_{t}\right), a_{t} ; \theta_{F}\right)
+                \]
+                <li>$f$ is trained to minimize MSE in feature space:</li>
+                \[
+                \frac{1}{2}\left\|\hat{\phi}\left(s_{t+1}\right)-\phi\left(s_{t+1}\right)\right\|_{2}^{2}
+                \]
+                <li>Prediction error by $f$ in feature space is used as the intrinsic reward.</li>
+                <li>Add the intrinsic reward to the MDP reward to form a new reward function:</li>
+                \[
+                r'(s_t, a_t, s_{t+1}) = r(s_t, a_t) +
+                \frac{\eta}{2}\left\|\hat{\phi}\left(s_{t+1}\right)-\phi\left(s_{t+1}\right)\right\|_{2}^{2}
+                \]
+                <!-- <li>Can use this reward function to train any RL algorithm.</li> -->
+            </ul>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Performance</h1>
+            <center>
+                <iframe width="900" height="550" src="https://www.youtube.com/embed/J3FHOyhUn3A"
+                    title="YouTube video player" frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen></iframe>
+            </center>
+            <ul>
+                <li>
+                    Mute video before playing.
+
+                </li>
+                <li>Video shows exploratory behavior without any MDP reward.</li>
+            </ul>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Principle of Occam's Razor</h1>
+            <ul>
+                <li>
+                    Given observed data, there maybe infinitely many models that explain the data.
+                </li>
+                <li>How do we choose a specific model?</li>
+                <i>
+                    For each accepted explanation of a phenomenon, there may be an extremely large, perhaps even
+                    incomprehensible, number of possible and more complex alternatives. Since failing explanations can
+                    always be burdened with ad hoc hypotheses to prevent them from being falsified, simpler theories are
+                    preferable to more complex ones because they tend to be more testable.
+                </i>
+            </ul>
+            <div class="ack">https://en.wikipedia.org/wiki/Occam%27s_razor</div>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Principle of Maximum Entropy</h1>
+            <i>Take precisely stated prior data or testable information about a probability distribution function.
+                Consider the set of all trial probability distributions that would encode the prior data. According to
+                this principle, the distribution with maximal information entropy is the best choice.</i>
+            <ul>
+                <li>Since the distribution with the maximum entropy is the one that makes the fewest assumptions about
+                    the true distribution of data, the principle of maximum entropy can be seen as an application of
+                    Occam's razor.
+                </li>
+            </ul>
+            <div class="ack">https://en.wikipedia.org/wiki/Principle_of_maximum_entropy</div>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Entropy Regularized RL</h1>
+            <ul>
+                <li>Let $\rho_{\pi}\left(\mathbf{s}_{t}\right)$ and $\rho_{\pi}\left(\mathbf{s}_{t},
+                    \mathbf{a}_{t}\right)$ denote the state and state-action marginal distribution induced by a policy
+                    $\pi\left(\mathbf{a}_{t} \mid \mathbf{s}_{t}\right)$.</li>
+                <li>The RL objective is:</li>
+                \[
+                \sum_{t} \mathbb{E}_{\left(\mathbf{s}_{t}, \mathbf{a}_{t}\right) \sim
+                \rho_{\pi}}\left[r\left(\mathbf{s}_{t}, \mathbf{a}_{t}\right)\right]
+                \]
+                <li>Maximum entropy RL optimizes for a different objective:</li>
+                \[
+                \sum_{t} \mathbb{E}_{\left(\mathbf{s}_{t}, \mathbf{a}_{t}\right) \sim
+                \rho_{\pi}}\left[r\left(\mathbf{s}_{t}, \mathbf{a}_{t}\right)+\alpha \mathcal{H}\left(\pi\left(\cdot
+                \mid \mathbf{s}_{t}\right)\right)\right]
+                \]
+                <ul>
+                    <li>$\alpha$ is a hyper-parameter, often called the temperature parameter</li>
+                    <li>$\mathcal{H}\left(\pi\left(\cdot \mid \mathbf{s}_{t}\right)\right)$ is the entropy of the policy
+                        given a state</li>
+                </ul>
+            </ul>
+            <div class="ack">Modeling Purposeful Adaptive Behavior with
+                the Principle of Maximum Causal Entropy. Brian D. Ziebart PhD Thesis.</div>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Entropy Regularization</h1>
+            <ul>
+                <li>Maximum entropy RL optimizes for the objective:</li>
+                \[
+                \sum_{t} \mathbb{E}_{\left(\mathbf{s}_{t}, \mathbf{a}_{t}\right) \sim
+                \rho_{\pi}}\left[r\left(\mathbf{s}_{t}, \mathbf{a}_{t}\right)+\alpha \mathcal{H}\left(\pi\left(\cdot
+                \mid \mathbf{s}_{t}\right)\right)\right]
+                \]
+                <ul>
+                    <li>$\alpha$ is a hyper-parameter, often called the temperature parameter</li>
+                    <li>$\mathcal{H}\left(\pi\left(\cdot \mid \mathbf{s}_{t}\right)\right)$ is the entropy of the policy
+                        given a state</li>
+                </ul>
+                <li>This objective leads to more robust and better exploration behavior:</li>
+                <ul>
+                    <li>Encourage exploratory action around the current mean of the policy (vs. uniformly random in
+                        $\epsilon$-greedy)</li>
+                    <li>Assign equal density mass to equally good action</li>
+                </ul>
+                <li>But $\alpha$ is hard to tune.</li>
+                <ul>
+                    <li>Good values for $\alpha$ depend on the environment and change over the course of training in
+                        one
+                        environment.</li>
+                </ul>
+            </ul>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Automatic Tuning of the Temperature</h1>
+            <ul>
+                <li>Maximum entropy RL optimizes for the objective:</li>
+                \[
+                \sum_{t} \mathbb{E}_{\left(\mathbf{s}_{t}, \mathbf{a}_{t}\right) \sim
+                \rho_{\pi}}\left[r\left(\mathbf{s}_{t}, \mathbf{a}_{t}\right)+\alpha \mathcal{H}\left(\pi\left(\cdot
+                \mid \mathbf{s}_{t}\right)\right)\right]
+                \]
+                <li>Soft Actor Critic (SAC) instead solves the constrained optimization problem:</li>
+                \[
+                \max _{\pi_{0: T}} \mathbb{E}_{\rho_{\pi}}\left[\sum_{t=0}^{T} r\left(\mathbf{s}_{t},
+                \mathbf{a}_{t}\right)\right]
+                \quad
+                \text { s.t. } \mathbb{E}_{\left(\mathbf{s}_{t}, \mathbf{a}_{t}\right) \sim \rho_{\pi}}\left[-\log
+                \left(\pi_{t}\left(\mathbf{a}_{t} \mid \mathbf{s}_{t}\right)\right)\right] \geq \overline{\mathcal{H}}
+                \quad
+                \forall t
+                \]
+                <ul>
+                    <li>$\overline{\mathcal{H}}$ is the desired minimum averaged entropy (lower bound)</li>
+                    <li>The entropy can vary across different states</li>
+                    <li>Only the averaged entropy is constrained</li>
+                    <li>Solving the optimization problem automatically tunes $\alpha$</li>
+                    <li>$\alpha$ becomes the Lagrange multipler of the optimization problem</li>
+                </ul>
+            </ul>
+            <div class="ack">Soft Actor-Critic Algorithms and Applications. Haarnoja et al.</div>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">SAC Objective Function</h1>
+            <ul>
+                <li>SAC maintains value function $Q_\theta$ and policy $\pi_\phi$.</li>
+                <li>Solving the constrained optimization problem leads to the following objective functions for the
+                    value
+                    function,
+                    policy and
+                    $\alpha$:</li>
+                \[
+                J_{Q}(\theta)=\mathbb{E}_{\left(\mathbf{s}_{t}, \mathbf{a}_{t}\right) \sim
+                \mathcal{D}}\left[\frac{1}{2}\left(Q_{\theta}\left(\mathbf{s}_{t},
+                \mathbf{a}_{t}\right)-\left(r\left(\mathbf{s}_{t}, \mathbf{a}_{t}\right)+\gamma
+                \mathbb{E}_{\mathbf{s}_{t+1} \sim
+                p}\left[V_{\bar{\theta}}\left(\mathbf{s}_{t+1}\right)\right]\right)\right)^{2}\right]
+                \]
+                \[
+                J_{\pi}(\phi)=\mathbb{E}_{\mathbf{s}_{t} \sim \mathcal{D}}\left[\mathbb{E}_{\mathbf{a}_{t} \sim
+                \pi_{\phi}}\left[\alpha \log \left(\pi_{\phi}\left(\mathbf{a}_{t} \mid
+                \mathbf{s}_{t}\right)\right)-Q_{\theta}\left(\mathbf{s}_{t}, \mathbf{a}_{t}\right)\right]\right]
+                \]
+                \[
+                J(\alpha)=\mathbb{E}_{\mathbf{a}_{t} \sim \pi_{\phi}}\left[-\alpha \log \pi_{\phi}\left(\mathbf{a}_{t}
+                \mid
+                \mathbf{s}_{t}\right)-\alpha \overline{\mathcal{H}}\right]
+                \]
+                <li>$\mathcal{D}$ is the replay buffer.</li>
+                <li>Sample-based estimates of the gradients of the three objective functions can be obtained (not
+                    shown).
+                    <ul>
+                        <li>
+                            Perform a few gradient steps for each objective function before collecting new data
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">SAC Pseudocode</h1>
+            <center>
+                <div style=margin-top:10px>
+                    <img src="./L17/sac_pseudocode.png" width="1150" />
+                </div>
+            </center>
+            SAC also maintains two value functions with parameters $\theta_1, \theta_2$ to implement double Q-learning.
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">SAC on Real Robot</h1>
+            <center>
+                <iframe width="900" height="600" src="https://www.youtube.com/embed/FmMPHL3TcrE"
+                    title="YouTube video player" frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen></iframe>
+            </center>
+            Video shows SAC trains the Minitaur robot to walk in 2 hours of training.
+        </div>
+
+        <!-- ######################### New Section ############################# -->
+        <div class="step slide separator">
+            <h1 class="nt">Structural Environment Modeling</h1>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Structural Environment Modeling</h1>
+            <ul>
+                <li>
+                    We will use two case studies to show more structured environment model can improve exploration
+                    behavior:
+                    <ul>
+                        <li>Learnt high-level environment model + Search to explore frontier states</li>
+                        <li>Environment model + Monte Carlo sampling + Search to focus computation and explore states
+                            immediately relevant</li>
+                    </ul>
+
+                </li>
+            </ul>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Search to Explore Frontier States</h1>
+            <div class="row">
+                The task: an ant robot tries to reach a specific goal.
+            </div>
+            <center>
+                <div style=margin-top:10px>
+                    <img src="./L17/ant_robot_navigation.png" width="600" />
+                </div>
+            </center>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Motion Planning</h1>
+            <div>
+                If we have the transition function in closed form and environment geometry, solve it by planning
+                algorithms.
+            </div>
+            <div style="display:flex; justify-content:center; margin-top:20px">
+                <div>
+                    <img src="./L17/ant_robot_navigation.png" width="60%" />
+                </div>
+                <div>
+                    <img src="./L17/ant_planning.png" width="815px" />
+                </div>
+            </div>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Challenges in the RL Setting</h1>
+            <ul>
+                <li>No prior physics model => need to learn complex low-level controllers for the high DOF ant.</li>
+                <li>No geometry model of the environment => Can not build a map.</li>
+                <div style=margin-top:10px>
+                    <img src="./L17/ant.png" width="35%" />
+                </div>
+            </ul>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Approach</h1>
+            <ul>
+                <li> <b>Reinforcement Learning</b> for low-level control policy to reach nearby states.</li>
+                <li> Mapping state space with <b>landmarks</b> from experience.</li>
+                <li> <b>Search</b> the map to find paths to frontier states and goal states.</li>
+                <div style=margin-top:10px>
+                    <img src="./L17/mapping_state_space_overview.png" width="45%" />
+                </div>
+            </ul>
+            <div class="ack">Mapping State Space using Landmarks for Universal Goal Reaching. Huang*, Liu*, Su. NeuRIPS
+                2019.</div>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Reinforcement Learning for Low-level Policy</h1>
+            <ul>
+                <li>Extend the notion of MDP with a set of goals $\mathcal{G}$ to form Universal MDP.
+                    <ul>
+                        <li>The goals $\mathcal{G}$ is often a sub-space of the state space or the state space itself.
+                        </li>
+                    </ul>
+                </li>
+                <li>The reward function takes a goal as input $\mathcal{R}: \mathcal{S} \times \mathcal{A} \times
+                    \mathcal{G} \rightarrow R$ </li>
+                <li>The policy is:
+                    <ul>
+                        <li>conditioned on a goal $\pi: \mathcal{S} \times \mathcal{G} \rightarrow \mathcal{A}$</li>
+                        <li>trained to maximize goal-condition value: $V_{g,
+                            \pi}\left(s_{0}\right)=E_{\pi}\left[\sum_{t=0}^{\infty} \gamma^{t} R\left(s_{t}, a_{t},
+                            g\right)\right]$</li>
+                    </ul>
+                </li>
+                <li>Arbitrary collected trajectories can be repurposed to train the goal-conditioned policy and value
+                    function.
+                    <ul>
+                        <li>A very important idea and source of supervision in RL</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Mapping State Space with Landmarks</h1>
+            <ul>
+                <li>State space can be embedded into a low-dimensional manifold.</li>
+                <div style="display:flex; justify-content:center; margin-top:20px">
+                    <div>
+                        <img src="./L17/full_state_space_viz.png" width="100%" />
+                        <center>
+                            Global Structure
+                        </center>
+                    </div>
+                    <div style="margin-left:150px">
+                        <img src="./L17/simple_2d_map.png" width="440px" />
+                        <center style="margin-top: 50px;">
+                            Simple 2D map
+                        </center>
+                    </div>
+                </div>
+            </ul>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Mapping State Space with Landmarks</h1>
+            <ul>
+                <li>Sample landmarks in state space.</li>
+                <li>Build a graph in state space.
+                    <ul>
+                        <li>Connecting "nearby" landmarks</li>
+                        <li>Navigating between "nearby" landmarks is a short-horizon task and solved by the RL agent
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+            <div style="display:flex; justify-content:center; margin-top:20px">
+                <div>
+                    <img src="./L17/landmark_sampling.png" width="80%" />
+                    <center>
+                        Landmark sampling to approximate state space
+                    </center>
+                </div>
+                <div style="margin-left:150px">
+                    <img src="./L17/landmark_graph.png" width="440px" />
+                    <center style="margin-top: 20px;">
+                        Build a graph connecting landmarks
+                    </center>
+                </div>
+            </div>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Mapping, Planning and RL</h1>
+            <ul>
+                <li>The algorithm consists of a few high-level ideas:</li>
+                <ul>
+                    <li>Sample landmarks from replay buffer.</li>
+                    <li>Build a graph whose nodes are landmarks.</li>
+                    <li>Plan a path to the goal or frontier states (nodes at the edge of the graph).</li>
+                    <li>Landmark traversal executed by goal-conditioned RL policy (landmark-conditioned policy in this
+                        case).</li>
+                </ul>
+            </ul>
+            <div style=margin-top:10px>
+                <img src="./L17/mapping_state_space_overview.png" width="40%" />
+            </div>
+        </div>
+
+        <!-- ###################################################### -->
+        <div class="step slide">
+            <h1 class="nt">Performance</h1>
+            <ul>
+                <li>The agent only receives a positive reward when reaching the goal.</li>
+            </ul>
+            <div style=margin-top:10px>
+                <img src="./L17/state_space_mapping_perf.png" width="45%" />
+            </div>
+        </div>
+
+        <!-- ################################################################### -->
+        <div class="step slide">
+            <div style="margin-top:300px"></div>
+            <center>
+                <div class="Large"><b>The End</b></div>
+            </center>
+        </div>
+
+    </div>
+    <!--
+        Add navigation-ui controls: back, forward and a select list.
+        Add a progress indicator bar (current step / all steps)
+        Add the help popup plugin
+    -->
+    <div id="impress-toolbar"></div>
+
+    <div class="impress-progressbar">
+        <div></div>
+    </div>
+    <div class="impress-progress"></div>
+
+    <div id="impress-help"></div>
+
+    <script type="text/javascript" src="../extras/highlight/highlight.pack.js"></script>
+    <script src="../extras/mermaid/mermaid.min.js"></script>
+    <script type="text/javascript" src="../extras/markdown/markdown.js"></script>
+    <!--
+        To make all described above really work, you need to include impress.js in the page.
+        You also need to call a `impress().init()` function to initialize impress.js presentation.
+        And you should do it in the end of your document. 
+    -->
+    <script>
+        function setSlideID() {
+            x = document.getElementsByClassName("slide");
+            const titleSet = new Set();
+            var titleDict = {};
+            for (var i = 2; i < x.length; i++) {
+                h1 = x[i].getElementsByTagName("h1")[0];
+                if (h1) {
+                    // alert(title);
+                    title = '--' + h1.innerHTML.replace(/\W/g, '');
+                    if (titleSet.has(title)) {
+                        titleDict[title] += 1;
+                        title = title + '_' + titleDict[title].toString();
+                    }
+                    else {
+                        titleSet.add(title);
+                        titleDict[title] = 1;
+                    }
+                    x[i].id = title;
+                }
+            }
+        }
+        setSlideID();
+    </script>
+    <script>
+        function getTitles() {
+            var secs = document.getElementsByClassName("separator");
+            var titleList = [];
+            var titleIdList = [];
+            const titleIdSet = new Set();
+            for (var i = 0; i < secs.length; i++) {
+                h1 = secs[i].getElementsByTagName("h1")[0];
+                titleId = 'Sec:' + h1.innerHTML.replace(/\W/g, '');
+                if (titleIdSet.has(titleId)) {
+                    continue;
+                }
+                titleIdSet.add(titleId);
+                titleList.push(h1.innerHTML);
+                titleIdList.push(titleId);
+                secs[i].id = titleId;
+            }
+            console.log(titleList);
+            return [titleList, titleIdList];
+        }
+
+        function addToC(titleList, titleIdList) {
+            var agenda = document.getElementById("agenda");
+            agenda.innerHTML = '';
+            for (var i = 0; i < titleList.length; i++) {
+                agenda.innerHTML += '<li><a href="#' + titleIdList[i] + '">' + titleList[i] + '</a></li>';
+            }
+        }
+
+        res = getTitles();
+        titleList = res[0]; titleIdList = res[1];
+        addToC(titleList, titleIdList);
+    </script>
+    <script type="text/javascript" src="../js/impress.js"></script>
+    <script type="text/javascript">
+        (function () {
+            var vizPrefix = "language-viz-";
+            Array.prototype.forEach.call(document.querySelectorAll("[class^=" + vizPrefix + "]"), function (x) {
+                var engine;
+                x.getAttribute("class").split(" ").forEach(function (cls) {
+                    if (cls.startsWith(vizPrefix)) {
+                        engine = cls.substr(vizPrefix.length);
+                    }
+                });
+                var image = new DOMParser().parseFromString(Viz(x.innerText, { format: "svg", engine: engine }), "image/svg+xml");
+                x.parentNode.insertBefore(image.documentElement, x);
+                x.style.display = 'none'
+                x.parentNode.style.backgroundColor = "white"
+            });
+        })();
+        window.MathJax = {
+            tex2jax: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true,
+                skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+                TeX: {
+                    equationNumbers: { autoNumber: "AMS" },
+                    extensions: ["AMSmath.js", "AMSsymbols.js", "color.js"],
+                },
+                jax: ["input/TeX", "output/SVG"]
+            },
+            AuthorInit: function () {
+                MathJax.Hub.Register.StartupHook("Begin", function () {
+                    MathJax.Hub.Queue(function () {
+                        var all = MathJax.Hub.getAllJax(), i;
+                        for (i = 0; i < all.length; i += 1) {
+                            all[i].SourceElement().parentNode.className += ' has-jax';
+                        }
+                    })
+                });
+            }
+        };
+    </script>
+    <script type="text/javascript" src="../extras/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script>impress().init();</script>
+</body>
+
+</html>
+<!-- discarded -->
+
+<!-- 
+    Modifications requested on May 22:
+
+    1. Add example of how UCB can be extended to deep RL and improve over taught algo. Done.
+
+    2. For the section of long-horizon RL, i want you to change it. 
+    - make it a section of "intrinsic rewards"
+    - add the approaches that uses intrinsic rewards to drive exploration: 
+    - curiosity-driven exploration by forward dynamic prediction, 
+    - inverse dynamic prediction, and 
+    - RND. 
+    - we can actually also explain SAC here. Done.
+
+    3. structural environment modeling based
+-->

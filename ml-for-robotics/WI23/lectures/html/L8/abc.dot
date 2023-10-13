@@ -1,0 +1,3 @@
+digraph abc {
+    rankdir=LR; 
+    \cdot{T}->b->c;}

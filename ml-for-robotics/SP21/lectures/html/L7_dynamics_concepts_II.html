@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>L7</title>
+        <meta name="description" content="" />
+        <meta name="author" content="Hao Su" />
+        <link rel="stylesheet" href="../extras/highlight/styles/github.css">
+        <link rel="stylesheet" href="../extras/mermaid/mermaid.dark.css">
+        <link href="../css/impress-common.css" rel="stylesheet" />   
+        <link href="css/classic-slides.css" rel="stylesheet" />
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/1.7.1/viz.js"> </script>
+        <link rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/vs.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+    </head>
+    <body class="impress-not-supported">
+        <div class="fallback-message">
+            <p>Your browser <b>doesn't support the features required</b> by impress.js, so you are presented with a simplified version of this presentation.</p>
+            <p>For the best experience please use the latest <b>Chrome</b>, <b>Safari</b> or <b>Firefox</b> browser.</p>
+        </div>
+        <div id="latex-macros"></div>
+        <script src="./latex_macros.js"></script>
+        <div id="impress"
+             data-width="1920"
+             data-height="1080"
+             data-max-scale="3"
+             data-min-scale="0"
+             data-perspective="1000"
+             data-transition-duration="0"
+             >
+             <div class="step slide title" data-x="-2200" data-y="-3000" id="title">
+                 <h1 class="nt">L7-2: Basic Concepts of Rigid-Body Dynamics</h1>
+                 <h2>Hao Su</h2>
+                 <h3>Spring, 2021</h3>
+             </div>
+             <div id="toc" class="step slide" data-rel-x="2200" data-rel-y="0">
+                 <h1 class="nt">Agenda</h1>
+                 <ul class="large" id="agenda"></ul>
+                 click to jump to the section.
+             </div>
+
+             <div class="step slide separator">
+                 <h1 class="nt">Angular Momentum and Rotational Inertia</h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Angular Momentum of Point Mass</h1>
+                 <ul>
+                     <li>Assume a point mass \(m\) that has a momentum \(\mv{p}^o\)</li>
+                     <li>Assume a vector from <em>the origin of the observer's frame</em> \(O\) to the point mass \(\mv{r}^o\)
+                         <li>
+                             Angular momentum: 
+                             \[
+                             \mv{L}^o=\mv{r}^o\times \mv{p}^o
+                             \]
+                         </li>
+                 </ul>
+                 <p>
+                     <img src="L6/moment.svg" width="50%"></img><br/>
+                 </p>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Rotational Inertia Preparation</h1>
+                 <p>\(\mv{v}\) can be decomposed into tangential velocity \(\mv{v}_t\) and radial velocity \(\mv{v}_r\)</p>
+                 <p>
+                     <img src="L7/momentum.svg" style="height: 400px; margin-top: 100px"></img>
+                 </p>
+                 <p>
+                     \(\mv{r}\times \mv{v}=\mv{r}\times (\mv{v}_t+\mv{v}_r)=\mv{r}\times \mv{v}_t=\mv{r}\times (\mv{\omega} \times \mv{r})\)
+                 </p>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Rotational Inertia of Point Mass</h1>
+                 <ul>
+                     \[
+                     \begin{aligned}
+                     \mv{L}^o&=\mv{r}^o\times \mv{p}^o=\mv{r}^o \times (m\mv{v}^o)=m \mv{r}^o \times (\mv{\omega}^o \times \mv{r}^o)\\
+                     &=-m \mv{r}^o\times (\mv{r}^o\times \mv{\omega}^o)=-m[\mv{r}^o][\mv{r}^o]\mv{\omega}^o
+                     \end{aligned}
+                     \]
+                     <center>
+                         <div class="hl">Angular momentum depends on the choice of the observer's frame!</div>
+                     </center>
+                     <li class="substep">
+                         Recall that a momentum, such as \(\mv{p}\), is a product of inertia and velocity
+                     </li>
+                     <li class="substep">We define the rotational inertia similarly.  The rotation inertia for a point mass is
+                         \[
+                         \mv{I}^o=-m[\mv{r}^o][\mv{r}^o] =\begin{bmatrix}
+                         m(r_y^2+r_z^2) & -mr_xr_y & -mr_xr_z\\
+                         -mr_xr_y & m(r^2_x+r^2_z) & -mr_yr_z\\
+                         -mr_xr_z & -mr_yr_z & m(r^2_x+r^2_y)
+                         \end{bmatrix}
+                         \in\mathbb{R}^{3\times 3}
+                         \]
+                     </li>
+                     <li class="substep">
+                         Then, 
+                         \[\mv{L}^o=\mv{I}^o\mv{\omega}^o \]
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Angular Momentum and Inertia of Rigid Body</h1>
+                 <ul>
+                     <li>Let us view rigid body as <em>a system of particles</em> whose relative positions are fixed (no deformation).</li>
+                     <li>Define the angular momentum of a body by aggregating from volume elements: 
+                         \[
+                         \mv{L}^o=\int_{x^o \in B} \d{\{\mv{r}^o(x) \times \mv{p}^o(x^o)\}}=\int_{x^o\in B} \d{\{\mv{r}^o(x) \times m(x^o) \mv{v}^o(x^o)\}}
+                         \]
+                     </li>
+                     <li>One more step:
+                         \[
+                         \mv{L}^o=\int_{x^o\in B} -\d{\{m^o(x^o) [\mv{r}^o(x^o)][\mv{r}^o(x^o)]\mv{\omega}^o\}}=\left(\int_{x^o\in B} -\d{\{m(x^o) [\mv{r}^o(x^o)][\mv{r}^o(x^o)]\}}\right)\mv{\omega}^o
+                         \]
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Angular Momentum and Inertia of Rigid Body</h1>
+                 <ul>
+                     <li>Particularly, if we choose the origin of the observer's frame \(O\) at the <em>center of mass</em>: 
+                         \[
+                         \mv{L}^{b}=\mv{I}^{b}\mv{\omega}^b \tag{body angular momentum}
+                         \]
+                         where 
+                         \[
+                         \mv{I}^{b}=\int_{x^b\in B} -\d{V}\{\rho(x^b) [\mv{r}^b(x^b)][\mv{r}^b(x^b)]\}\tag{body inertia}
+                         \]
+                         and center of mass
+                         \[
+                         x^o_{cm}=\frac{\int \mv{r}^o \rho d\mathbf{V}}{\int\rho d\mathbf{V}} \tag{center of mass}
+                         \]
+                     </li>
+                     <li class="substep">
+                         Since \(\cal{F}_{b(t)}\) is tightly binded to the body, \(\mv{I}^b\) does not change w.r.t. time and is a basic property of the object.
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Computation of Rigid Body Inertia</h1>
+                 <ul>
+                     \[
+                     \begin{aligned}
+                     \mv{I}^b&=\int_{x^b\in B} -\d{V}\rho(\mv{x}^b) [\mv{r}^b(\mv{x}^b)][\mv{r}^b(\mv{x}^b)]\\
+                     &=\begin{bmatrix}
+                     \int\rho(r_y^2+r_z^2)d\mv{V} & -\int\rho r_xr_yd\mv{V} & -\int\rho r_xr_zd\mv{V}\\
+                     -\int\rho r_xr_yd\mv{V}  & \int\rho (r_x^2+r_z^2)d\mv{V} & -\int\rho r_yr_zd\mv{V}\\
+                     -\int\rho r_xr_zd\mv{V} & -\int\rho r_yr_zd\mv{V} & \int\rho(r_y^2+r_x^2)d\mv{V}\\
+                     \end{bmatrix} 
+                     \end{aligned}
+                     \]
+                     <li> 
+                         Given uniform density, the integral can be computed analytically for watertight meshes
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Fast Inertia Computation</h1>
+                 <ul>
+                     <li>Divergence theorem! Let \(\mv{F}:\mathbb{R}^3\to\mathbb{R}^3\),
+                         \(\int_V\nabla\cdot \mv{F} dV = \oint_S \mv{F}\cdot \mv{n} d S\)
+                     </li>
+                     <li>An example: a term of \(\mv{I}\), which is \(-\rho \int_\mv{V}r_yr_zd\mv{V}\)
+                         <br/>
+                         Let
+                         \(\mv{F}(r_x,r_y,r_z) = \begin{bmatrix}r_xr_yr_z &0 & 0\end{bmatrix}^T\)
+                         \[\nabla\cdot\mv{F} = r_yr_z\]
+                         The integral becomes
+                         \[\oint_S \mv{F}\cdot\mv{n} dS\]
+                         Now we only need to do 2D integral over triangles.
+                     </li>
+                 </ul>
+                 <div class="rby">Read by yourself</div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Mass Properties</h1>
+                 <ul>
+                     <li>Observe 
+                         \(
+                         \mv{I}^b=\int_{\mv{r}^b\in B} -\d{\mv{V}}\rho(\mv{r}^b)[\mv{r}^b][\mv{r}^b] 
+                         \)
+                     </li>
+                     <li>Although the origin is always at the center of mass, if we change the orientation of body frame axes, \(\mv{I}^b\) may change!</li>
+                     <li>How will it change, then?</li>
+                 </ul>
+                 <ul class="substep">
+                     <li>If we rotate the frame by \(R^T\) and obtain a new frame \(b'\), then 
+                         \[
+                         \begin{aligned} 
+                         {\mv{I}^b}'&=\int_{\mv{r}^b\in B} -\d{\mv{V}}\rho(\mv{r}^b)[R\mv{r}^b][R\mv{r}^b]=\int_{\mv{r}^b\in B} -\d{\mv{V}}\rho(\mv{r}^b)R[\mv{r}^b][\mv{r}^b]R^T =R \mv{I}^b R^T
+                         \end{aligned}
+                         \]
+                         where the second equality follows \([Rr]=R[r]R^T\) for \(R\in\mathbb{SO}^3\). Again, <strong>similarity transformation</strong>!
+                     </li> 
+                 </ul>
+                 <center>
+                     <div class="hl substep">Conclusion: Rigid-transformation does not change the eigen properties of \(\mv{I}^b\)</div> 
+                 </center>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Mass Properties</h1>
+                 <div class="row">
+                     <div class="column">
+                         <ul>
+                             <li>\(\mv{I}^b\) admits eigen-decomposition 
+                                 <ul>
+                                     <li>The eigenvectors are called <strong>principal axes</strong>. </li>
+                                     <li>The eigenvalues (\(I_1, I_2, I_3\)) are called the <strong>principal moments of inertia</strong>. </li>
+                                 </ul>
+                             </li>
+                             <li class="substep"> 
+                                 \(x_{cm}\) and principal axes form a <strong>body frame</strong> that is intrinsic to the object</li>
+                             <li class="substep"> <strong>\(x_{cm}\), principal axes, \(m, I_1, I_2, I_3\) fully determine the behavior of a rigid body under external forces</strong></li>                 
+                         </ul>
+                     </div>
+                     <div class="column">
+                         <img src="./L6/rotational_inertia.png" width="700px"/> <br/>
+                         <div class="credit">(from: https://www.cnblogs.com/21207-iHome/p/7765508.html)</div>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Quiz</h1>
+                 Suppose an object is moving in space (rotating and translating), which of the
+                 following quantities may change during the motion. (Assume all quantities are
+                 measured w.r.t. a static spatial frame)
+                 <ul>
+                     <li>
+                         A. principal axes (observed from the spatial frame)
+                     </li>
+                     <li>
+                         B. \(x_{cm}\) (observed from the spatial frame)
+                     </li>
+                     <li>
+                         C. \(m\)
+                     </li>
+                     <li>
+                         D. \(I_1,I_2,I_3\)
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide separator">
+                 <h1>Torque</h1>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Torque</h1>
+                 <div class="row">
+                     <div class="column" style="flex: 70%">
+                         <ul>
+                             <li>Consider a simple example on the right.
+                             </li>
+                             <li>Recall how we define the angular momentum \(\mv{L}^o\) for <em>point mass</em>:
+                                 \[
+                                 \mv{L}^o=\mv{r}^o\times \mv{p}^o=\mv{r}^o \times (m\mv{v}^o) \tag{1}
+                                 \]
+                             </li>
+                             <li>We have also derived that
+                                 \[
+                                 \mv{L}^o=\mv{I}^o\mv{\omega^o} \tag{2}
+                                 \]
+                             </li>
+                             <li class="substep">We use the time derivative of \(\mv{L}^o\) to define <strong>torque</strong>, denoted by \(\tau^o\)
+                                 <ol>
+                                     <li>
+                                         By (1), \(\tau^o = \dot{\mv{L}^o}=\dot{\mv{r}^o} \times (m\mv{v}^o)+\mv{r}^o \times \mv{f}^o=\mv{r}^o\times \mv{f}^o\), because \(\dot{\mv{r}^o}\parallel\mv{v}^o \)
+                                     </li>
+                                     <li>
+                                         By (2), \(\tau=\frac{\d{(\mv{I}^o\mv{\omega}^o)}}{\d{t}}\)
+                                     </li>
+                                 </ol>
+                             </li>
+                             <li class="substep">
+                                 Torque describes how fast the angular momentum changes (from 2). Torque also relates the change with the cause: an external power input (from 1).
+                             </li>
+                         </ul>
+                     </div>
+                     <div class="column" style="flex: 30%">
+                         <img src="./L6/torque.png" style="margin-top: 20px; margin-bottom: 20px"/>
+                         <p style="text-align:left">Example: a point mass is fixed at the end of a light stick mounted on the wall. At the moment of analysis, it has velocity \(\mv{v}\).</p>
+                     </div>
+                 </div>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Torque</h1>
+                 <div class="row">
+                     <div class="column" style="flex: 70%">
+                         <ul>
+                             <li>
+                                 In the example of point mass, we showed the equality of two torque computations
+                                 <ul>
+                                     <li>the change rate of \(\mv{L}\)</li>
+                                     <li>the input to the system</li>
+                                 </ul>   
+                             </li>
+                             <li>
+                                 For general rigid-body systems, the equality is also true 
+                             </li>
+                             <li>For robotic manipulation, torque is the most common description of system input </li>
+                         </ul>
+                     </div>
+                     <div class="column" style="flex: 30%">
+                         <img src="./L6/electric_motor.gif" />
+                         <div class="credit">https://en.wikipedia.org/wiki/Electric_motor</div>
+                     </div>
+                 </div>
+             </div>
+
+             <div class="step slide">
+                 <h1 class="nt">Euler Equation</h1>
+                 \[
+                 \begin{align*}
+                 % \mv{f} &= \frac{\d{\mv{p}}}{\d{t}}=\frac{\d{(m\mv{v})}}{\d{t}}=m\mv{a} \tag{linear motion}\\
+                 \mv{\tau}^b &= \frac{\d{\mv{L}^b}}{\d{t}}=\frac{\d{(\mv{I}^b\mv{\omega}^b)}}{\d{t}}=\frac{\d{\mv{I}^b}}{\d{t}}\mv{\omega}^b+\mv{I}^b\frac{\d{\mv{\omega}^b}}{\d{t}}=\mv{\omega}^b\times \mv{I}^b\mv{\omega}^b + \mv{I}^b\dot{\mv{\omega}^b}
+                 \end{align*}
+                 \]
+                 <ul>
+                     <li>
+                         We used \(\dot{\mv{I}^b}=[\mv{\omega}]\mv{I}^b\) without proof
+                     </li>
+                     <li>
+                         An observation (example): Even if there is no torque input, if the object has a non-zero angular velocity \(\mv{\omega}^b\), then it may still have an angular acceleration \(\dot{\mv{\omega}^b}\)
+                         <ul>
+                             <li>When \(\mv{\omega}^b \not\parallel \mv{I}^b\mv{\omega}^b\), i.e., \(\mv{\omega}^b\) is not along the eigenvector of \(\mv{I}^b\), \(\mv{\omega}^b\) will <strong>NOT</strong> keep unchanged</li>
+                             <li>\(\mv{\omega}^b\) will not converge (\(\dot{\omega}^b\) will never be zero). Its trajectory will form a periodic curve</li>
+                             <li>\(\mv{L}^b=\mv{I}^b\mv{\omega}^b\) is conserved</li>
+                         </ul>
+                     </li>
+                 </ul>
+             </div>
+             <div class="step slide">
+                 <h1 class="nt">Euler Equation</h1>
+                 <span style="font-size:1.5em">
+                     \[
+                     \mv{\tau}^b=\mv{\omega}^b\times \mv{I}^b\mv{\omega}^b + \mv{I}^b\dot{\mv{\omega}^b} \tag{angular motion}
+                     \]
+                 </span>
+                 <center>
+                     <div class="row">
+                         <div class="column"><img src="./L6/euler_equation.svg"/></div>
+                         <div class="column"><img src="./L6/peek.gif" width="80%"/><p>A numerical experiment in SAPIEN for \(\mv{\tau}^b=0\)</p><p>(this is illustrative and there are numerical errors)</p></div>
+                     </div>
+                 </center>
+             </div>
+        </div>
+
+        <!--
+            Add navigation-ui controls: back, forward and a select list.
+            Add a progress indicator bar (current step / all steps)
+            Add the help popup plugin
+        -->
+        <div id="impress-toolbar"></div>
+
+        <div class="impress-progressbar"><div></div></div>
+        <div class="impress-progress"></div>
+
+        <div id="impress-help"></div>
+
+        <script type="text/javascript" src="../extras/highlight/highlight.pack.js"></script>
+        <script src="../extras/mermaid/mermaid.min.js"></script>
+        <script type="text/javascript" src="../extras/markdown/markdown.js"></script>
+        <!--
+            To make all described above really work, you need to include impress.js in the page.
+            You also need to call a `impress().init()` function to initialize impress.js presentation.
+            And you should do it in the end of your document. 
+        -->
+        <script>
+            function setSlideID() {
+                x = document.getElementsByClassName("slide");
+                const titleSet = new Set();
+                var titleDict = {};
+                for (var i = 2; i < x.length; i++) {
+                    h1 = x[i].getElementsByTagName("h1")[0];
+                    if (h1) {
+                        // alert(title);
+                        title = '--'+h1.innerHTML.replace(/\W/g, '');
+                        if (titleSet.has(title)) {
+                            titleDict[title] += 1;
+                            title = title + '_' + titleDict[title].toString();
+                        }
+                        else {
+                            titleSet.add(title);
+                            titleDict[title] = 1;
+                        }
+                        x[i].id = title;
+                    }
+                }
+            }
+            setSlideID(); 
+            function getTitles() {
+                var secs = document.getElementsByClassName("separator");
+                var titleList = [];
+                var titleIdList = [];
+                const titleIdSet = new Set();
+                for (var i = 0; i < secs.length; i++) {
+                    h1 = secs[i].getElementsByTagName("h1")[0];
+                    titleId = 'Sec:'+h1.innerHTML.replace(/\W/g, '');
+                    if (titleIdSet.has(titleId)) {
+                        continue;
+                    }
+                    titleIdSet.add(titleId);
+                    titleList.push(h1.innerHTML);
+                    titleIdList.push(titleId);
+                    secs[i].id = titleId;
+                }
+                console.log(titleList);
+                return [titleList, titleIdList];
+            }
+
+            function addToC(titleList, titleIdList){
+                var agenda = document.getElementById("agenda");
+                agenda.innerHTML = '';
+                for (var i = 0; i < titleList.length; i++) {
+                    agenda.innerHTML += '<li><a href="#'+titleIdList[i]+'">'+titleList[i]+'</a></li>';
+                }
+            }
+
+            res = getTitles();
+            titleList = res[0]; titleIdList  = res[1];
+            addToC(titleList, titleIdList);
+        </script>
+        <script type="text/javascript" src="../js/impress.js"></script>
+        <script type="text/javascript">
+            (function(){
+                var vizPrefix = "language-viz-";
+                Array.prototype.forEach.call(document.querySelectorAll("[class^=" + vizPrefix + "]"), function(x){
+                    var engine;
+                    x.getAttribute("class").split(" ").forEach(function(cls){
+                        if (cls.startsWith(vizPrefix)) {
+                            engine = cls.substr(vizPrefix.length);
+                        }
+                    });
+                    var image = new DOMParser().parseFromString(Viz(x.innerText, {format:"svg", engine:engine}), "image/svg+xml");
+                    x.parentNode.insertBefore(image.documentElement, x);
+                    x.style.display = 'none'
+                    x.parentNode.style.backgroundColor = "white"
+                });
+            })();
+            window.MathJax = {
+                tex2jax: {
+                    inlineMath: [['$','$'], ['\\(','\\)']],
+                    displayMath: [['$$','$$'], ['\\[','\\]']],
+                    processEscapes: true,
+                    processEnvironments: true,
+                    skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+                    TeX: { equationNumbers: { autoNumber: "AMS" },
+                        extensions: ["AMSmath.js", "AMSsymbols.js", "color.js"],
+                    },
+                    jax: ["input/TeX", "output/SVG"]
+                },
+                AuthorInit: function () {
+                    MathJax.Hub.Register.StartupHook("Begin",function () {
+                        MathJax.Hub.Queue(function() {
+                            var all = MathJax.Hub.getAllJax(), i;
+                            for(i = 0; i < all.length; i += 1) {
+                                all[i].SourceElement().parentNode.className += ' has-jax';
+                            }
+                        })
+                    });
+                }
+            };
+        </script>
+        <script type="text/javascript" src="../extras/mathjax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+        <script>impress().init();</script>
+    </body>
+</html>
+<!-- discarded -->
